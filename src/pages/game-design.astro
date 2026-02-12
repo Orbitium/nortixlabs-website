@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.jsx';
+import GameDesignDocs from '../components/GameDesignDocs.jsx';
+import Footer from '../components/Footer.jsx';
+
+export const prerender = true;
+---
+
+<Layout 
+    title="Game Design Documents - Nortixlabs"
+    description="Explore our comprehensive game design documentation and creative vision for upcoming projects."
+>
+	<Navbar client:load />
+	<main>
+		<GameDesignDocs client:visible />
+	</main>
+	<Footer client:visible />
+</Layout>

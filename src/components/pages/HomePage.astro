@@ -1,0 +1,38 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Hero from '../../components/Hero.jsx';
+import Services from '../../components/Services.jsx';
+import About from '../../components/About.jsx';
+import Contact from '../../components/Contact.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const titles = {
+    en: "NortixLabs - Innovative Software, Game Development & SaaS Solutions",
+    tr: "NortixLabs - Yenilikçi Yazılım, Oyun Geliştirme ve SaaS Çözümleri"
+};
+
+const descriptions = {
+    en: "Nortixlabs - Innovation in SaaS, Game Development, and Mobile Applications.",
+    tr: "Nortixlabs - SaaS, Oyun Geliştirme ve Mobil Uygulamalarda İnovasyon."
+};
+---
+
+<Layout title={titles[lang]} description={descriptions[lang]} lang={lang}>
+	<Navbar lang={lang} client:load />
+	
+	<main>
+		<Hero lang={lang} client:visible />
+		<Services lang={lang} client:visible />
+		<About lang={lang} client:visible />
+		<Contact lang={lang} client:visible />
+	</main>
+
+	<Footer lang={lang} client:visible />
+</Layout>

@@ -1,0 +1,14 @@
+---
+import SaaSDevelopmentPage from '../../../components/pages/SaaSDevelopmentPage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<SaaSDevelopmentPage lang={lang as 'en' | 'tr'} />

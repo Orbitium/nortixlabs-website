@@ -1,0 +1,14 @@
+---
+import AkademizPage from '../../components/pages/AkademizPage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<AkademizPage lang={lang as 'en' | 'tr'} />

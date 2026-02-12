@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-200: #e2e8f0;
+
+  --color-accent-primary: #8b5cf6;
+  /* Violet for generic tech/SaaS feel, distinct from Cyan */
+  --color-accent-secondary: #06b6d4;
+  /* Cyan to link back to Nortix */
+}
+
+@layer utilities {
+  .glass {
+    @apply border border-white/5 backdrop-blur-sm md:backdrop-blur-xl;
+    background: rgba(15, 23, 42, 0.7);
+  }
+
+  .glass-card {
+    @apply border border-white/5 backdrop-blur-none bg-slate-900/80 md:backdrop-blur-md md:bg-slate-900/50 hover:bg-slate-900/70 transition-all duration-300;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  }
+
+  .blob {
+    @apply absolute -z-10 opacity-30 blur-[30px] md:opacity-40 md:blur-[80px];
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .optimize-gpu {
+    backface-visibility: hidden;
+    perspective: 1000px;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes blob1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(80px, -60px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-40px, 40px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(20px, -20px) scale(1.05);
+  }
+}
+
+@keyframes blob2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(-60px, 40px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(40px, -60px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(-20px, 20px) scale(1.05);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  @apply md:block;
+  animation: float 10s infinite ease-in-out;
+}
+
+.animate-blob-1 {
+  animation: none;
+}
+
+.animate-blob-2 {
+  animation: none;
+}
+
+@media (min-width: 768px) {
+  .animate-blob-1 {
+    animation: blob1 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-blob-2 {
+    animation: blob2 30s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+body {
+  @apply bg-slate-950 text-slate-200 overflow-x-hidden font-sans;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+}
+
+section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-display;
+}

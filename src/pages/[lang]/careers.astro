@@ -1,0 +1,14 @@
+---
+import CareersPage from '../../components/pages/CareersPage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<CareersPage lang={lang as 'en' | 'tr'} />

@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import CareersList from '../../components/CareersList.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const titles = {
+    en: "Careers - Join the NortixLabs Team",
+    tr: "Kariyer - NortixLabs Ekibine Katılın"
+};
+---
+
+<Layout title={titles[lang]} lang={lang}>
+	<Navbar lang={lang} client:load />
+	
+	<main>
+		<CareersList lang={lang} client:load />
+	</main>
+
+	<Footer lang={lang} client:visible />
+</Layout>

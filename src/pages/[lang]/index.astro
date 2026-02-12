@@ -1,0 +1,14 @@
+---
+import HomePage from '../../components/pages/HomePage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<HomePage lang={lang as 'en' | 'tr'} />

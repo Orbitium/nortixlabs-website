@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AdminPanel from '../../components/admin/AdminPanel.jsx';
+
+export const prerender = false;
+---
+
+<Layout title="AkademiZ Admin Panel | NortixLabs">
+    <AdminPanel client:only="react" />
+</Layout>
+
+<style is:global>
+    /* Ensure the admin panel takes full screen and overrides any default layout padding if necessary */
+    body {
+        background-color: #020617;
+    }
+</style>

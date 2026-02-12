@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import ComingSoon from '../../components/ComingSoon.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const titles = {
+    en: "Mobile Apps - Nortixlabs",
+    tr: "Mobil Uygulamalar - Nortixlabs"
+};
+
+const descriptions = {
+    en: "Next-generation mobile experiences crafted by Nortixlabs. We specialize in high-performance, cross-platform applications for modern users.",
+    tr: "Nortixlabs tarafından hazırlanan yeni nesil mobil deneyimler. Modern kullanıcılar için yüksek performanslı, çapraz platform uygulamalarda uzmanlaşıyoruz."
+};
+
+const pageContent = {
+    en: {
+        title: "Mobile Applications",
+        desc: "Next-generation mobile experiences are being crafted in our labs. We're bringing the power of Nortix to your pocket."
+    },
+    tr: {
+        title: "Mobil Uygulamalar",
+        desc: "Laboratuvarlarımızda yeni nesil mobil deneyimler hazırlanıyor. Nortix'in gücünü cebinize getiriyoruz."
+    }
+};
+
+const t = pageContent[lang];
+---
+
+<Layout title={titles[lang]} description={descriptions[lang]} lang={lang}>
+	<Navbar lang={lang} client:load />
+	<main>
+		<ComingSoon 
+            lang={lang}
+            client:load 
+            title={t.title}
+            description={t.desc}
+        />
+	</main>
+	<Footer lang={lang} client:visible />
+</Layout>

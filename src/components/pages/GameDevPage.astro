@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import ComingSoon from '../../components/ComingSoon.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const titles = {
+    en: "Game Development - Nortixlabs",
+    tr: "Oyun Geliştirme - Nortixlabs"
+};
+
+const descriptions = {
+    en: "Nortixlabs Game Studios is pushing the boundaries of interactive entertainment. Discover our approach to immersive game development and digital world-building.",
+    tr: "Nortixlabs Oyun Stüdyoları, etkileşimli eğlencenin sınırlarını zorluyor. Sürükleyici oyun geliştirme ve dijital dünya kurma yaklaşımımızı keşfedin."
+};
+
+const pageContent = {
+    en: {
+        title: "Game Development",
+        desc: "Our game studios are currently in stealth mode, developing immersive experiences that push the boundaries of interactivity."
+    },
+    tr: {
+        title: "Oyun Geliştirme",
+        desc: "Oyun stüdyolarımız şu anda gizli modda, etkileşim sınırlarını zorlayan sürükleyici deneyimler geliştiriyor."
+    }
+};
+
+const t = pageContent[lang];
+---
+
+<Layout title={titles[lang]} description={descriptions[lang]} lang={lang}>
+	<Navbar lang={lang} client:load />
+	<main>
+		<ComingSoon 
+            lang={lang}
+            client:load 
+            title={t.title}
+            description={t.desc}
+        />
+	</main>
+	<Footer lang={lang} client:visible />
+</Layout>

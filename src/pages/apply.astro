@@ -1,0 +1,18 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.jsx';
+import ApplicationForm from '../components/ApplicationForm.jsx';
+import Footer from '../components/Footer.jsx';
+
+export const prerender = true;
+---
+
+<Layout title="Apply Now - Nortixlabs">
+	<Navbar client:load />
+	
+	<main>
+		<ApplicationForm client:load />
+	</main>
+
+	<Footer client:visible />
+</Layout>

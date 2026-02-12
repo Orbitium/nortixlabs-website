@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.jsx';
+import Contact from '../components/Contact.jsx';
+import Footer from '../components/Footer.jsx';
+
+export const prerender = true;
+---
+
+<Layout 
+    title="Contact Us - Nortixlabs"
+    description="Get in touch with Nortixlabs. We're here to help with your SaaS, game development, and mobile app projects."
+>
+	<Navbar client:load />
+	<main>
+		<Contact client:visible />
+	</main>
+	<Footer client:visible />
+</Layout>

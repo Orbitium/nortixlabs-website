@@ -1,0 +1,57 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+	description?: string;
+    lang?: string;
+}
+
+const { title, description = "Nortixlabs - Innovation in SaaS, Game Development, and Mobile Applications.", lang = "en" } = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang} class="scroll-smooth">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/png" href="/favicon.png" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+
+        <!-- Primary Meta Tags -->
+		<title>{title}</title>
+		<meta name="title" content={title} />
+		<meta name="description" content={description} />
+        <meta name="keywords" content="Nortixlabs, Nortix, Software Development, Game Development, SaaS, Mobile Apps, Innovative Software, Nortix Team, Technology Solutions" />
+        <link rel="canonical" href={Astro.url} />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={Astro.url} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content="/og-image.png" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={Astro.url} />
+        <meta property="twitter:title" content={title} />
+        <meta property="twitter:description" content={description} />
+        <meta property="twitter:image" content="/og-image.png" />
+        
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body class="bg-slate-950 text-slate-200 antialiased selection:bg-cyan-500/30">
+        <!-- Background Ambient Blobs - Hidden on mobile for performance -->
+        <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-20 pointer-events-none hidden md:block">
+            <div class="blob w-[500px] h-[500px] rounded-full bg-violet-600/20 top-[-100px] left-[-100px] animate-blob-1"></div>
+            <div class="blob w-[400px] h-[400px] rounded-full bg-cyan-600/20 bottom-[-50px] right-[-50px] animate-blob-2"></div>
+            <div class="blob w-[600px] h-[600px] rounded-full bg-slate-800/30 top-[20%] left-[30%] animate-float"></div>
+        </div>
+        
+		<slot />
+	</body>
+</html>

@@ -1,0 +1,82 @@
+---
+import Layout from './Layout.astro';
+import Navbar from '../components/Navbar.jsx';
+import Footer from '../components/Footer.jsx';
+import { getLangFromUrl } from '../i18n/utils';
+
+const { frontmatter } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const currentPath = Astro.url.pathname;
+
+const labels = {
+    en: {
+        center: "Legal Center",
+        subtitle: "Transparency and terms for our services.",
+        documents: "Documents",
+        terms: "Terms of Service",
+        privacy: "Privacy Policy",
+        cookies: "Cookie Policy"
+    },
+    tr: {
+        center: "Hukuk Merkezi",
+        subtitle: "Hizmetlerimiz için şeffaflık ve şartlar.",
+        documents: "Belgeler",
+        terms: "Hizmet Şartları",
+        privacy: "Gizlilik Politikası",
+        cookies: "Çerez Politikası"
+    }
+};
+
+const t = labels[lang] || labels.en;
+const base = lang === 'en' ? '' : `/${lang}`;
+---
+
+<Layout title={`${frontmatter.title} - Nortixlabs`} lang={lang}>
+  <Navbar client:load lang={lang} />
+  <div class="pt-32 pb-24 relative z-10 min-h-screen">
+    <div class="container mx-auto px-6 max-w-6xl">
+        <header class="mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold font-display text-white mb-4">{t.center}</h1>
+            <p class="text-slate-400">{t.subtitle}</p>
+        </header>
+
+        <div class="flex flex-col md:flex-row gap-12">
+            <aside class="md:w-64 flex-shrink-0">
+                <div class="sticky top-32 p-6 rounded-2xl border border-white/5 bg-slate-900/50 backdrop-blur-sm">
+                    <h3 class="font-bold text-white mb-4 uppercase tracking-wider text-xs opacity-70">{t.documents}</h3>
+                    <nav class="flex flex-col gap-2 text-sm font-medium">
+                        <a 
+                            href={`${base}/legal/terms`} 
+                            class={`block py-2 px-3 rounded-lg transition-all ${currentPath.includes('/terms') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            {t.terms}
+                        </a>
+                        <a 
+                            href={`${base}/legal/privacy`} 
+                            class={`block py-2 px-3 rounded-lg transition-all ${currentPath.includes('/privacy') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            {t.privacy}
+                        </a>
+                        <a 
+                            href={`${base}/legal/cookies`} 
+                            class={`block py-2 px-3 rounded-lg transition-all ${currentPath.includes('/cookies') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                        >
+                            {t.cookies}
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <main class="flex-1 min-w-0">
+                <div class="glass p-8 md:p-12 rounded-2xl border border-white/5">
+                    <h1 class="text-3xl font-bold font-display text-white mb-8 pb-6 border-b border-white/5">{frontmatter.title}</h1>
+                    <div class="prose prose-invert prose-lg max-w-none prose-headings:font-display prose-headings:text-white prose-a:text-cyan-400 prose-strong:text-white text-slate-400">
+                        <slot />
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+  </div>
+  <Footer client:visible lang={lang} />
+</Layout>

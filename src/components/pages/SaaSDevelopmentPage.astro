@@ -1,0 +1,30 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import SaaSPage from '../../components/SaaSPage.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const titles = {
+    en: "SaaS Development - Nortixlabs",
+    tr: "SaaS Geliştirme - Nortixlabs"
+};
+
+const descriptions = {
+    en: "Scalable, enterprise-grade SaaS solutions by Nortixlabs. We build high-performance software architectures designed for growth and reliability.",
+    tr: "Nortixlabs'dan ölçeklenebilir, kurumsal düzeyde SaaS çözümleri. Büyüme ve güvenilirlik için tasarlanmış yüksek performanslı yazılım mimarileri kuruyoruz."
+};
+---
+
+<Layout title={titles[lang]} description={descriptions[lang]} lang={lang}>
+	<Navbar lang={lang} client:load />
+	<main>
+		<SaaSPage lang={lang} client:load />
+	</main>
+	<Footer lang={lang} client:visible />
+</Layout>

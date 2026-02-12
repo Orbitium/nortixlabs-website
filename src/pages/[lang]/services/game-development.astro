@@ -1,0 +1,14 @@
+---
+import GameDevPage from '../../../components/pages/GameDevPage.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<GameDevPage lang={lang as 'en' | 'tr'} />
