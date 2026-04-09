@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "deploy": "astro build && wrangler pages deploy dist",
+    "deploy": "astro build && wrangler pages deploy dist --project-name nortixlabs-website --branch production",
+    "deploy:preview": "astro build && wrangler pages deploy dist --project-name nortixlabs-website",
     "astro": "astro"
   },
   "dependencies": {
