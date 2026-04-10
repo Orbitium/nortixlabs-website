@@ -4,7 +4,7 @@ import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
     LogOut, ShieldAlert, GraduationCap, LayoutDashboard,
     Settings, Users, MessageSquare, Calendar, Plus,
-    X, Upload, Image as ImageIcon, Send, Loader2
+    X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://akademiz-api.nortixlabs.com';
@@ -383,7 +383,15 @@ const AdminPanel = () => {
                         </>
                     )}
 
-                    {activeTab === 'schedule' && <ScheduleManager />}
+                    {activeTab === 'schedule' && (
+                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-8 text-center backdrop-blur-xl">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Schedules</p>
+                            <h3 className="mt-3 text-2xl font-bold text-white">Schedule management is unavailable</h3>
+                            <p className="mt-3 text-sm leading-7 text-slate-400">
+                                The placeholder schedule admin has been removed from this page.
+                            </p>
+                        </div>
+                    )}
 
                     {activeTab === 'events' && (
                         <div className="space-y-6">
@@ -470,6 +478,7 @@ const ScheduleManager = () => {
     const [selectedScheduleId, setSelectedScheduleId] = useState('');
     const [selectedGradeKey, setSelectedGradeKey] = useState('grade1');
     const [editorState, setEditorState] = useState(null);
+    const [timeSlotEditor, setTimeSlotEditor] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -512,6 +521,7 @@ const ScheduleManager = () => {
 
     useEffect(() => {
         setEditorState(null);
+        setTimeSlotEditor(null);
         setError('');
         setNotice('');
     }, [selectedScheduleId, selectedGradeKey]);
@@ -556,6 +566,43 @@ const ScheduleManager = () => {
     const closeEditor = () => {
         if (saving) return;
         setEditorState(null);
+    };
+
+    const openTimeSlotEditor = (slot) => {
+        setError('');
+        setNotice('');
+        setTimeSlotEditor({
+            slotId: slot.id,
+            previousTime: slot.time,
+            sourceTime: slot.originalTime,
+            startTime: slot.time,
+            endTime: slot.endTime,
+            isNew: false
+        });
+    };
+
+    const openCreateTimeSlot = () => {
+        const lastSlot = scheduleBoard.timeSlots[scheduleBoard.timeSlots.length - 1];
+        const defaultStart = lastSlot?.endTime || lastSlot?.time || '17:30';
+        setError('');
+        setNotice('');
+        setTimeSlotEditor({
+            slotId: '',
+            previousTime: '',
+            sourceTime: '',
+            startTime: defaultStart,
+            endTime: addMinutesToTime(defaultStart, 50) || '',
+            isNew: true
+        });
+    };
+
+    const closeTimeSlotEditor = () => {
+        if (saving) return;
+        setTimeSlotEditor(null);
+    };
+
+    const updateTimeSlotEditorField = (field, value) => {
+        setTimeSlotEditor((prev) => (prev ? { ...prev, [field]: value } : prev));
     };
 
     const updateEditorField = (field, value) => {
@@ -657,6 +704,83 @@ const ScheduleManager = () => {
         }
     };
 
+    const handleSaveTimeSlot = async (e) => {
+        e.preventDefault();
+        if (!selectedSchedule || !timeSlotEditor) return;
+
+        if (!isValidTime(timeSlotEditor.startTime) || !isValidTime(timeSlotEditor.endTime)) {
+            setError('Saat araligi HH:MM formatinda olmali.');
+            return;
+        }
+
+        if (timeToMinutes(timeSlotEditor.endTime) <= timeToMinutes(timeSlotEditor.startTime)) {
+            setError('Bitis saati baslangictan sonra olmali.');
+            return;
+        }
+
+        const hasDuplicate = scheduleBoard.timeSlots.some((slot) => (
+            slot.time === timeSlotEditor.startTime && slot.id !== timeSlotEditor.slotId
+        ));
+        if (hasDuplicate) {
+            setError('Bu baslangic saati zaten kullaniliyor.');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setError('');
+            setNotice('');
+
+            await fakeScheduleApi.upsertTimeSlot({
+                scheduleId: selectedSchedule.id,
+                gradeKey: selectedGradeKey,
+                slot: {
+                    id: timeSlotEditor.slotId || undefined,
+                    previousTime: timeSlotEditor.previousTime || undefined,
+                    sourceTime: timeSlotEditor.sourceTime || undefined,
+                    startTime: timeSlotEditor.startTime.trim(),
+                    endTime: timeSlotEditor.endTime.trim()
+                }
+            });
+
+            await loadSchedules({
+                successMessage: timeSlotEditor.isNew
+                    ? 'Yeni saat satiri eklendi.'
+                    : 'Saat satiri guncellendi.'
+            });
+            setEditorState(null);
+            setTimeSlotEditor(null);
+        } catch (err) {
+            setError(err.message || 'Saat satiri kaydedilemedi.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteTimeSlot = async () => {
+        if (!selectedSchedule || !timeSlotEditor?.slotId) return;
+
+        try {
+            setSaving(true);
+            setError('');
+            setNotice('');
+
+            await fakeScheduleApi.deleteTimeSlot({
+                scheduleId: selectedSchedule.id,
+                gradeKey: selectedGradeKey,
+                slotId: timeSlotEditor.slotId
+            });
+
+            await loadSchedules({ successMessage: 'Saat satiri silindi.' });
+            setEditorState(null);
+            setTimeSlotEditor(null);
+        } catch (err) {
+            setError(err.message || 'Saat satiri silinemedi.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
@@ -686,7 +810,7 @@ const ScheduleManager = () => {
                 </p>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(340px,0.88fr)]">
+            <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="space-y-2">
@@ -765,12 +889,6 @@ const ScheduleManager = () => {
                             {error || notice}
                         </div>
                     )}
-
-                    <ScheduleBoardCard
-                        board={scheduleBoard}
-                        onCellClick={openEditor}
-                        saving={saving}
-                    />
                 </div>
 
                 <div className="space-y-6">
@@ -779,6 +897,16 @@ const ScheduleManager = () => {
                         description="Sagdaki liste secili grade icin son gorunecek akistir."
                         lessonMap={selectedGrade.effectiveLessons}
                         emptyText="Bu secim icin gosterilecek ders yok."
+                    />
+                </div>
+
+                <div className="xl:col-span-2">
+                    <ScheduleBoardCard
+                        board={scheduleBoard}
+                        onCellClick={openEditor}
+                        onTimeSlotClick={openTimeSlotEditor}
+                        onAddTimeSlot={openCreateTimeSlot}
+                        saving={saving}
                     />
                 </div>
             </section>
@@ -793,6 +921,18 @@ const ScheduleManager = () => {
                     onFieldChange={updateEditorField}
                     onDelete={handleDeleteLesson}
                     onSubmit={handleSaveLesson}
+                />
+            )}
+
+            {timeSlotEditor && (
+                <ScheduleTimeSlotModal
+                    state={timeSlotEditor}
+                    saving={saving}
+                    error={error}
+                    onClose={closeTimeSlotEditor}
+                    onFieldChange={updateTimeSlotEditorField}
+                    onDelete={handleDeleteTimeSlot}
+                    onSubmit={handleSaveTimeSlot}
                 />
             )}
         </div>
@@ -1354,7 +1494,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => (
     </div>
 );
 
-const ScheduleBoardCard = ({ board, onCellClick, saving }) => {
+const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot, saving }) => {
     const template = {
         gridTemplateColumns: `92px repeat(${SCHEDULE_DAYS.length}, minmax(152px, 1fr))`
     };
@@ -1363,9 +1503,23 @@ const ScheduleBoardCard = ({ board, onCellClick, saving }) => {
         <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
             <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Weekly Grid</p>
-                <h4 className="mt-2 text-xl font-bold text-white">Click a cell to add or edit class data</h4>
+                <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <h4 className="text-xl font-bold text-white">Click a cell to add or edit class data</h4>
+                    <button
+                        type="button"
+                        onClick={onAddTimeSlot}
+                        disabled={saving}
+                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${saving
+                            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500 opacity-60'
+                            : 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/30 hover:bg-cyan-400/15'
+                            }`}
+                    >
+                        <Plus size={16} />
+                        Yeni Saat Satiri
+                    </button>
+                </div>
                 <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">
-                    Omusiber'deki haftalik gorunume benzer sekilde saatler solda, gunler ustte. Bos kutu yeni ders icin hazir, dolu kutu ise o slottaki mevcut kaydi aciyor.
+                    Omusiber'deki haftalik gorunume benzer sekilde saatler solda, gunler ustte. Saat kutusuna tiklayarak araligi duzenleyebilir, satir ekleyebilir veya silebilirsin.
                 </p>
             </div>
 
@@ -1390,11 +1544,24 @@ const ScheduleBoardCard = ({ board, onCellClick, saving }) => {
                         ))}
 
                         {board.timeSlots.map((slot) => (
-                            <React.Fragment key={slot.time}>
-                                <div className="rounded-2xl border border-white/8 bg-slate-950/70 px-3 py-4">
-                                    <div className="text-sm font-bold text-white">{slot.time}</div>
-                                    <div className="mt-2 text-xs text-slate-500">{slot.endTime}</div>
-                                </div>
+                            <React.Fragment key={slot.id}>
+                                <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => onTimeSlotClick(slot)}
+                                    className={`rounded-2xl border border-white/8 bg-slate-950/70 px-3 py-4 text-left transition ${saving
+                                        ? 'cursor-not-allowed opacity-60'
+                                        : 'hover:border-cyan-300/25 hover:bg-cyan-400/8'
+                                        }`}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <div className="text-sm font-bold text-white">{slot.time}</div>
+                                            <div className="mt-2 text-xs text-slate-500">{slot.endTime}</div>
+                                        </div>
+                                        <Pencil size={15} className="text-slate-500" />
+                                    </div>
+                                </button>
 
                                 {SCHEDULE_DAYS.map((day) => {
                                     const cell = board.cellMap[makeScheduleCellKey(day.key, slot.time)] || createEmptyScheduleCell(day.key, slot.time);
@@ -1589,6 +1756,104 @@ const ScheduleLessonModal = ({
     );
 };
 
+const ScheduleTimeSlotModal = ({
+    state,
+    saving,
+    error,
+    onClose,
+    onFieldChange,
+    onDelete,
+    onSubmit
+}) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8 backdrop-blur-sm">
+            <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-slate-900/95 p-6 shadow-[0_30px_80px_rgba(2,6,23,0.65)]">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Time Slot</p>
+                        <h4 className="mt-2 text-2xl font-bold text-white">
+                            {state.isNew ? 'Create hour row' : `Edit ${state.previousTime}`}
+                        </h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                            Baslangic ve bitis saatini guncelle. Satir silinirse bu saate bagli manuel kayitlar da temizlenir.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-full border border-white/10 p-2 text-slate-400 transition hover:text-white"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form className="mt-6 space-y-5" onSubmit={onSubmit}>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ScheduleField label="Start Time">
+                            <input
+                                type="time"
+                                value={state.startTime}
+                                onChange={(e) => onFieldChange('startTime', e.target.value)}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                            />
+                        </ScheduleField>
+
+                        <ScheduleField label="End Time">
+                            <input
+                                type="time"
+                                value={state.endTime}
+                                onChange={(e) => onFieldChange('endTime', e.target.value)}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                            />
+                        </ScheduleField>
+                    </div>
+
+                    <div className="min-h-6 text-sm">
+                        {error && <p className="text-red-300">{error}</p>}
+                    </div>
+
+                    <div className="flex flex-col gap-3 border-t border-white/5 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        {!state.isNew ? (
+                            <button
+                                type="button"
+                                disabled={saving}
+                                onClick={onDelete}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Trash2 size={16} />
+                                Delete Row
+                            </button>
+                        ) : (
+                            <div className="text-sm text-slate-500">
+                                Yeni satir kaydedildikten sonra tabloya eklenir.
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={18} /> : <Pencil size={18} />}
+                                Save Row
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
     const entries = getOrderedLessonEntries(lessonMap);
 
@@ -1735,6 +2000,63 @@ const fakeScheduleApi = {
         });
 
         return buildScheduleSnapshot();
+    },
+
+    async upsertTimeSlot({ scheduleId, gradeKey, slot }) {
+        await wait(120);
+        const storage = readScheduleStorage();
+        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
+        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
+        const slotId = slot.id || `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const sourceTime = slot.sourceTime || slot.startTime;
+
+        const nextTimeSlots = [...timeSlots.filter((item) => item.id !== slotId), {
+            id: slotId,
+            originalTime: sourceTime,
+            startTime: slot.startTime,
+            endTime: slot.endTime
+        }].sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
+
+        writeScheduleStorage({
+            ...storage,
+            [scheduleId]: {
+                ...(storage[scheduleId] || {}),
+                [gradeKey]: {
+                    ...currentGrade,
+                    timeSlots: nextTimeSlots,
+                    manualLessons: slot.previousTime && slot.previousTime !== slot.startTime
+                        ? moveManualLessonsToNewTime(currentGrade.manualLessons, slot.previousTime, slot.startTime)
+                        : currentGrade.manualLessons
+                }
+            }
+        });
+
+        return buildScheduleSnapshot();
+    },
+
+    async deleteTimeSlot({ scheduleId, gradeKey, slotId }) {
+        await wait(120);
+        const storage = readScheduleStorage();
+        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
+        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
+        const targetSlot = timeSlots.find((slot) => slot.id === slotId);
+        if (!targetSlot) {
+            return buildScheduleSnapshot();
+        }
+
+        writeScheduleStorage({
+            ...storage,
+            [scheduleId]: {
+                ...(storage[scheduleId] || {}),
+                [gradeKey]: {
+                    ...currentGrade,
+                    timeSlots: timeSlots.filter((slot) => slot.id !== slotId),
+                    manualLessons: removeManualLessonsForTime(currentGrade.manualLessons, targetSlot.startTime)
+                }
+            }
+        });
+
+        return buildScheduleSnapshot();
     }
 };
 
@@ -1745,15 +2067,18 @@ const buildScheduleSnapshot = () => {
         const storedSchedule = storage[schedule.id] || {};
         const grades = Object.fromEntries(
             GRADE_OPTIONS.map(({ key }) => {
-                const generatedLessons = normalizeLessonMap(schedule.generated[key] || {});
-                const manualLessons = normalizeLessonMap(storedSchedule[key]?.manualLessons || {});
-                const overrideEnabled = storedSchedule[key]?.overrideEnabled === true;
+                const gradeState = getStoredGradeState(storedSchedule, '', key);
+                const timeSlots = normalizeStoredTimeSlots(gradeState.timeSlots);
+                const generatedLessons = mapGeneratedLessonsToTimeSlots(schedule.generated[key] || {}, timeSlots);
+                const manualLessons = normalizeLessonMap(gradeState.manualLessons || {});
+                const overrideEnabled = gradeState.overrideEnabled === true;
                 const effectiveLessons = overrideEnabled
                     ? normalizeLessonMap(markLessonsAsManual(manualLessons))
                     : mergeLessonMaps(generatedLessons, manualLessons);
 
                 return [key, {
                     overrideEnabled,
+                    timeSlots,
                     generatedLessons,
                     manualLessons: normalizeLessonMap(markLessonsAsManual(manualLessons)),
                     effectiveLessons,
@@ -1790,6 +2115,46 @@ const writeScheduleStorage = (value) => {
     window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(value));
 };
 
+const getDefaultGradeState = () => ({
+    overrideEnabled: false,
+    manualLessons: {},
+    timeSlots: createDefaultTimeSlots()
+});
+
+const getStoredGradeState = (storage, scheduleId, gradeKey) => {
+    if (scheduleId) {
+        return {
+            ...getDefaultGradeState(),
+            ...(storage[scheduleId]?.[gradeKey] || {})
+        };
+    }
+
+    return {
+        ...getDefaultGradeState(),
+        ...(storage[gradeKey] || {})
+    };
+};
+
+const createDefaultTimeSlots = () => DEFAULT_SCHEDULE_TIMES.map((time) => ({
+    id: `slot-${time}`,
+    originalTime: time,
+    startTime: time,
+    endTime: addMinutesToTime(time, 50)
+}));
+
+const normalizeStoredTimeSlots = (timeSlots = []) => {
+    const source = timeSlots.length > 0 ? timeSlots : createDefaultTimeSlots();
+    return [...source]
+        .map((slot) => ({
+            id: slot.id || `slot-${slot.originalTime || slot.startTime}`,
+            originalTime: slot.originalTime || slot.startTime,
+            startTime: slot.startTime,
+            endTime: slot.endTime || addMinutesToTime(slot.startTime, 50)
+        }))
+        .filter((slot) => isValidTime(slot.startTime) && isValidTime(slot.endTime))
+        .sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
+};
+
 const normalizeLessonMap = (lessonMap = {}) => {
     const result = {};
 
@@ -1801,6 +2166,35 @@ const normalizeLessonMap = (lessonMap = {}) => {
 
     return result;
 };
+
+const moveManualLessonsToNewTime = (lessonMap = {}, previousTime, nextTime) => {
+    const result = {};
+
+    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
+        const nextLessons = lessons
+            .map((lesson) => (
+                lesson.time === previousTime
+                    ? { ...lesson, time: nextTime }
+                    : { ...lesson }
+            ))
+            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+
+        if (nextLessons.length > 0) {
+            result[dayKey] = nextLessons;
+        }
+    });
+
+    return result;
+};
+
+const removeManualLessonsForTime = (lessonMap = {}, removedTime) => Object.fromEntries(
+    Object.entries(lessonMap || {})
+        .map(([dayKey, lessons]) => [
+            dayKey,
+            lessons.filter((lesson) => lesson.time !== removedTime).map((lesson) => ({ ...lesson }))
+        ])
+        .filter(([, lessons]) => lessons.length > 0)
+);
 
 const markLessonsAsManual = (lessonMap = {}) => Object.fromEntries(
     Object.entries(lessonMap).map(([dayKey, lessons]) => [
@@ -1907,12 +2301,36 @@ const addMinutesToTime = (time, minutesToAdd) => {
     return `${hours}:${minutePart}`;
 };
 
+const mapGeneratedLessonsToTimeSlots = (lessonMap = {}, timeSlots = []) => {
+    const slotLookup = new Map(timeSlots.map((slot) => [slot.originalTime, slot]));
+    const result = {};
+
+    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
+        const mappedLessons = lessons
+            .map((lesson) => {
+                const slot = slotLookup.get(lesson.time);
+                if (!slot) return null;
+                return { ...lesson, time: slot.startTime };
+            })
+            .filter(Boolean)
+            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+
+        if (mappedLessons.length > 0) {
+            result[dayKey] = mappedLessons;
+        }
+    });
+
+    return result;
+};
+
 const buildScheduleBoard = (grade) => {
     if (!grade) {
         return {
-            timeSlots: DEFAULT_SCHEDULE_TIMES.map((time) => ({
-                time,
-                endTime: addMinutesToTime(time, 50)
+            timeSlots: createDefaultTimeSlots().map((slot) => ({
+                id: slot.id,
+                originalTime: slot.originalTime,
+                time: slot.startTime,
+                endTime: slot.endTime
             })),
             cellMap: {},
             filledCells: 0
@@ -1922,22 +2340,15 @@ const buildScheduleBoard = (grade) => {
     const generatedByCell = indexLessonsByCell(grade.generatedLessons);
     const manualByCell = indexLessonsByCell(grade.manualLessons);
     const effectiveByCell = indexLessonsByCell(grade.effectiveLessons);
-    const uniqueTimes = new Set(DEFAULT_SCHEDULE_TIMES);
-
-    [generatedByCell, manualByCell, effectiveByCell].forEach((cellMap) => {
-        Object.values(cellMap).forEach((lessons) => {
-            lessons.forEach((lesson) => {
-                if (isValidTime(lesson.time)) {
-                    uniqueTimes.add(lesson.time);
-                }
-            });
-        });
-    });
-
-    const orderedTimes = [...uniqueTimes].sort((left, right) => timeToMinutes(left) - timeToMinutes(right));
+    const normalizedTimeSlots = normalizeStoredTimeSlots(grade.timeSlots).map((slot) => ({
+        id: slot.id,
+        originalTime: slot.originalTime,
+        time: slot.startTime,
+        endTime: slot.endTime
+    }));
     const cellMap = {};
 
-    orderedTimes.forEach((time) => {
+    normalizedTimeSlots.forEach(({ time }) => {
         SCHEDULE_DAYS.forEach((day) => {
             const key = makeScheduleCellKey(day.key, time);
             const generatedLessons = generatedByCell[key] || [];
@@ -1965,10 +2376,7 @@ const buildScheduleBoard = (grade) => {
     });
 
     return {
-        timeSlots: orderedTimes.map((time) => ({
-            time,
-            endTime: addMinutesToTime(time, 50)
-        })),
+        timeSlots: normalizedTimeSlots,
         cellMap,
         filledCells: Object.values(cellMap).filter((cell) => cell.mode !== 'empty').length
     };
