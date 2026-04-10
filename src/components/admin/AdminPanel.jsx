@@ -1,33 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, googleProvider } from '../../lib/firebase';
 import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
     LogOut, ShieldAlert, GraduationCap, LayoutDashboard,
     Settings, Users, MessageSquare, Calendar, Plus,
-    X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2
+    X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2,
+    ChevronDown, RefreshCw
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://akademiz-api.nortixlabs.com';
 const SCHEDULE_STORAGE_KEY = 'akademiz_fake_schedule_admin_v1';
 
 const NAV_ITEMS = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'schedule', label: 'Schedules', icon: Settings },
-    { id: 'events', label: 'Events', icon: Calendar },
-    { id: 'community', label: 'Community', icon: Users },
-    { id: 'news', label: 'News Feed', icon: MessageSquare }
+    { id: 'dashboard', label: 'Genel Bakış', icon: LayoutDashboard },
+    { id: 'schedule', label: 'Ders Programları', icon: Settings },
+    { id: 'events', label: 'Etkinlikler', icon: Calendar },
+    { id: 'community', label: 'Topluluk', icon: Users },
+    { id: 'news', label: 'Haberler', icon: MessageSquare }
 ];
 
 const GRADE_OPTIONS = [
-    { key: 'grade1', label: '1. Sinif' },
-    { key: 'grade2', label: '2. Sinif' }
+    { key: 'grade1', label: '1. Sınıf' },
+    { key: 'grade2', label: '2. Sınıf' }
 ];
 
 const SCHEDULE_DAYS = [
     { key: 'PAZARTESI', label: 'Pazartesi' },
-    { key: 'SALI', label: 'Sali' },
-    { key: 'CARSAMBA', label: 'Carsamba' },
-    { key: 'PERSEMBE', label: 'Persembe' },
+    { key: 'SALI', label: 'Salı' },
+    { key: 'CARSAMBA', label: 'Çarşamba' },
+    { key: 'PERSEMBE', label: 'Perşembe' },
     { key: 'CUMA', label: 'Cuma' },
     { key: 'CUMARTESI', label: 'Cumartesi' },
     { key: 'PAZAR', label: 'Pazar' }
@@ -57,46 +58,46 @@ const createSeedLesson = (id, time, courseCode, courseName, instructor, classroo
 const SCHEDULE_SEED_DATA = [
     {
         id: 'sgt-a',
-        programName: 'Siber Guvenlik Teknolojileri',
+        programName: 'Siber Güvenlik Teknolojileri',
         className: '1. Grup',
         academicYear: '2025-2026',
         semester: 'Bahar',
         generated: {
             grade1: {
                 PAZARTESI: [
-                    createSeedLesson('sgt-a-g1-1', '08:30', 'SGT101', 'Ag Temelleri', 'Ogretim Gorevlisi A', 'Lab 3'),
-                    createSeedLesson('sgt-a-g1-2', '10:30', 'SGT103', 'Linux Uygulamalari', 'Ogretim Gorevlisi C', 'Lab 1')
+                    createSeedLesson('sgt-a-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi A', 'Lab 3'),
+                    createSeedLesson('sgt-a-g1-2', '10:30', 'SGT103', 'Linux Uygulamaları', 'Öğretim Görevlisi C', 'Lab 1')
                 ],
                 SALI: [
                     createSeedLesson('sgt-a-g1-3', '09:30', 'SGT105', 'Temel Programlama', 'Dr. B', 'Derslik 12')
                 ],
                 PERSEMBE: [
-                    createSeedLesson('sgt-a-g1-4', '13:30', 'SGT109', 'Siber Hijyen', 'Ogretim Gorevlisi D', 'Atolye 2')
+                    createSeedLesson('sgt-a-g1-4', '13:30', 'SGT109', 'Siber Hijyen', 'Öğretim Görevlisi D', 'Atölye 2')
                 ]
             },
             grade2: {
                 PAZARTESI: [
-                    createSeedLesson('sgt-a-g2-1', '09:30', 'SGT204', 'Web Guvenligi', 'Ogretim Gorevlisi F', 'Lab 2')
+                    createSeedLesson('sgt-a-g2-1', '09:30', 'SGT204', 'Web Güvenliği', 'Öğretim Görevlisi F', 'Lab 2')
                 ],
                 SALI: [
                     createSeedLesson('sgt-a-g2-2', '13:30', 'SGT208', 'Zafiyet Analizi', 'Dr. G', 'Lab 4')
                 ],
                 PERSEMBE: [
-                    createSeedLesson('sgt-a-g2-3', '10:30', 'SGT210', 'Adli Bilisim', 'Ogretim Gorevlisi H', 'Derslik 8')
+                    createSeedLesson('sgt-a-g2-3', '10:30', 'SGT210', 'Adli Bilişim', 'Öğretim Görevlisi H', 'Derslik 8')
                 ]
             }
         }
     },
     {
         id: 'sgt-b',
-        programName: 'Siber Guvenlik Teknolojileri',
+        programName: 'Siber Güvenlik Teknolojileri',
         className: '2. Grup',
         academicYear: '2025-2026',
         semester: 'Bahar',
         generated: {
             grade1: {
                 PAZARTESI: [
-                    createSeedLesson('sgt-b-g1-1', '08:30', 'SGT101', 'Ag Temelleri', 'Ogretim Gorevlisi N', 'Lab 5')
+                    createSeedLesson('sgt-b-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi N', 'Lab 5')
                 ],
                 CARSAMBA: [
                     createSeedLesson('sgt-b-g1-2', '11:30', 'SGT111', 'Temel Kriptografi', 'Dr. P', 'B-204')
@@ -104,7 +105,7 @@ const SCHEDULE_SEED_DATA = [
             },
             grade2: {
                 SALI: [
-                    createSeedLesson('sgt-b-g2-1', '08:30', 'SGT206', 'SIEM Operasyonlari', 'Ogretim Gorevlisi R', 'SOC Lab')
+                    createSeedLesson('sgt-b-g2-1', '08:30', 'SGT206', 'SIEM Operasyonları', 'Öğretim Görevlisi R', 'SOC Lab')
                 ],
                 CUMA: [
                     createSeedLesson('sgt-b-g2-2', '13:30', 'SGT214', 'Pentest Lab', 'Dr. S', 'Lab 7')
@@ -114,20 +115,20 @@ const SCHEDULE_SEED_DATA = [
     },
     {
         id: 'bpr-a',
-        programName: 'Bilgisayar Programciligi',
+        programName: 'Bilgisayar Programcılığı',
         className: '1. Grup',
         academicYear: '2025-2026',
         semester: 'Bahar',
         generated: {
             grade1: {
                 PAZARTESI: [
-                    createSeedLesson('bpr-a-g1-1', '08:30', 'BPR101', 'Algoritma Mantigi', 'Dr. I', 'B-101')
+                    createSeedLesson('bpr-a-g1-1', '08:30', 'BPR101', 'Algoritma Mantığı', 'Dr. I', 'B-101')
                 ],
                 SALI: [
-                    createSeedLesson('bpr-a-g1-2', '10:30', 'BPR103', 'Veritabani Temelleri', 'Ogretim Gorevlisi J', 'Lab 5')
+                    createSeedLesson('bpr-a-g1-2', '10:30', 'BPR103', 'Veritabanı Temelleri', 'Öğretim Görevlisi J', 'Lab 5')
                 ],
                 CARSAMBA: [
-                    createSeedLesson('bpr-a-g1-3', '13:30', 'BPR107', 'Nesne Tabanli Programlama', 'Dr. K', 'Lab 6')
+                    createSeedLesson('bpr-a-g1-3', '13:30', 'BPR107', 'Nesne Tabanlı Programlama', 'Dr. K', 'Lab 6')
                 ]
             },
             grade2: {
@@ -135,10 +136,10 @@ const SCHEDULE_SEED_DATA = [
                     createSeedLesson('bpr-a-g2-1', '08:30', 'BPR202', 'Mobil Programlama', 'Dr. L', 'Lab 2')
                 ],
                 CARSAMBA: [
-                    createSeedLesson('bpr-a-g2-2', '11:30', 'BPR204', 'API Gelistirme', 'Ogretim Gorevlisi M', 'Lab 3')
+                    createSeedLesson('bpr-a-g2-2', '11:30', 'BPR204', 'API Geliştirme', 'Öğretim Görevlisi M', 'Lab 3')
                 ],
                 PERSEMBE: [
-                    createSeedLesson('bpr-a-g2-3', '09:30', 'BPR206', 'Bulut Tabanli Sistemler', 'Dr. N', 'A-303')
+                    createSeedLesson('bpr-a-g2-3', '09:30', 'BPR206', 'Bulut Tabanlı Sistemler', 'Dr. N', 'A-303')
                 ]
             }
         }
@@ -151,7 +152,11 @@ const AdminPanel = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalType, setModalType] = useState(''); // 'event' or 'post'
+    const [modalType, setModalType] = useState(''); // 'post'
+    const [eventView, setEventView] = useState('list');
+    const [eventNotice, setEventNotice] = useState('');
+    const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+    const accountMenuRef = useRef(null);
     const activeNavItem = NAV_ITEMS.find((item) => item.id === activeTab);
 
     useEffect(() => {
@@ -166,19 +171,19 @@ const AdminPanel = () => {
                             setUser(currentUser);
                             setError(null);
                         } else {
-                            setError('Access denied. Your account does not have administrator privileges.');
+                            setError('Erişim reddedildi. Hesabınızda yönetici yetkisi bulunmuyor.');
                             // We don't sign out automatically here so they can see the error, 
                             // but we don't set the user state.
                             setUser(null);
                         }
                     } else {
-                        setError('Access denied. Only .edu email addresses are allowed.');
+                        setError('Erişim reddedildi. Yalnızca .edu uzantılı e-posta adreslerine izin verilir.');
                         signOut(auth);
                         setUser(null);
                     }
                 } catch (err) {
                     console.error("Auth check failed", err);
-                    setError("Interal authentication error.");
+                    setError("İç kimlik doğrulama hatası.");
                 }
             } else {
                 setUser(null);
@@ -189,18 +194,52 @@ const AdminPanel = () => {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const handlePointerDown = (event) => {
+            if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+                setIsAccountMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, []);
+
+    useEffect(() => {
+        setIsAccountMenuOpen(false);
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (activeTab !== 'events') {
+            setEventView('list');
+        }
+    }, [activeTab]);
+
     const handleGoogleSignIn = async () => {
         try {
             setError(null);
             await signInWithPopup(auth, googleProvider);
         } catch (err) {
-            setError('Failed to sign in with Google. Please try again.');
+            setError('Google ile giriş yapılamadı. Lütfen tekrar deneyin.');
+            console.error(err);
+        }
+    };
+
+    const handleSwitchAccount = async () => {
+        try {
+            setError(null);
+            setIsAccountMenuOpen(false);
+            googleProvider.setCustomParameters({ prompt: 'select_account' });
+            await signInWithPopup(auth, googleProvider);
+        } catch (err) {
+            setError('Hesap değiştirilemedi. Lütfen tekrar deneyin.');
             console.error(err);
         }
     };
 
     const handleSignOut = async () => {
         try {
+            setIsAccountMenuOpen(false);
             await signOut(auth);
         } catch (err) {
             console.error(err);
@@ -211,6 +250,19 @@ const AdminPanel = () => {
         setModalType(type);
         setIsModalOpen(true);
     };
+
+    const openEventCreator = () => {
+        setActiveTab('events');
+        setEventView('create');
+        setEventNotice('');
+    };
+
+    const handleEventCreated = () => {
+        setEventView('list');
+        setEventNotice('Etkinlik taslağı oluşturuldu. Liste bağlantısı geldiğinde burada görünecek.');
+    };
+
+    const avatarInitial = (user?.displayName || user?.email || 'A').charAt(0).toUpperCase();
 
     if (loading) {
         return (
@@ -228,8 +280,8 @@ const AdminPanel = () => {
                         <div className="inline-flex items-center justify-center p-3 bg-cyan-500/10 rounded-2xl mb-4 border border-cyan-500/20">
                             <GraduationCap className="w-10 h-10 text-cyan-400" />
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">AkademiZ Admin</h1>
-                        <p className="text-slate-400">Sign in to manage your university platform</p>
+                        <h1 className="text-3xl font-bold text-white mb-2">AkademiZ Yönetim</h1>
+                        <p className="text-slate-400">Üniversite platformunu yönetmek için giriş yapın</p>
                     </div>
 
                     <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
@@ -245,11 +297,11 @@ const AdminPanel = () => {
                             className="w-full py-4 px-6 bg-white hover:bg-slate-100 text-slate-950 font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                         >
                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-                            Sign in with Google
+                            Google ile giriş yap
                         </button>
 
                         <p className="mt-8 text-center text-xs text-slate-500">
-                            Only authorized <span className="text-cyan-400 font-semibold">.edu</span> email addresses are permitted.
+                            Yalnızca yetkili <span className="text-cyan-400 font-semibold">.edu</span> e-posta adreslerine izin verilir.
                         </p>
                     </div>
                 </div>
@@ -278,31 +330,87 @@ const AdminPanel = () => {
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-white/5">
-                    <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                    >
-                        <LogOut size={20} />
-                        <span>Sign Out</span>
-                    </button>
-                </div>
             </div>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="h-20 border-b border-white/5 bg-slate-950/30 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
+                <header className="relative z-40 h-20 overflow-visible border-b border-white/5 bg-slate-950/30 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
                     <h2 className="text-xl font-semibold text-white">{activeNavItem?.label || activeTab}</h2>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right hidden sm:block">
-                            <div className="text-sm font-medium text-white">{user.displayName}</div>
-                            <div className="text-xs text-slate-500">{user.email}</div>
-                        </div>
-                        <img
-                            src={user.photoURL}
-                            alt={user.displayName}
-                            className="w-10 h-10 rounded-full border border-cyan-500/20"
-                        />
+                    <div className="relative" ref={accountMenuRef}>
+                        <button
+                            type="button"
+                            onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+                            className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-left transition ${isAccountMenuOpen
+                                ? 'border-cyan-400/30 bg-cyan-400/10'
+                                : 'border-white/10 bg-white/5 hover:border-white/15 hover:bg-white/[0.07]'
+                                }`}
+                        >
+                            {user.photoURL ? (
+                                <img
+                                    src={user.photoURL}
+                                    alt={user.displayName}
+                                    className="h-10 w-10 rounded-full border border-cyan-500/20 object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-500/20 bg-cyan-500/10 text-sm font-bold text-cyan-200">
+                                    {avatarInitial}
+                                </div>
+                            )}
+
+                            <div className="hidden min-w-0 sm:block">
+                                <div className="truncate text-sm font-medium text-white">{user.displayName || 'Yönetici Hesabı'}</div>
+                                <div className="truncate text-xs text-slate-500">{user.email}</div>
+                            </div>
+
+                            <ChevronDown
+                                size={16}
+                                className={`text-slate-400 transition ${isAccountMenuOpen ? 'rotate-180 text-white' : ''}`}
+                            />
+                        </button>
+
+                        {isAccountMenuOpen && (
+                            <div className="absolute right-0 z-[70] mt-3 w-72 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-[0_24px_60px_rgba(2,6,23,0.55)] backdrop-blur-xl">
+                                <div className="border-b border-white/5 px-4 py-4">
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Hesap</div>
+                                    <div className="mt-3 flex items-center gap-3">
+                                        {user.photoURL ? (
+                                            <img
+                                                src={user.photoURL}
+                                                alt={user.displayName}
+                                                className="h-11 w-11 rounded-full border border-cyan-500/20 object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-500/20 bg-cyan-500/10 text-sm font-bold text-cyan-200">
+                                                {avatarInitial}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <div className="truncate text-sm font-semibold text-white">{user.displayName || 'Yönetici Hesabı'}</div>
+                                            <div className="truncate text-xs text-slate-500">{user.email}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSwitchAccount}
+                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                    >
+                                        <RefreshCw size={16} />
+                                        <span>Hesap Değiştir</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSignOut}
+                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                    >
+                                        <LogOut size={16} />
+                                        <span>Çıkış Yap</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </header>
 
@@ -328,52 +436,52 @@ const AdminPanel = () => {
                     {activeTab === 'dashboard' && (
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                <StatCard title="Total Students" value="0" change="0 from last week" />
-                                <StatCard title="Active Events" value="0" change="0 starting today" />
-                                <StatCard title="News Published" value="0" change="0 pending approval" />
+                                <StatCard title="Toplam Öğrenci" value="0" change="Geçen haftaya göre 0" />
+                                <StatCard title="Aktif Etkinlik" value="0" change="Bugün başlayan 0" />
+                                <StatCard title="Yayınlanan Haber" value="0" change="Onay bekleyen 0" />
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6">
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
-                                        <button className="text-cyan-400 text-sm hover:underline">View all</button>
+                                        <h3 className="text-lg font-semibold text-white">Son Etkinlikler</h3>
+                                        <button className="text-cyan-400 text-sm hover:underline">Tümünü Gör</button>
                                     </div>
                                     <div className="space-y-4">
                                         <div className="text-center py-8 text-slate-500 italic text-sm">
-                                            No recent activity to show
+                                            Gösterilecek son etkinlik bulunmuyor
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6">
-                                    <h3 className="text-lg font-semibold text-white mb-6">Quick Actions</h3>
+                                    <h3 className="text-lg font-semibold text-white mb-6">Hızlı İşlemler</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <QuickActionButton
-                                            label="Edit Schedules"
+                                            label="Programları Düzenle"
                                             color="bg-cyan-500/20 text-cyan-400"
                                             icon={<Settings size={20} />}
                                             onClick={() => setActiveTab('schedule')}
                                         />
                                         <QuickActionButton
-                                            label="Create News"
+                                            label="Haber Oluştur"
                                             color="bg-violet-500/20 text-violet-400"
                                             icon={<Plus size={20} />}
                                         />
                                         <QuickActionButton
-                                            label="Add Event"
+                                            label="Etkinlik Ekle"
                                             color="bg-cyan-500/20 text-cyan-400"
                                             icon={<Plus size={20} />}
-                                            onClick={() => openModal('event')}
+                                            onClick={openEventCreator}
                                         />
                                         <QuickActionButton
-                                            label="New Post"
+                                            label="Yeni Gönderi"
                                             color="bg-emerald-500/20 text-emerald-400"
                                             icon={<Plus size={20} />}
                                             onClick={() => openModal('post')}
                                         />
                                         <QuickActionButton
-                                            label="Reports"
+                                            label="Raporlar"
                                             color="bg-amber-500/20 text-amber-400"
                                             icon={<LayoutDashboard size={20} />}
                                         />
@@ -383,53 +491,64 @@ const AdminPanel = () => {
                         </>
                     )}
 
-                    {activeTab === 'schedule' && (
-                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-8 text-center backdrop-blur-xl">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Schedules</p>
-                            <h3 className="mt-3 text-2xl font-bold text-white">Schedule management is unavailable</h3>
-                            <p className="mt-3 text-sm leading-7 text-slate-400">
-                                The placeholder schedule admin has been removed from this page.
-                            </p>
-                        </div>
-                    )}
+                    {activeTab === 'schedule' && <ScheduleManager />}
 
                     {activeTab === 'events' && (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-white">Events Management</h3>
-                                <button
-                                    onClick={() => openModal('event')}
-                                    className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-900/20"
-                                >
-                                    <Plus size={20} />
-                                    Create Event
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {/* Placeholder for events list */}
-                                <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                    Events data will be loaded here...
-                                </div>
-                            </div>
+                            {eventView === 'create' ? (
+                                <EventForm
+                                    user={user}
+                                    onBack={() => setEventView('list')}
+                                    onCreated={handleEventCreated}
+                                />
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white">Etkinlik Yönetimi</h3>
+                                            <p className="mt-2 text-sm text-slate-500">Temel bilgileri hızlıca girin, kalan ayrıntıları isterseniz sonradan zenginleştirin.</p>
+                                        </div>
+                                        <button
+                                            onClick={openEventCreator}
+                                            className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-900/20"
+                                        >
+                                            <Plus size={20} />
+                                            Etkinlik Oluştur
+                                        </button>
+                                    </div>
+
+                                    {eventNotice && (
+                                        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
+                                            {eventNotice}
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                            Etkinlik verileri burada yüklenecek...
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
                     {activeTab === 'community' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-white">Community Posts</h3>
+                                <h3 className="text-2xl font-bold text-white">Topluluk Gönderileri</h3>
                                 <button
                                     onClick={() => openModal('post')}
                                     className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20"
                                 >
                                     <Plus size={20} />
-                                    New Post
+                                    Yeni Gönderi
                                 </button>
                             </div>
                             <div className="max-w-3xl mx-auto space-y-6">
                                 {/* Placeholder for community list */}
                                 <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                    Community posts will be loaded here...
+                                    Topluluk gönderileri burada yüklenecek...
                                 </div>
                             </div>
                         </div>
@@ -438,14 +557,14 @@ const AdminPanel = () => {
                     {activeTab === 'news' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-white">News Feed</h3>
+                                <h3 className="text-2xl font-bold text-white">Haber Akışı</h3>
                                 <button className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-violet-900/20">
                                     <Plus size={20} />
-                                    Create News
+                                    Haber Oluştur
                                 </button>
                             </div>
                             <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                News management tools will appear here...
+                                Haber yönetim araçları burada görünecek...
                             </div>
                         </div>
                     )}
@@ -453,15 +572,11 @@ const AdminPanel = () => {
             </div>
 
             {/* Modals */}
-            {isModalOpen && (
+            {isModalOpen && modalType === 'post' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
                     <div className="relative bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
-                        {modalType === 'event' ? (
-                            <EventForm onClose={() => setIsModalOpen(false)} user={user} />
-                        ) : (
-                            <PostForm onClose={() => setIsModalOpen(false)} user={user} />
-                        )}
+                        <PostForm onClose={() => setIsModalOpen(false)} user={user} />
                     </div>
                 </div>
             )}
@@ -495,7 +610,7 @@ const ScheduleManager = () => {
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(err.message || 'Schedule admin verisi yuklenemedi.');
+                    setError(err.message || 'Ders programı yönetim verisi yüklenemedi.');
                 }
             } finally {
                 if (!cancelled) {
@@ -544,7 +659,7 @@ const ScheduleManager = () => {
                 setNotice(successMessage);
             }
         } catch (err) {
-            setError(err.message || 'Schedule verisi guncellenemedi.');
+            setError(err.message || 'Ders programı verisi güncellenemedi.');
         }
     };
 
@@ -614,12 +729,12 @@ const ScheduleManager = () => {
         if (!selectedSchedule || !editorState) return;
 
         if (!editorState.courseName.trim()) {
-            setError('Ders adi zorunlu.');
+            setError('Ders adı zorunludur.');
             return;
         }
 
         if (!isValidTime(editorState.time)) {
-            setError('Saat hucre verisi gecersiz. Lutfen farkli bir kutu sec.');
+            setError('Saat hücresi verisi geçersiz. Lütfen farklı bir kutu seçin.');
             return;
         }
 
@@ -644,12 +759,12 @@ const ScheduleManager = () => {
 
             await loadSchedules({
                 successMessage: editorState.manualLessonId
-                    ? 'Hucredeki manuel ders guncellendi.'
-                    : 'Hucreye manuel ders eklendi.'
+                    ? 'Hücredeki manuel ders güncellendi.'
+                    : 'Hücreye manuel ders eklendi.'
             });
             setEditorState(null);
         } catch (err) {
-            setError(err.message || 'Hucre kaydi guncellenemedi.');
+            setError(err.message || 'Hücre kaydı güncellenemedi.');
         } finally {
             setSaving(false);
         }
@@ -671,11 +786,11 @@ const ScheduleManager = () => {
 
             await loadSchedules({
                 successMessage: !selectedGrade.overrideEnabled
-                    ? 'Yalnizca kaydedilen dersler gosterilecek.'
-                    : 'Tum ders akisi tekrar gosterilecek.'
+                    ? 'Yalnızca kaydedilen dersler gösterilecek.'
+                    : 'Tüm ders akışı tekrar gösterilecek.'
             });
         } catch (err) {
-            setError(err.message || 'Gorunum modu guncellenemedi.');
+            setError(err.message || 'Görünüm modu güncellenemedi.');
         } finally {
             setSaving(false);
         }
@@ -695,7 +810,7 @@ const ScheduleManager = () => {
                 lessonId: editorState.manualLessonId
             });
 
-            await loadSchedules({ successMessage: 'Hucredeki manuel ders kaldirildi.' });
+            await loadSchedules({ successMessage: 'Hücredeki manuel ders kaldırıldı.' });
             setEditorState(null);
         } catch (err) {
             setError(err.message || 'Manuel ders silinemedi.');
@@ -709,12 +824,12 @@ const ScheduleManager = () => {
         if (!selectedSchedule || !timeSlotEditor) return;
 
         if (!isValidTime(timeSlotEditor.startTime) || !isValidTime(timeSlotEditor.endTime)) {
-            setError('Saat araligi HH:MM formatinda olmali.');
+            setError('Saat aralığı HH:MM formatında olmalıdır.');
             return;
         }
 
         if (timeToMinutes(timeSlotEditor.endTime) <= timeToMinutes(timeSlotEditor.startTime)) {
-            setError('Bitis saati baslangictan sonra olmali.');
+            setError('Bitiş saati başlangıç saatinden sonra olmalıdır.');
             return;
         }
 
@@ -722,7 +837,7 @@ const ScheduleManager = () => {
             slot.time === timeSlotEditor.startTime && slot.id !== timeSlotEditor.slotId
         ));
         if (hasDuplicate) {
-            setError('Bu baslangic saati zaten kullaniliyor.');
+            setError('Bu başlangıç saati zaten kullanılıyor.');
             return;
         }
 
@@ -745,13 +860,13 @@ const ScheduleManager = () => {
 
             await loadSchedules({
                 successMessage: timeSlotEditor.isNew
-                    ? 'Yeni saat satiri eklendi.'
-                    : 'Saat satiri guncellendi.'
+                    ? 'Yeni saat satırı eklendi.'
+                    : 'Saat satırı güncellendi.'
             });
             setEditorState(null);
             setTimeSlotEditor(null);
         } catch (err) {
-            setError(err.message || 'Saat satiri kaydedilemedi.');
+            setError(err.message || 'Saat satırı kaydedilemedi.');
         } finally {
             setSaving(false);
         }
@@ -771,11 +886,11 @@ const ScheduleManager = () => {
                 slotId: timeSlotEditor.slotId
             });
 
-            await loadSchedules({ successMessage: 'Saat satiri silindi.' });
+            await loadSchedules({ successMessage: 'Saat satırı silindi.' });
             setEditorState(null);
             setTimeSlotEditor(null);
         } catch (err) {
-            setError(err.message || 'Saat satiri silinemedi.');
+            setError(err.message || 'Saat satırı silinemedi.');
         } finally {
             setSaving(false);
         }
@@ -786,7 +901,7 @@ const ScheduleManager = () => {
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
                 <div className="flex items-center gap-3 text-slate-400">
                     <Loader2 className="animate-spin text-cyan-400" />
-                    Program yukleniyor...
+                    Program yükleniyor...
                 </div>
             </div>
         );
@@ -794,19 +909,19 @@ const ScheduleManager = () => {
 
     if (!selectedSchedule || !selectedGrade) {
         return (
-            <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
-                Schedule kaydi bulunamadi.
-            </div>
-        );
-    }
+                <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
+                Ders programı kaydı bulunamadı.
+                </div>
+            );
+        }
 
     return (
         <div className="space-y-6">
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Schedule Editor</p>
-                <h3 className="mt-3 text-3xl font-bold text-white">Select a class, pick a grade, click a slot</h3>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Programı Düzenleyici</p>
+                <h3 className="mt-3 text-3xl font-bold text-white">Bir sınıf seçin, kademe belirleyin ve bir hücreye tıklayın</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Haftalik tabloyu dogrudan duzenlemek icin kutuya tikla. Secilen grade icin sag tarafta sadece son gorunecek program akisini gorursun.
+                    Haftalık tabloyu doğrudan düzenlemek için kutuya tıklayın. Seçilen sınıf düzeyi için sağ tarafta yalnızca son görünecek program akışını görürsünüz.
                 </p>
             </section>
 
@@ -814,10 +929,10 @@ const ScheduleManager = () => {
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Class Selection</p>
-                            <h4 className="text-xl font-bold text-white">Choose the class you want to edit</h4>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Seçimi</p>
+                            <h4 className="text-xl font-bold text-white">Düzenlemek istediğiniz sınıfı seçin</h4>
                             <p className="text-sm leading-7 text-slate-400">
-                                Sinif secimini daha belirgin hale getirdim. Kartlardan birine tiklayip programi degistirebilirsin.
+                                Açılır listeden sınıfı seçerek program görünümünü değiştirebilirsiniz.
                             </p>
                         </div>
 
@@ -831,18 +946,18 @@ const ScheduleManager = () => {
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Selected View</p>
+                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Seçili Görünüm</p>
                                 <h4 className="mt-2 text-xl font-bold text-white">
                                     {selectedSchedule.programName} • {selectedSchedule.className}
                                 </h4>
                                 <p className="mt-2 text-sm leading-7 text-slate-400">
-                                    Grade sec, sonra tabloda bir kutuya tiklayip dersi doldur. Sag panel secili grade icin son akisi gosterir.
+                                    Sınıf düzeyini seçin, sonra tabloda bir kutuya tıklayıp dersi girin. Sağ panel seçili düzey için son akışı gösterir.
                                 </p>
                             </div>
 
                             <div className="flex flex-col gap-4 xl:items-end">
                                 <div className="space-y-2">
-                                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Grade</span>
+                                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Düzeyi</span>
                                     <div className="flex rounded-2xl border border-white/10 bg-slate-950/60 p-1">
                                         {GRADE_OPTIONS.map((grade) => (
                                             <button
@@ -869,14 +984,14 @@ const ScheduleManager = () => {
                                         : 'border-white/10 bg-white/5 text-slate-300'
                                         } ${saving ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01]'}`}
                                 >
-                                    {selectedGrade.overrideEnabled ? 'Yalnizca Kaydedilen Dersler' : 'Tum Gecerli Dersler'}
+                                    {selectedGrade.overrideEnabled ? 'Yalnızca Kaydedilen Dersler' : 'Tüm Geçerli Dersler'}
                                 </button>
                             </div>
                         </div>
 
                         {selectedGrade.overrideEnabled && selectedGrade.counts.manual === 0 && (
                             <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-6 text-amber-100">
-                                Bu mod acik ama bu grade icin henuz kaydedilmis ders yok.
+                                Bu mod açık ancak bu sınıf düzeyi için henüz kaydedilmiş ders yok.
                             </div>
                         )}
                     </div>
@@ -893,10 +1008,10 @@ const ScheduleManager = () => {
 
                 <div className="space-y-6">
                     <SchedulePreviewCard
-                        title="Secili Grade Akisi"
-                        description="Sagdaki liste secili grade icin son gorunecek akistir."
+                        title="Seçili Sınıf Düzeyi Akışı"
+                        description="Sağdaki liste, seçili sınıf düzeyi için son görünecek akışı gösterir."
                         lessonMap={selectedGrade.effectiveLessons}
-                        emptyText="Bu secim icin gosterilecek ders yok."
+                        emptyText="Bu seçim için gösterilecek ders yok."
                     />
                 </div>
 
@@ -940,11 +1055,12 @@ const ScheduleManager = () => {
 };
 
 // Forms
-const EventForm = ({ onClose, user }) => {
+const EventForm = ({ onBack, onCreated, user }) => {
     const [formData, setFormData] = useState({
         title: '',
         date: '',
         description: '',
+        creatorName: 'AkademiZ Admin',
         location: '',
         eventLength: '',
         maxJoiners: '',
@@ -953,204 +1069,423 @@ const EventForm = ({ onClose, user }) => {
         carouselImages: []
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadingImage, setUploadingImage] = useState(false);
+    const [uploadingTarget, setUploadingTarget] = useState('');
+    const [submitError, setSubmitError] = useState('');
 
     const handleImageUpload = async (e, type) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
-        setUploadingImage(true);
+        setUploadingTarget(type);
         const token = await auth.currentUser.getIdToken(true);
-        const data = new FormData();
-        data.append('image', file);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/upload/image`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: data
-            });
+            const uploadedUrls = [];
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`Upload failed: ${res.status} ${text}`);
+            for (const file of files) {
+                const data = new FormData();
+                data.append('image', file);
+
+                const res = await fetch(`${API_BASE_URL}/upload/image`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: data
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Yükleme başarısız oldu: ${res.status} ${text}`);
+                }
+
+                const result = await res.json();
+                uploadedUrls.push(result.url);
             }
 
-            const result = await res.json();
             if (type === 'thumbnail') {
-                setFormData(prev => ({ ...prev, thumbnailUrl: result.url }));
+                setFormData((prev) => ({ ...prev, thumbnailUrl: uploadedUrls[0] || '' }));
+            } else {
+                setFormData((prev) => ({
+                    ...prev,
+                    carouselImages: [...prev.carouselImages, ...uploadedUrls]
+                }));
             }
         } catch (err) {
-            console.error('Upload failed', err);
+            console.error('Yükleme başarısız oldu', err);
             alert(err.message);
         } finally {
-            setUploadingImage(false);
+            setUploadingTarget('');
+            e.target.value = '';
         }
+    };
+
+    const removeGalleryImage = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            carouselImages: prev.carouselImages.filter((_, imageIndex) => imageIndex !== index)
+        }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setSubmitError('');
         try {
             const token = await auth.currentUser.getIdToken(true);
+            const parsedEventLength = parseFloat(formData.eventLength);
+            const parsedMaxJoiners = parseInt(formData.maxJoiners, 10);
+            const parsedTags = formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+
+            const payload = {
+                title: formData.title.trim(),
+                date: formData.date,
+                description: formData.description.trim(),
+                creatorName: formData.creatorName.trim() || 'AkademiZ Admin',
+                location: formData.location.trim(),
+                thumbnailUrl: formData.thumbnailUrl,
+                tags: JSON.stringify(parsedTags),
+                carouselImages: JSON.stringify(formData.carouselImages)
+            };
+
+            if (Number.isFinite(parsedEventLength)) {
+                payload.eventLength = parsedEventLength;
+            }
+
+            if (Number.isFinite(parsedMaxJoiners)) {
+                payload.maxJoiners = parsedMaxJoiners;
+            }
+
             const res = await fetch(`${API_BASE_URL}/events/create`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    ...formData,
-                    eventLength: parseFloat(formData.eventLength),
-                    maxJoiners: parseInt(formData.maxJoiners),
-                    tags: JSON.stringify(formData.tags.split(',').map(t => t.trim())),
-                    carouselImages: JSON.stringify([])
-                })
+                body: JSON.stringify(payload)
             });
             if (res.ok) {
-                onClose();
+                setFormData({
+                    title: '',
+                    date: '',
+                    description: '',
+                    creatorName: 'AkademiZ Admin',
+                    location: '',
+                    eventLength: '',
+                    maxJoiners: '',
+                    tags: '',
+                    thumbnailUrl: '',
+                    carouselImages: []
+                });
+                onCreated?.();
+            } else {
+                const text = await res.text();
+                throw new Error(text || 'Etkinlik oluşturulamadı.');
             }
         } catch (err) {
-            console.error('Event creation failed', err);
+            console.error('Etkinlik oluşturma başarısız oldu', err);
+            setSubmitError(err.message || 'Etkinlik oluşturma başarısız oldu.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="flex items-center justify-between mb-2">
-                <h3 className="text-2xl font-bold text-white">Create New Event</h3>
-                <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400">
-                    <X size={24} />
-                </button>
-            </div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_rgba(15,23,42,0.92)_58%)] p-6 md:p-8">
+                    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Etkinlik Oluşturucu</p>
+                            <h3 className="mt-3 text-2xl font-bold text-white">Yeni Etkinlik</h3>
+                            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+                                Başlık ve tarih önde. Konum, medya ve diğer ayrıntılar opsiyonel olarak aşağıda duruyor.
+                            </p>
+                        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-400">Event Title</label>
-                    <input
-                        required
-                        type="text"
-                        value={formData.title}
-                        onChange={e => setFormData({ ...formData, title: e.target.value })}
-                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                        placeholder="Grand Annual Tech Fair"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-400">Date & Time</label>
-                    <input
-                        required
-                        type="datetime-local"
-                        value={formData.date}
-                        onChange={e => setFormData({ ...formData, date: e.target.value })}
-                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-400">Location</label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={formData.location}
-                            onChange={e => setFormData({ ...formData, location: e.target.value })}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                            placeholder="Main Campus Hall"
-                        />
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                        >
+                            Listeye Dön
+                        </button>
                     </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400">Duration (Hrs)</label>
-                        <input
-                            type="number"
-                            step="0.5"
-                            value={formData.eventLength}
-                            onChange={e => setFormData({ ...formData, eventLength: e.target.value })}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                            placeholder="3.5"
-                        />
+                </section>
+
+                <section className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                    <div className="mb-6">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Temel Bilgiler</p>
+                        <h4 className="mt-2 text-xl font-bold text-white">Gerekli olan kısım kısa tutuldu</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">Yalnızca başlık ve tarih zorunlu. Açıklamayı kısa bırakabilirsiniz.</p>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400">Max Joiners</label>
-                        <input
-                            type="number"
-                            value={formData.maxJoiners}
-                            onChange={e => setFormData({ ...formData, maxJoiners: e.target.value })}
-                            className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                            placeholder="500"
-                        />
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-300">Etkinlik Başlığı</label>
+                            <input
+                                required
+                                type="text"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-500/50"
+                                placeholder="Büyük Yıllık Teknoloji Fuarı"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300">Tarih ve Saat</label>
+                            <input
+                                required
+                                type="datetime-local"
+                                value={formData.date}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-500/50"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Konum</label>
+                            <input
+                                type="text"
+                                value={formData.location}
+                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="Ana yerleşke konferans salonu"
+                            />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-500">Kısa Açıklama</label>
+                            <textarea
+                                rows="4"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="İsterseniz kısa bir özet girin. Detayı sonradan da geliştirebilirsiniz."
+                            />
+                        </div>
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-400">Description</label>
-                <textarea
-                    required
-                    rows="3"
-                    value={formData.description}
-                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors resize-none"
-                    placeholder="Describe the event details..."
-                />
-            </div>
+                <section className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6 backdrop-blur-xl">
+                    <div className="mb-6">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">İsteğe Bağlı Özelleştirmeler</p>
+                        <h4 className="mt-2 text-xl font-bold text-slate-200">Detay isteyenler için hafif ikinci katman</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-500">Bu ayarlar zorunlu değil. Girmeden de etkinlik oluşturabilirsiniz.</p>
+                    </div>
 
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-400">Tags (comma separated)</label>
-                <input
-                    type="text"
-                    value={formData.tags}
-                    onChange={e => setFormData({ ...formData, tags: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                    placeholder="tag1, tag2, tag3"
-                />
-            </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Oluşturan</label>
+                            <input
+                                type="text"
+                                value={formData.creatorName}
+                                onChange={(e) => setFormData({ ...formData, creatorName: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="AkademiZ Admin"
+                            />
+                        </div>
 
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-400">Thumbnail Image</label>
-                <div className="flex items-center gap-4">
-                    <div className="flex-1 relative group">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(e, 'thumbnail')}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />
-                        <div className="flex items-center gap-3 bg-slate-950/50 border-2 border-dashed border-white/10 group-hover:border-cyan-500/30 rounded-xl px-4 py-6 transition-all">
-                            {uploadingImage ? (
-                                <Loader2 className="w-6 h-6 text-cyan-500 animate-spin mx-auto" />
-                            ) : formData.thumbnailUrl ? (
-                                <div className="flex items-center gap-3 text-cyan-400 overflow-hidden">
-                                    <ImageIcon className="shrink-0" />
-                                    <span className="text-sm truncate">{formData.thumbnailUrl}</span>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Süre (Saat)</label>
+                            <input
+                                type="number"
+                                step="0.5"
+                                value={formData.eventLength}
+                                onChange={(e) => setFormData({ ...formData, eventLength: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="3.5"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Maksimum Katılımcı</label>
+                            <input
+                                type="number"
+                                value={formData.maxJoiners}
+                                onChange={(e) => setFormData({ ...formData, maxJoiners: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="500"
+                            />
+                        </div>
+
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-500">Etiketler</label>
+                            <input
+                                type="text"
+                                value={formData.tags}
+                                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                placeholder="teknoloji, kampüs, atölye"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <section className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 backdrop-blur-xl">
+                    <div className="mb-6">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Medya</p>
+                        <h4 className="mt-2 text-xl font-bold text-white">Kaybolan görsel seçeneklerini geri getirdim</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-500">Kapak görseli ekleyebilir, ayrıca etkinlik sayfası için küçük bir galeri oluşturabilirsiniz.</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-slate-400">Kapak Görseli</label>
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                                <div className="flex-1 relative group">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e, 'thumbnail')}
+                                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10"
+                                    />
+                                    <div className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-white/10 bg-slate-950/40 px-4 py-6 transition-all group-hover:border-cyan-500/30">
+                                        {uploadingTarget === 'thumbnail' ? (
+                                            <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
+                                        ) : formData.thumbnailUrl ? (
+                                            <>
+                                                <ImageIcon className="shrink-0 text-cyan-400" />
+                                                <span className="truncate text-sm text-cyan-200">{formData.thumbnailUrl}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="h-6 w-6 text-slate-500" />
+                                                <span className="text-sm font-medium text-slate-500">Kapak görseli yüklemek için tıklayın</span>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            ) : (
-                                <>
-                                    <Upload className="w-6 h-6 text-slate-500" />
-                                    <span className="text-slate-500 font-medium">Click to upload thumbnail</span>
-                                </>
+
+                                {formData.thumbnailUrl && (
+                                    <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shrink-0">
+                                        <img src={formData.thumbnailUrl.startsWith('/') ? `${API_BASE_URL}${formData.thumbnailUrl}` : formData.thumbnailUrl} className="h-full w-full object-cover" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <label className="text-sm font-medium text-slate-400">Galeri Görselleri</label>
+                                <span className="text-xs text-slate-500">{formData.carouselImages.length} görsel</span>
+                            </div>
+
+                            <div className="relative group rounded-2xl border-2 border-dashed border-white/10 bg-slate-950/30 px-4 py-6 transition-all hover:border-cyan-500/30">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) => handleImageUpload(e, 'gallery')}
+                                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                />
+                                <div className="flex items-center gap-3 text-slate-500">
+                                    {uploadingTarget === 'gallery' ? (
+                                        <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                                    ) : (
+                                        <Upload className="h-5 w-5" />
+                                    )}
+                                    <span className="text-sm">Galeri için bir veya birden fazla görsel ekleyin</span>
+                                </div>
+                            </div>
+
+                            {formData.carouselImages.length > 0 && (
+                                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                                    {formData.carouselImages.map((imageUrl, index) => (
+                                        <div key={`${imageUrl}-${index}`} className="group relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950">
+                                            <img src={imageUrl.startsWith('/') ? `${API_BASE_URL}${imageUrl}` : imageUrl} className="aspect-square w-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeGalleryImage(index)}
+                                                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition group-hover:opacity-100"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
-                    {formData.thumbnailUrl && (
-                        <div className="w-20 h-20 rounded-xl border border-white/10 overflow-hidden bg-slate-950 shrink-0">
-                            <img src={formData.thumbnailUrl.startsWith('/') ? `${API_BASE_URL}${formData.thumbnailUrl}` : formData.thumbnailUrl} className="w-full h-full object-cover" />
-                        </div>
-                    )}
-                </div>
-            </div>
+                </section>
 
-            <button
-                type="submit"
-                disabled={isSubmitting || uploadingImage}
-                className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-xl shadow-cyan-900/20 flex items-center justify-center gap-3"
-            >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
-                Create Event
-            </button>
-        </form>
+                {submitError && (
+                    <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                        {submitError}
+                    </div>
+                )}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                    >
+                        Vazgeç
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || uploadingTarget !== ''}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                        Etkinliği Oluştur
+                    </button>
+                </div>
+            </form>
+
+            <aside className="space-y-6">
+                <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Canlı Önizleme</p>
+                    <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-white/8 bg-slate-950/70">
+                        <div className="aspect-[4/3] w-full bg-slate-900">
+                            {formData.thumbnailUrl ? (
+                                <img src={formData.thumbnailUrl.startsWith('/') ? `${API_BASE_URL}${formData.thumbnailUrl}` : formData.thumbnailUrl} className="h-full w-full object-cover" />
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-slate-600">Kapak görseli eklenmedi</div>
+                            )}
+                        </div>
+
+                        <div className="space-y-4 p-5">
+                            <div>
+                                <div className="text-lg font-bold text-white">{formData.title || 'Etkinlik başlığı burada görünecek'}</div>
+                                <div className="mt-2 text-sm text-slate-500">{formData.date ? new Date(formData.date).toLocaleString('tr-TR') : 'Tarih seçilmedi'}</div>
+                            </div>
+
+                            <div className="text-sm leading-6 text-slate-400">
+                                {formData.description || 'Kısa açıklama girerseniz burada önizlemesini göreceksiniz.'}
+                            </div>
+
+                            <div className="space-y-2 text-sm text-slate-500">
+                                <div>Oluşturan: <span className="text-slate-300">{formData.creatorName || 'AkademiZ Admin'}</span></div>
+                                <div>Konum: <span className="text-slate-300">{formData.location || 'Belirtilmedi'}</span></div>
+                                <div>Süre: <span className="text-slate-300">{formData.eventLength || 'Belirtilmedi'}</span></div>
+                                <div>Katılımcı: <span className="text-slate-300">{formData.maxJoiners || 'Belirtilmedi'}</span></div>
+                            </div>
+
+                            {formData.tags && (
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean).map((tag) => (
+                                        <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Düzen Notu</p>
+                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                        İkincil alanları özellikle daha gri tuttum. Böylece kullanıcı önce etkinliği yayına alır, detay seviyesini isterse sonra artırır.
+                    </p>
+                    <div className="mt-4 text-sm text-slate-400">
+                        Varsayılan oluşturucu: <span className="text-white">{formData.creatorName || 'AkademiZ Admin'}</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
     );
 };
 
@@ -1185,13 +1520,13 @@ const PostForm = ({ onClose, user }) => {
 
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(`Upload failed: ${res.status} ${text}`);
+                throw new Error(`Yükleme başarısız oldu: ${res.status} ${text}`);
             }
 
             const result = await res.json();
             setFormData(prev => ({ ...prev, imageUrl: result.url }));
         } catch (err) {
-            console.error('Upload failed', err);
+            console.error('Yükleme başarısız oldu', err);
             alert(err.message);
         } finally {
             setUploadingImage(false);
@@ -1254,7 +1589,7 @@ const PostForm = ({ onClose, user }) => {
                 onClose();
             }
         } catch (err) {
-            console.error('Post creation failed', err);
+            console.error('Gönderi oluşturma başarısız oldu', err);
         } finally {
             setIsSubmitting(false);
         }
@@ -1263,7 +1598,7 @@ const PostForm = ({ onClose, user }) => {
     return (
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-2xl font-bold text-white">New Community Post</h3>
+                <h3 className="text-2xl font-bold text-white">Yeni Topluluk Gönderisi</h3>
                 <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400">
                     <X size={24} />
                 </button>
@@ -1274,7 +1609,7 @@ const PostForm = ({ onClose, user }) => {
                     <img src={user.photoURL} className="w-12 h-12 rounded-full border border-white/10" />
                     <div>
                         <div className="font-bold text-white">{user.displayName}</div>
-                        <div className="text-xs text-slate-500">Posting as Admin</div>
+                        <div className="text-xs text-slate-500">Yönetici olarak paylaşılıyor</div>
                     </div>
                 </div>
 
@@ -1284,7 +1619,7 @@ const PostForm = ({ onClose, user }) => {
                     value={formData.content}
                     onChange={e => setFormData({ ...formData, content: e.target.value })}
                     className="w-full bg-slate-950/30 border border-white/5 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500/30 transition-all text-lg resize-none"
-                    placeholder="What's on your mind? Share an update with the campus..."
+                    placeholder="Aklınızda ne var? Kampüsle bir güncelleme paylaşın..."
                 />
             </div>
 
@@ -1304,12 +1639,12 @@ const PostForm = ({ onClose, user }) => {
             {showPoll && (
                 <div className="bg-slate-950/50 border border-white/5 rounded-2xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Poll Creation</span>
-                        <button type="button" onClick={() => setShowPoll(false)} className="text-xs text-slate-500 hover:text-white transition-colors">Cancel Poll</button>
+                        <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Anket Oluşturma</span>
+                        <button type="button" onClick={() => setShowPoll(false)} className="text-xs text-slate-500 hover:text-white transition-colors">Anketi İptal Et</button>
                     </div>
                     <input
                         type="text"
-                        placeholder="Ask a question..."
+                        placeholder="Bir soru sorun..."
                         value={formData.poll.question}
                         onChange={e => setFormData({ ...formData, poll: { ...formData.poll, question: e.target.value } })}
                         className="w-full bg-transparent border-b border-white/10 py-2 focus:outline-none focus:border-emerald-500 transition-colors text-white font-medium"
@@ -1319,7 +1654,7 @@ const PostForm = ({ onClose, user }) => {
                             <div key={idx} className="flex items-center gap-3">
                                 <input
                                     type="text"
-                                    placeholder={`Option ${idx + 1}`}
+                                    placeholder={`Seçenek ${idx + 1}`}
                                     value={opt}
                                     onChange={e => updateOption(idx, e.target.value)}
                                     className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500/50"
@@ -1337,7 +1672,7 @@ const PostForm = ({ onClose, user }) => {
                                 onClick={addOption}
                                 className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
                             >
-                                <Plus size={14} /> Add Option
+                                <Plus size={14} /> Seçenek Ekle
                             </button>
                         )}
                     </div>
@@ -1346,21 +1681,21 @@ const PostForm = ({ onClose, user }) => {
 
             <div className="flex items-center justify-between border-t border-white/5 pt-6">
                 <div className="flex items-center gap-4">
-                    <div className="relative">
+                    <div className="relative h-12 w-12 shrink-0">
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleImageUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                         />
-                        <button type="button" className={`p-3 rounded-xl transition-all ${formData.imageUrl ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}>
+                        <button type="button" className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${formData.imageUrl ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}>
                             {uploadingImage ? <Loader2 className="animate-spin" size={20} /> : <ImageIcon size={20} />}
                         </button>
                     </div>
                     <button
                         type="button"
-                        onClick={() => setShowPoll(true)}
-                        className={`p-3 rounded-xl transition-all ${showPoll ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
+                        onClick={() => setShowPoll((prev) => !prev)}
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all ${showPoll ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
                     >
                         <MessageSquare size={20} />
                     </button>
@@ -1372,7 +1707,7 @@ const PostForm = ({ onClose, user }) => {
                     className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-xl shadow-emerald-900/20 flex items-center gap-3"
                 >
                     {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
-                    Post Update
+                    Gönderiyi Paylaş
                 </button>
             </div>
         </form>
@@ -1459,40 +1794,37 @@ const ScheduleField = ({ label, children }) => (
     </label>
 );
 
-const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => (
-    <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {schedules.map((schedule) => {
-            const selected = schedule.id === selectedScheduleId;
+const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
+    const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
 
-            return (
-                <button
-                    key={schedule.id}
-                    type="button"
-                    onClick={() => onSelect(schedule.id)}
-                    className={`rounded-[1.5rem] border px-5 py-5 text-left transition ${selected
-                        ? 'border-cyan-400/30 bg-cyan-400/10 shadow-[0_18px_40px_rgba(34,211,238,0.08)]'
-                        : 'border-white/8 bg-slate-950/50 hover:border-white/15 hover:bg-white/[0.04]'
-                        }`}
-                >
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="text-base font-bold text-white">{schedule.className}</div>
-                        <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${selected
-                            ? 'bg-cyan-300/15 text-cyan-100'
-                            : 'bg-white/5 text-slate-400'
-                            }`}>
-                            {selected ? 'Secili' : 'Sec'}
-                        </span>
-                    </div>
+    return (
+        <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-slate-950/50 p-5">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sınıflar</div>
+            <select
+                value={selectedScheduleId}
+                onChange={(e) => onSelect(e.target.value)}
+                className="mt-3 block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40"
+            >
+                {schedules.map((schedule) => (
+                    <option key={schedule.id} value={schedule.id}>
+                        {schedule.programName} - {schedule.className}
+                    </option>
+                ))}
+            </select>
 
-                    <div className="mt-3 text-sm leading-6 text-slate-300">{schedule.programName}</div>
-                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">
-                        {schedule.academicYear} • {schedule.semester}
+            {selectedSchedule && (
+                <>
+                    <div className="mt-3 text-sm text-slate-400">
+                        {selectedSchedule.academicYear} • {selectedSchedule.semester}
                     </div>
-                </button>
-            );
-        })}
-    </div>
-);
+                    <div className="mt-1 text-sm text-slate-300">
+                        {selectedSchedule.programName}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
 
 const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot, saving }) => {
     const template = {
@@ -1502,9 +1834,9 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
     return (
         <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
             <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Weekly Grid</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Haftalık Tablo</p>
                 <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <h4 className="text-xl font-bold text-white">Click a cell to add or edit class data</h4>
+                    <h4 className="text-xl font-bold text-white">Ders bilgisi eklemek veya düzenlemek için bir hücreye tıklayın</h4>
                     <button
                         type="button"
                         onClick={onAddTimeSlot}
@@ -1515,11 +1847,11 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                             }`}
                     >
                         <Plus size={16} />
-                        Yeni Saat Satiri
+                        Yeni Saat Satırı
                     </button>
                 </div>
                 <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">
-                    Omusiber'deki haftalik gorunume benzer sekilde saatler solda, gunler ustte. Saat kutusuna tiklayarak araligi duzenleyebilir, satir ekleyebilir veya silebilirsin.
+                    Omusiber'deki haftalık görünüme benzer şekilde saatler solda, günler üstte yer alır. Saat kutusuna tıklayarak aralığı düzenleyebilir, satır ekleyebilir veya silebilirsiniz.
                 </p>
             </div>
 
@@ -1528,7 +1860,7 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                     <div className="grid gap-3" style={template}>
                         <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/8 px-4 py-4">
                             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Saat</div>
-                            <div className="mt-2 text-sm font-semibold text-slate-200">Gun</div>
+                            <div className="mt-2 text-sm font-semibold text-slate-200">Gün</div>
                         </div>
 
                         {SCHEDULE_DAYS.map((day) => (
@@ -1538,7 +1870,7 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                             >
                                 <div className="text-base font-bold text-white">{day.label}</div>
                                 <div className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                    Duzenle
+                                    Düzenle
                                 </div>
                             </div>
                         ))}
@@ -1594,7 +1926,7 @@ const ScheduleBoardCell = ({ cell, saving, onClick }) => {
     };
 
     const subtitle = isEmpty
-        ? 'Yeni ders eklemek icin tikla'
+        ? 'Yeni ders eklemek için tıklayın'
         : formatLessonMeta(cell.primaryLesson);
 
     return (
@@ -1635,10 +1967,10 @@ const ScheduleLessonModal = ({
                 <div className="border-b border-white/5 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.12),_rgba(15,23,42,0.92)_60%)] px-6 py-5">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Edit Slot</div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Saati Düzenle</div>
                             <h4 className="mt-2 text-2xl font-bold text-white">{getDayLabel(state.dayKey)} • {state.time}</h4>
                             <p className="mt-2 text-sm leading-6 text-slate-300">
-                                Bu kutu icin dersi kaydet, guncelle veya istersen temizle.
+                                Bu kutu için dersi kaydedin, güncelleyin veya isterseniz temizleyin.
                             </p>
                         </div>
 
@@ -1655,23 +1987,23 @@ const ScheduleLessonModal = ({
                 <form onSubmit={onSubmit} className="space-y-6 p-6">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Selected Day</div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Seçili Gün</div>
                             <div className="mt-2 text-lg font-bold text-white">{getDayLabel(state.dayKey)}</div>
                         </div>
                         <div className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Selected Time</div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Seçili Saat</div>
                             <div className="mt-2 text-lg font-bold text-white">{state.time}</div>
                         </div>
                     </div>
 
                     {cell.totalLessons > 1 && (
                         <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-6 text-amber-100">
-                            Bu saat diliminde birden fazla ders gorunuyor. Grid, ilk dersi kartta gosterir ama ogrenci tarafinda efektif toplam {cell.totalLessons} ders var.
+                            Bu saat diliminde birden fazla ders görünüyor. Tablo ilk dersi kartta gösterir ancak öğrenci tarafında efektif olarak toplam {cell.totalLessons} ders vardır.
                         </div>
                     )}
 
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <ScheduleField label="Course Code">
+                        <ScheduleField label="Ders Kodu">
                             <input
                                 type="text"
                                 value={state.courseCode}
@@ -1681,7 +2013,7 @@ const ScheduleLessonModal = ({
                             />
                         </ScheduleField>
 
-                        <ScheduleField label="Course Name">
+                        <ScheduleField label="Ders Adı">
                             <input
                                 type="text"
                                 value={state.courseName}
@@ -1691,17 +2023,17 @@ const ScheduleLessonModal = ({
                             />
                         </ScheduleField>
 
-                        <ScheduleField label="Instructor">
+                        <ScheduleField label="Öğretim Elemanı">
                             <input
                                 type="text"
                                 value={state.instructor}
                                 onChange={(e) => onFieldChange('instructor', e.target.value)}
-                                placeholder="Dr. Example"
+                                placeholder="Dr. Örnek"
                                 className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/40"
                             />
                         </ScheduleField>
 
-                        <ScheduleField label="Classroom">
+                        <ScheduleField label="Derslik">
                             <input
                                 type="text"
                                 value={state.classroom}
@@ -1724,11 +2056,11 @@ const ScheduleLessonModal = ({
                                 onClick={onDelete}
                                 className="inline-flex items-center justify-center rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Clear Saved Change
+                                Kaydedilen Değişikliği Temizle
                             </button>
                         ) : (
                             <div className="text-sm text-slate-500">
-                                Bu slot henuz kaydedilmemis.
+                                Bu hücre henüz kaydedilmemiş.
                             </div>
                         )}
 
@@ -1738,7 +2070,7 @@ const ScheduleLessonModal = ({
                                 onClick={onClose}
                                 className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
                             >
-                                Cancel
+                                İptal
                             </button>
                             <button
                                 type="submit"
@@ -1746,7 +2078,7 @@ const ScheduleLessonModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                Save Cell
+                                Hücreyi Kaydet
                             </button>
                         </div>
                     </div>
@@ -1770,12 +2102,12 @@ const ScheduleTimeSlotModal = ({
             <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-slate-900/95 p-6 shadow-[0_30px_80px_rgba(2,6,23,0.65)]">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Time Slot</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Saat Satırı</p>
                         <h4 className="mt-2 text-2xl font-bold text-white">
-                            {state.isNew ? 'Create hour row' : `Edit ${state.previousTime}`}
+                            {state.isNew ? 'Yeni saat satırı oluştur' : `${state.previousTime} saatini düzenle`}
                         </h4>
                         <p className="mt-2 text-sm leading-7 text-slate-400">
-                            Baslangic ve bitis saatini guncelle. Satir silinirse bu saate bagli manuel kayitlar da temizlenir.
+                            Başlangıç ve bitiş saatini güncelleyin. Satır silinirse bu saate bağlı manuel kayıtlar da temizlenir.
                         </p>
                     </div>
 
@@ -1790,7 +2122,7 @@ const ScheduleTimeSlotModal = ({
 
                 <form className="mt-6 space-y-5" onSubmit={onSubmit}>
                     <div className="grid gap-4 sm:grid-cols-2">
-                        <ScheduleField label="Start Time">
+                        <ScheduleField label="Başlangıç Saati">
                             <input
                                 type="time"
                                 value={state.startTime}
@@ -1799,7 +2131,7 @@ const ScheduleTimeSlotModal = ({
                             />
                         </ScheduleField>
 
-                        <ScheduleField label="End Time">
+                        <ScheduleField label="Bitiş Saati">
                             <input
                                 type="time"
                                 value={state.endTime}
@@ -1822,11 +2154,11 @@ const ScheduleTimeSlotModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <Trash2 size={16} />
-                                Delete Row
+                                Satırı Sil
                             </button>
                         ) : (
                             <div className="text-sm text-slate-500">
-                                Yeni satir kaydedildikten sonra tabloya eklenir.
+                                Yeni satır kaydedildikten sonra tabloya eklenir.
                             </div>
                         )}
 
@@ -1836,7 +2168,7 @@ const ScheduleTimeSlotModal = ({
                                 onClick={onClose}
                                 className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
                             >
-                                Cancel
+                                İptal
                             </button>
                             <button
                                 type="submit"
@@ -1844,7 +2176,7 @@ const ScheduleTimeSlotModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? <Loader2 className="animate-spin" size={18} /> : <Pencil size={18} />}
-                                Save Row
+                                Satırı Kaydet
                             </button>
                         </div>
                     </div>
@@ -1860,7 +2192,7 @@ const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
     return (
         <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
             <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Timeline</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Akış</p>
                 <h4 className="mt-2 text-xl font-bold text-white">{title}</h4>
                 <p className="mt-2 text-sm leading-7 text-slate-400">{description}</p>
             </div>
