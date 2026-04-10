@@ -1,0 +1,319 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const content = {
+    en: {
+        title: 'BillTicket - Booking & Reservation System | NortixLabs',
+        description: 'BillTicket is a simple self-service booking and reservation system for workshops, studios, and event-based small businesses.',
+        badge: 'Booking automation for small workshops',
+        heroTitle: 'BillTicket',
+        heroSubtitle: 'A clean booking experience for ceramic studios, art workshops, candle-making sessions, and other reservation-based businesses.',
+        heroBody: 'BillTicket helps businesses move reservations out of scattered Instagram and WhatsApp messages into one organized flow. Customers can pick a session, book in minutes, and receive a confirmation and ticket. Owners can manage sessions, capacity, and attendee records from one dashboard.',
+        primaryCta: 'Book a Demo',
+        heroNote: 'Simple for customers. Organized for business owners.',
+        placeholderTitle: 'Product image placeholder',
+        placeholderBody: 'Space for a future screenshot, dashboard preview, or booking flow visual.',
+        highlightsTitle: 'What BillTicket Makes Easier',
+        highlightsSubtitle: 'The goal is not to add complexity. It is to remove manual back-and-forth and make reservations feel professional.',
+        highlights: [
+            {
+                title: 'Self-service booking',
+                body: 'Customers can browse available dates and sessions on their own instead of sending messages back and forth.',
+            },
+            {
+                title: 'No more overbooking',
+                body: 'Session capacity is tracked automatically so businesses can avoid mistakes and manage attendance with confidence.',
+            },
+            {
+                title: 'Clear confirmations',
+                body: 'Booking confirmations and ticket or reservation documents are created automatically for a smoother customer experience.',
+            },
+        ],
+        audienceTitle: 'Built for Both Sides of the Booking Flow',
+        audienceSubtitle: 'BillTicket keeps the customer journey simple while giving the business a clearer daily workflow.',
+        customerTitle: 'For customers',
+        customerPoints: [
+            'Browse available sessions',
+            'Choose a date and time',
+            'Reserve a spot without waiting for manual replies',
+            'Complete booking or prepayment when enabled',
+            'Receive confirmation and ticket details',
+        ],
+        adminTitle: 'For business owners',
+        adminPoints: [
+            'Create workshop types and sessions',
+            'Track reservations and attendee lists',
+            'Review payment records and statuses',
+            'Manage capacity in one place',
+            'Export records and reports',
+        ],
+        workflowTitle: 'From Manual Messages to a Structured Booking Flow',
+        workflowBody: 'Many small event businesses still coordinate reservations through DMs and phone calls. BillTicket replaces that with a clear flow: show available sessions, collect bookings, confirm attendance, and keep records organized in one place.',
+        workflowSteps: [
+            'Show open sessions',
+            'Let customers reserve their spot',
+            'Track payments and booking status',
+            'Send confirmation and ticket information',
+        ],
+        galleryTitle: 'Spaces for Product Visuals',
+        galleryCards: [
+            'Session calendar placeholder',
+            'Booking flow placeholder',
+            'Admin dashboard placeholder',
+        ],
+        ctaTitle: 'Want to see how BillTicket could fit your business?',
+        ctaBody: 'We can walk you through the idea, show the product direction, and talk about how it could work for your studio or workshop.',
+        footerCta: 'Book a Demo With Us',
+    },
+    tr: {
+        title: 'BillTicket - Rezervasyon ve Biletleme Sistemi | NortixLabs',
+        description: 'BillTicket, atölye, stüdyo ve etkinlik bazlı küçük işletmeler için sade bir self-servis rezervasyon sistemidir.',
+        badge: 'Küçük atölyeler için rezervasyon otomasyonu',
+        heroTitle: 'BillTicket',
+        heroSubtitle: 'Seramik stüdyoları, sanat atölyeleri, mum yapımı etkinlikleri ve benzeri işletmeler için sade bir rezervasyon deneyimi.',
+        heroBody: 'BillTicket, dağınık Instagram ve WhatsApp mesajlarıyla yürüyen rezervasyon sürecini tek bir düzenli akışa taşır. Müşteriler uygun seansı seçip hızlıca rezervasyon yapabilir, onay ve bilet bilgilerini alabilir. İşletme tarafı ise seansları, kontenjanı ve katılımcı kayıtlarını tek panelden yönetebilir.',
+        primaryCta: 'Demo Planla',
+        heroNote: 'Müşteri için sade. İşletme için düzenli.',
+        placeholderTitle: 'Ürün görseli alanı',
+        placeholderBody: 'İleride eklenecek ekran görüntüsü, panel önizlemesi veya rezervasyon akışı görseli için alan.',
+        highlightsTitle: 'BillTicket Neyi Kolaylaştırır?',
+        highlightsSubtitle: 'Amaç yeni bir karmaşa yaratmak değil. Amaç, manuel mesajlaşmayı azaltıp rezervasyon sürecini daha profesyonel hale getirmek.',
+        highlights: [
+            {
+                title: 'Self-servis rezervasyon',
+                body: 'Müşteriler karşılıklı mesajlaşmaya ihtiyaç duymadan uygun tarih ve seansları kendileri inceleyebilir.',
+            },
+            {
+                title: 'Fazla rezervasyonu önler',
+                body: 'Seans kapasitesi otomatik takip edilir; böylece işletmeler hataları azaltır ve katılımı daha güvenle yönetir.',
+            },
+            {
+                title: 'Net onay süreci',
+                body: 'Rezervasyon onayı ile bilet veya rezervasyon belgesi otomatik oluşturulur ve müşteri deneyimi daha akıcı hale gelir.',
+            },
+        ],
+        audienceTitle: 'Rezervasyon Sürecinin İki Tarafı İçin de Tasarlandı',
+        audienceSubtitle: 'BillTicket, müşteri tarafını sade tutarken işletmeye de daha net bir günlük akış sunar.',
+        customerTitle: 'Müşteri tarafı',
+        customerPoints: [
+            'Uygun seansları görüntüleme',
+            'Tarih ve saat seçme',
+            'Manuel dönüş beklemeden rezervasyon oluşturma',
+            'Gerekirse ön ödeme veya booking adımını tamamlama',
+            'Onay ve bilet bilgilerini görüntüleme',
+        ],
+        adminTitle: 'İşletme sahibi tarafı',
+        adminPoints: [
+            'Atölye türleri ve seanslar oluşturma',
+            'Rezervasyonları ve katılımcı listesini takip etme',
+            'Ödeme kayıtlarını ve durumlarını görüntüleme',
+            'Kontenjanı tek yerden yönetme',
+            'Kayıt ve raporları dışa aktarma',
+        ],
+        workflowTitle: 'Dağınık Mesajlardan Düzenli Rezervasyon Akışına',
+        workflowBody: 'Birçok küçük etkinlik işletmesi rezervasyonlarını hâlâ DM veya telefon üzerinden yönetiyor. BillTicket ise bunu daha net bir akışa dönüştürür: uygun seansları göster, rezervasyonu al, katılımı onayla ve tüm kayıtları tek yerde tut.',
+        workflowSteps: [
+            'Uygun seansları göster',
+            'Müşterinin yerini ayırtmasını sağla',
+            'Ödeme ve rezervasyon durumunu takip et',
+            'Onay ve bilet bilgisini gönder',
+        ],
+        galleryTitle: 'Ürün Görselleri İçin Ayrılmış Alanlar',
+        galleryCards: [
+            'Seans takvimi alanı',
+            'Rezervasyon akışı alanı',
+            'Yönetim paneli alanı',
+        ],
+        ctaTitle: 'BillTicketin işletmenize nasıl uyacağını görmek ister misiniz?',
+        ctaBody: 'Bir demo görüşmesinde ürün fikrini, genel akışı ve stüdyonuz veya atölyeniz için nasıl şekillenebileceğini birlikte konuşabiliriz.',
+        footerCta: 'Bizimle Demo Planla',
+    },
+};
+
+const t = content[lang] || content.en;
+const base = lang === 'en' ? '' : '/tr';
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main>
+        <section class="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(34,197,94,0.12),transparent_24%)]"></div>
+            <div class="container mx-auto px-6">
+                <div class="grid items-center gap-14 lg:grid-cols-[1.15fr_0.85fr]">
+                    <div class="max-w-3xl">
+                        <div class="mb-6 inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+                            {t.badge}
+                        </div>
+                        <h1 class="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl">
+                            {t.heroTitle}
+                        </h1>
+                        <p class="mb-4 max-w-2xl text-lg text-slate-300 md:text-2xl">
+                            {t.heroSubtitle}
+                        </p>
+                        <p class="mb-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">
+                            {t.heroBody}
+                        </p>
+
+                        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                            <a
+                                href={`${base}/#contact`}
+                                class="rounded-full bg-white px-7 py-3 text-sm font-bold text-slate-950 transition-all duration-300 hover:bg-amber-300"
+                            >
+                                {t.primaryCta}
+                            </a>
+                            <p class="text-sm text-slate-500">{t.heroNote}</p>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-amber-500/25 via-orange-500/10 to-emerald-400/20 blur-3xl"></div>
+                        <div class="glass-card rounded-[2rem] border border-white/10 p-5 shadow-2xl">
+                            <div class="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">BillTicket</p>
+                                    <p class="text-sm font-semibold text-white">{t.placeholderTitle}</p>
+                                </div>
+                                <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">Preview</span>
+                            </div>
+                            <div class="grid gap-4">
+                                <div class="flex min-h-[260px] items-center justify-center rounded-[1.75rem] border border-dashed border-white/15 bg-slate-900/80 p-6 text-center">
+                                    <div>
+                                        <p class="mb-2 text-base font-semibold text-slate-200">{t.placeholderTitle}</p>
+                                        <p class="mx-auto max-w-xs text-sm leading-6 text-slate-500">{t.placeholderBody}</p>
+                                    </div>
+                                </div>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/60 p-4 text-sm text-slate-500">
+                                        {lang === 'en' ? 'Session list placeholder' : 'Seans listesi alanı'}
+                                    </div>
+                                    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/60 p-4 text-sm text-slate-500">
+                                        {lang === 'en' ? 'Ticket preview placeholder' : 'Bilet önizleme alanı'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="mb-10 max-w-3xl">
+                    <h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">{t.highlightsTitle}</h2>
+                    <p class="text-base leading-7 text-slate-400 md:text-lg">{t.highlightsSubtitle}</p>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-3">
+                    {t.highlights.map((item) => (
+                        <div class="glass-card rounded-3xl border border-white/10 p-7">
+                            <div class="mb-5 h-10 w-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-[1px]">
+                                <div class="flex h-full w-full items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">
+                                    +
+                                </div>
+                            </div>
+                            <h3 class="mb-3 text-xl font-bold text-white">{item.title}</h3>
+                            <p class="text-sm leading-7 text-slate-400">{item.body}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="mb-10 max-w-3xl">
+                    <h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">{t.audienceTitle}</h2>
+                    <p class="text-base leading-7 text-slate-400 md:text-lg">{t.audienceSubtitle}</p>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="glass-card rounded-[2rem] border border-white/10 p-8">
+                        <p class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300">{t.customerTitle}</p>
+                        <ul class="space-y-4">
+                            {t.customerPoints.map((point) => (
+                                <li class="flex items-start gap-3 text-slate-300">
+                                    <span class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-cyan-400"></span>
+                                    <span>{point}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div class="glass-card rounded-[2rem] border border-white/10 p-8">
+                        <p class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">{t.adminTitle}</p>
+                        <ul class="space-y-4">
+                            {t.adminPoints.map((point) => (
+                                <li class="flex items-start gap-3 text-slate-300">
+                                    <span class="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-amber-400"></span>
+                                    <span>{point}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+                    <div>
+                        <h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">{t.workflowTitle}</h2>
+                        <p class="mb-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">{t.workflowBody}</p>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            {t.workflowSteps.map((step, index) => (
+                                <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-5">
+                                    <p class="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Step {index + 1}</p>
+                                    <p class="text-sm font-medium text-slate-200">{step}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-[2rem] border border-white/10 p-6">
+                        <p class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">{t.galleryTitle}</p>
+                        <div class="grid gap-4">
+                            {t.galleryCards.map((card, index) => (
+                                <div class={`flex min-h-[120px] items-center justify-center rounded-[1.5rem] border border-dashed border-white/12 px-6 text-center text-sm text-slate-500 ${index === 1 ? 'bg-slate-950/70' : 'bg-slate-900/70'}`}>
+                                    {card}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-20 md:pb-28">
+            <div class="container mx-auto px-6">
+                <div class="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-8 md:p-12">
+                    <div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-amber-500/15 blur-3xl"></div>
+                    <div class="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-cyan-500/10 blur-3xl"></div>
+                    <div class="relative max-w-3xl">
+                        <h2 class="mb-4 text-3xl font-bold text-white md:text-5xl">{t.ctaTitle}</h2>
+                        <p class="mb-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">{t.ctaBody}</p>
+                        <a
+                            href={`${base}/#contact`}
+                            class="inline-flex rounded-full border border-white/10 bg-white px-7 py-3 text-sm font-bold text-slate-950 transition-all duration-300 hover:bg-cyan-300"
+                        >
+                            {t.footerCta}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>

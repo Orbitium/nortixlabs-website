@@ -56,7 +56,6 @@ export default function Footer({ lang = 'en' }) {
         <footer className="bg-slate-950 border-t border-white/5 pt-16 pb-8">
             <div className="container mx-auto px-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-12 mb-12">
-
                     <div className="col-span-1 md:col-span-1">
                         <a href={base || '/'} className="flex items-center gap-2 mb-4 group">
                             <div className="p-2 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500">
@@ -98,6 +97,9 @@ export default function Footer({ lang = 'en' }) {
                             <li>
                                 <a href={`${base}/akademiz`} className="hover:text-cyan-400 transition-colors">AkademiZ</a>
                             </li>
+                            <li>
+                                <a href={`${base}/billticket`} className="hover:text-cyan-400 transition-colors">BillTicket</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -120,7 +122,6 @@ export default function Footer({ lang = 'en' }) {
                             <li><a href={`${base}/akademiz/delete`} className="hover:text-cyan-400 transition-colors">{t.accountDeletion}</a></li>
                         </ul>
                     </div>
-
                 </div>
 
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -128,7 +129,7 @@ export default function Footer({ lang = 'en' }) {
                         &copy; {new Date().getFullYear()} Nortixlabs LLC. {t.rights}
                     </p>
                     <p className="text-slate-600 text-xs">
-                        {t.designed} <span className="text-red-500">♥</span> {t.by}
+                        {t.designed} <span className="text-red-500">&hearts;</span> {t.by}
                     </p>
                 </div>
             </div>
