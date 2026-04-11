@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 const API_BASE_URL = 'https://akademiz-api.nortixlabs.com';
-const SCHEDULE_STORAGE_KEY = 'akademiz_fake_schedule_admin_v1';
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Genel Bakış', icon: LayoutDashboard },
@@ -17,11 +16,6 @@ const NAV_ITEMS = [
     { id: 'events', label: 'Etkinlikler', icon: Calendar },
     { id: 'community', label: 'Topluluk', icon: Users },
     { id: 'news', label: 'Haberler', icon: MessageSquare }
-];
-
-const GRADE_OPTIONS = [
-    { key: 'grade1', label: '1. Sınıf' },
-    { key: 'grade2', label: '2. Sınıf' }
 ];
 
 const SCHEDULE_DAYS = [
@@ -45,107 +39,6 @@ const DEFAULT_SCHEDULE_TIMES = [
     '16:30'
 ];
 
-const createSeedLesson = (id, time, courseCode, courseName, instructor, classroom) => ({
-    id,
-    time,
-    courseCode,
-    courseName,
-    instructor,
-    classroom,
-    source: 'generated'
-});
-
-const SCHEDULE_SEED_DATA = [
-    {
-        id: 'sgt-a',
-        programName: 'Siber Güvenlik Teknolojileri',
-        className: '1. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-a-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi A', 'Lab 3'),
-                    createSeedLesson('sgt-a-g1-2', '10:30', 'SGT103', 'Linux Uygulamaları', 'Öğretim Görevlisi C', 'Lab 1')
-                ],
-                SALI: [
-                    createSeedLesson('sgt-a-g1-3', '09:30', 'SGT105', 'Temel Programlama', 'Dr. B', 'Derslik 12')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('sgt-a-g1-4', '13:30', 'SGT109', 'Siber Hijyen', 'Öğretim Görevlisi D', 'Atölye 2')
-                ]
-            },
-            grade2: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-a-g2-1', '09:30', 'SGT204', 'Web Güvenliği', 'Öğretim Görevlisi F', 'Lab 2')
-                ],
-                SALI: [
-                    createSeedLesson('sgt-a-g2-2', '13:30', 'SGT208', 'Zafiyet Analizi', 'Dr. G', 'Lab 4')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('sgt-a-g2-3', '10:30', 'SGT210', 'Adli Bilişim', 'Öğretim Görevlisi H', 'Derslik 8')
-                ]
-            }
-        }
-    },
-    {
-        id: 'sgt-b',
-        programName: 'Siber Güvenlik Teknolojileri',
-        className: '2. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-b-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi N', 'Lab 5')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('sgt-b-g1-2', '11:30', 'SGT111', 'Temel Kriptografi', 'Dr. P', 'B-204')
-                ]
-            },
-            grade2: {
-                SALI: [
-                    createSeedLesson('sgt-b-g2-1', '08:30', 'SGT206', 'SIEM Operasyonları', 'Öğretim Görevlisi R', 'SOC Lab')
-                ],
-                CUMA: [
-                    createSeedLesson('sgt-b-g2-2', '13:30', 'SGT214', 'Pentest Lab', 'Dr. S', 'Lab 7')
-                ]
-            }
-        }
-    },
-    {
-        id: 'bpr-a',
-        programName: 'Bilgisayar Programcılığı',
-        className: '1. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('bpr-a-g1-1', '08:30', 'BPR101', 'Algoritma Mantığı', 'Dr. I', 'B-101')
-                ],
-                SALI: [
-                    createSeedLesson('bpr-a-g1-2', '10:30', 'BPR103', 'Veritabanı Temelleri', 'Öğretim Görevlisi J', 'Lab 5')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('bpr-a-g1-3', '13:30', 'BPR107', 'Nesne Tabanlı Programlama', 'Dr. K', 'Lab 6')
-                ]
-            },
-            grade2: {
-                SALI: [
-                    createSeedLesson('bpr-a-g2-1', '08:30', 'BPR202', 'Mobil Programlama', 'Dr. L', 'Lab 2')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('bpr-a-g2-2', '11:30', 'BPR204', 'API Geliştirme', 'Öğretim Görevlisi M', 'Lab 3')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('bpr-a-g2-3', '09:30', 'BPR206', 'Bulut Tabanlı Sistemler', 'Dr. N', 'A-303')
-                ]
-            }
-        }
-    }
-];
-
 const AdminPanel = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -163,19 +56,11 @@ const AdminPanel = () => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 try {
-                    const tokenResult = await currentUser.getIdTokenResult();
                     const [_, domain] = currentUser.email.split('@');
 
                     if (domain && domain.toLowerCase().includes('.edu')) {
-                        if (tokenResult.claims.admin) {
-                            setUser(currentUser);
-                            setError(null);
-                        } else {
-                            setError('Erişim reddedildi. Hesabınızda yönetici yetkisi bulunmuyor.');
-                            // We don't sign out automatically here so they can see the error, 
-                            // but we don't set the user state.
-                            setUser(null);
-                        }
+                        setUser(currentUser);
+                        setError(null);
                     } else {
                         setError('Erişim reddedildi. Yalnızca .edu uzantılı e-posta adreslerine izin verilir.');
                         signOut(auth);
@@ -257,9 +142,10 @@ const AdminPanel = () => {
         setEventNotice('');
     };
 
-    const handleEventCreated = () => {
+    const handleEventCreated = (createdEvent) => {
         setEventView('list');
-        setEventNotice('Etkinlik taslağı oluşturuldu. Liste bağlantısı geldiğinde burada görünecek.');
+        const status = createdEvent?.status || (createdEvent?.isActive === false ? 'draft' : 'active');
+        setEventNotice(status === 'active' ? 'Etkinlik yayınlandı.' : 'Etkinlik taslak olarak kaydedildi.');
     };
 
     const avatarInitial = (user?.displayName || user?.email || 'A').charAt(0).toUpperCase();
@@ -464,11 +350,6 @@ const AdminPanel = () => {
                                             onClick={() => setActiveTab('schedule')}
                                         />
                                         <QuickActionButton
-                                            label="Haber Oluştur"
-                                            color="bg-violet-500/20 text-violet-400"
-                                            icon={<Plus size={20} />}
-                                        />
-                                        <QuickActionButton
                                             label="Etkinlik Ekle"
                                             color="bg-cyan-500/20 text-cyan-400"
                                             icon={<Plus size={20} />}
@@ -502,33 +383,8 @@ const AdminPanel = () => {
                                     onCreated={handleEventCreated}
                                 />
                             ) : (
-                                <>
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-2xl font-bold text-white">Etkinlik Yönetimi</h3>
-                                            <p className="mt-2 text-sm text-slate-500">Temel bilgileri hızlıca girin, kalan ayrıntıları isterseniz sonradan zenginleştirin.</p>
-                                        </div>
-                                        <button
-                                            onClick={openEventCreator}
-                                            className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-900/20"
-                                        >
-                                            <Plus size={20} />
-                                            Etkinlik Oluştur
-                                        </button>
-                                    </div>
+                                <EventManager notice={eventNotice} onCreate={openEventCreator} />
 
-                                    {eventNotice && (
-                                        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
-                                            {eventNotice}
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                            Etkinlik verileri burada yüklenecek...
-                                        </div>
-                                    </div>
-                                </>
                             )}
                         </div>
                     )}
@@ -554,20 +410,7 @@ const AdminPanel = () => {
                         </div>
                     )}
 
-                    {activeTab === 'news' && (
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-white">Haber Akışı</h3>
-                                <button className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-violet-900/20">
-                                    <Plus size={20} />
-                                    Haber Oluştur
-                                </button>
-                            </div>
-                            <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                Haber yönetim araçları burada görünecek...
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'news' && <NewsManager />}
                 </main>
             </div>
 
@@ -584,16 +427,493 @@ const AdminPanel = () => {
     );
 };
 
+const parseJsonArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const getEventStatus = (event) => {
+    if (event?.status === 'active' || event?.isActive === true) return 'active';
+    return 'draft';
+};
+
+const getEventImageUrl = (event) => {
+    const imageUrl = event?.thumbnailFullUrl || event?.thumbnailUrl || parseJsonArray(event?.carouselImageFullUrls)[0] || parseJsonArray(event?.carouselImages)[0];
+    if (!imageUrl) return '';
+    return imageUrl.startsWith('/') ? `${API_BASE_URL}${imageUrl}` : imageUrl;
+};
+
+const formatEventDate = (value) => {
+    if (!value) return 'Tarih yok';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('tr-TR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+};
+
+const EventManager = ({ notice, onCreate }) => {
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [localNotice, setLocalNotice] = useState('');
+    const [busyEventId, setBusyEventId] = useState(null);
+    const [reloadKey, setReloadKey] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadEvents = async () => {
+            try {
+                setLoading(true);
+                setError('');
+                const token = await auth.currentUser.getIdToken(true);
+                const response = await fetch(`${API_BASE_URL}/admin/events`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Etkinlikler yüklenemedi: ${response.status} ${text}`);
+                }
+
+                const result = await response.json();
+                const items = Array.isArray(result) ? result : (result.events || result.data || []);
+
+                if (!cancelled) {
+                    setEvents(items);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('Etkinlikler yüklenemedi', err);
+                    setError(err.message || 'Etkinlikler yüklenemedi.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadEvents();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [reloadKey]);
+
+    const updateEventStatus = async (event) => {
+        const nextStatus = getEventStatus(event) === 'active' ? 'draft' : 'active';
+
+        try {
+            setBusyEventId(event.id);
+            setError('');
+            setLocalNotice('');
+            const token = await auth.currentUser.getIdToken(true);
+            const response = await fetch(`${API_BASE_URL}/events/edit`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: event.id, status: nextStatus })
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Etkinlik güncellenemedi: ${response.status} ${text}`);
+            }
+
+            const result = await response.json();
+            const updatedEvent = result.event || result.data || result;
+            setEvents((current) => current.map((item) => item.id === event.id
+                ? { ...item, ...updatedEvent, isActive: nextStatus === 'active', status: nextStatus }
+                : item
+            ));
+            setLocalNotice(nextStatus === 'active' ? 'Etkinlik yayına alındı.' : 'Etkinlik taslağa alındı.');
+        } catch (err) {
+            console.error('Etkinlik güncellenemedi', err);
+            setError(err.message || 'Etkinlik güncellenemedi.');
+        } finally {
+            setBusyEventId(null);
+        }
+    };
+
+    const deleteEvent = async (event) => {
+        const confirmed = window.confirm(`"${event.title || 'Etkinlik'}" silinsin mi?`);
+        if (!confirmed) return;
+
+        try {
+            setBusyEventId(event.id);
+            setError('');
+            setLocalNotice('');
+            const token = await auth.currentUser.getIdToken(true);
+            const response = await fetch(`${API_BASE_URL}/events/delete`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: event.id })
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Etkinlik silinemedi: ${response.status} ${text}`);
+            }
+
+            setEvents((current) => current.filter((item) => item.id !== event.id));
+            setLocalNotice('Etkinlik silindi.');
+        } catch (err) {
+            console.error('Etkinlik silinemedi', err);
+            setError(err.message || 'Etkinlik silinemedi.');
+        } finally {
+            setBusyEventId(null);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 className="text-2xl font-bold text-white">Etkinlik Yönetimi</h3>
+                    <p className="mt-2 text-sm text-slate-500">Yayınlanan ve taslak etkinlikleri buradan yönetin.</p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                    <button
+                        type="button"
+                        onClick={() => setReloadKey((key) => key + 1)}
+                        disabled={loading}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-300 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                        Yenile
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onCreate}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-500"
+                    >
+                        <Plus size={18} />
+                        Etkinlik Oluştur
+                    </button>
+                </div>
+            </div>
+
+            {(notice || localNotice) && (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
+                    {localNotice || notice}
+                </div>
+            )}
+
+            {error && (
+                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                    {error}
+                </div>
+            )}
+
+            {loading ? (
+                <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-10">
+                    <div className="flex items-center justify-center gap-3 text-slate-400">
+                        <Loader2 className="animate-spin text-cyan-400" />
+                        Etkinlikler yükleniyor...
+                    </div>
+                </div>
+            ) : events.length === 0 ? (
+                <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-10 text-center text-sm italic text-slate-500">
+                    Henüz etkinlik bulunmuyor.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    {events.map((event) => {
+                        const status = getEventStatus(event);
+                        const imageUrl = getEventImageUrl(event);
+                        const isBusy = busyEventId === event.id;
+                        const tags = parseJsonArray(event.tags);
+
+                        return (
+                            <article key={event.id} className="overflow-hidden rounded-2xl border border-white/5 bg-slate-900/45">
+                                <div className="flex flex-col sm:flex-row">
+                                    <div className="h-56 bg-slate-950 sm:h-auto sm:w-48 sm:shrink-0">
+                                        {imageUrl ? (
+                                            <img src={imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-slate-700">
+                                                <ImageIcon size={34} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 p-5">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-[0.12em] ${status === 'active'
+                                                ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200'
+                                                : 'border-amber-400/25 bg-amber-400/10 text-amber-200'
+                                                }`}>
+                                                {status === 'active' ? 'Yayında' : 'Taslak'}
+                                            </span>
+                                            <span className="text-xs text-slate-500">{formatEventDate(event.date)}</span>
+                                        </div>
+
+                                        <h4 className="mt-3 line-clamp-2 text-lg font-bold leading-snug text-white">
+                                            {event.title || 'Başlıksız etkinlik'}
+                                        </h4>
+
+                                        {event.description && (
+                                            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                                                {event.description}
+                                            </p>
+                                        )}
+
+                                        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                                            {event.location && <span>{event.location}</span>}
+                                            <span>{event.views || 0} görüntülenme</span>
+                                            <span>{event.likes || 0} beğeni</span>
+                                            {event.maxJoiners ? <span>{event.maxJoiners} kontenjan</span> : null}
+                                        </div>
+
+                                        {tags.length > 0 && (
+                                            <div className="mt-4 flex flex-wrap gap-2">
+                                                {tags.slice(0, 5).map((tag) => (
+                                                    <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-300">
+                                                        #{tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-5 flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateEventStatus(event)}
+                                                disabled={isBusy}
+                                                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${status === 'active'
+                                                    ? 'border border-amber-400/20 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15'
+                                                    : 'border border-emerald-400/20 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15'
+                                                    }`}
+                                            >
+                                                {isBusy ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                                                {status === 'active' ? 'Taslağa Al' : 'Yayınla'}
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => deleteEvent(event)}
+                                                disabled={isBusy}
+                                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2 text-sm font-bold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                {isBusy ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                                                Sil
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const NewsManager = () => {
+    const [newsItems, setNewsItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [reloadKey, setReloadKey] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadNews = async () => {
+            try {
+                setLoading(true);
+                setError('');
+
+                const response = await fetch(`${API_BASE_URL}/news`);
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Haberler yüklenemedi: ${response.status} ${text}`);
+                }
+
+                const result = await response.json();
+                const items = Array.isArray(result) ? result : (result.news || result.data || []);
+                if (!cancelled) {
+                    setNewsItems(items);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('Haberler yüklenemedi', err);
+                    setError(err.message || 'Haberler yüklenemedi.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadNews();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [reloadKey]);
+
+    const formatNewsDate = (item) => {
+        if (item.publishedAtText) return item.publishedAtText;
+
+        const rawDate = item.publishedAt || item.createdAt;
+        if (!rawDate) return 'Tarih yok';
+
+        const date = new Date(rawDate);
+        if (Number.isNaN(date.getTime())) return rawDate;
+
+        return new Intl.DateTimeFormat('tr-TR', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
+    };
+
+    const getNewsImage = (item) => {
+        if (item.heroImage) return item.heroImage;
+
+        try {
+            const images = typeof item.imageUrls === 'string' ? JSON.parse(item.imageUrls) : item.imageUrls;
+            return Array.isArray(images) ? images[0] : '';
+        } catch {
+            return '';
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 className="text-2xl font-bold text-white">Haber Akışı</h3>
+                    <p className="mt-2 text-sm text-slate-500">AkademiZ haber kaynağındaki son kayıtlar.</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => setReloadKey((key) => key + 1)}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-300 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                    Yenile
+                </button>
+            </div>
+
+            {error && (
+                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                    {error}
+                </div>
+            )}
+
+            {loading ? (
+                <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-10">
+                    <div className="flex items-center justify-center gap-3 text-slate-400">
+                        <Loader2 className="animate-spin text-cyan-400" />
+                        Haberler yükleniyor...
+                    </div>
+                </div>
+            ) : newsItems.length === 0 ? (
+                <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-10 text-center text-sm italic text-slate-500">
+                    Gösterilecek haber bulunamadı.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    {newsItems.map((item) => {
+                        const imageUrl = getNewsImage(item);
+
+                        return (
+                            <article key={item.id || item.detailUrl || item.title} className="overflow-hidden rounded-2xl border border-white/5 bg-slate-900/45">
+                                <div className="flex flex-col sm:flex-row">
+                                    <div className="h-48 bg-slate-950 sm:h-auto sm:w-44 sm:shrink-0">
+                                        {imageUrl ? (
+                                            <img src={imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center text-slate-700">
+                                                <ImageIcon size={32} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 p-5">
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                            {item.faculty && (
+                                                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 font-semibold uppercase tracking-[0.12em] text-cyan-200">
+                                                    {item.faculty}
+                                                </span>
+                                            )}
+                                            <span>{formatNewsDate(item)}</span>
+                                        </div>
+
+                                        <h4 className="mt-3 line-clamp-2 text-lg font-bold leading-snug text-white">
+                                            {item.title || 'Başlıksız haber'}
+                                        </h4>
+
+                                        {item.summary && (
+                                            <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                                                {item.summary}
+                                            </p>
+                                        )}
+
+                                        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                                            {item.authorName && <span>{item.authorName}</span>}
+                                            <span>{item.views || 0} görüntülenme</span>
+                                            <span>{item.likes || 0} beğeni</span>
+                                            {item.detailUrl && (
+                                                <a
+                                                    href={item.detailUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="font-semibold text-cyan-300 transition hover:text-cyan-200"
+                                                >
+                                                    Kaynağı aç
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const ScheduleManager = () => {
     const [schedules, setSchedules] = useState([]);
+    const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
     const [selectedScheduleId, setSelectedScheduleId] = useState('');
-    const [selectedGradeKey, setSelectedGradeKey] = useState('grade1');
+    const [selectedClassKey, setSelectedClassKey] = useState('');
     const [editorState, setEditorState] = useState(null);
     const [timeSlotEditor, setTimeSlotEditor] = useState(null);
+    const [classForm, setClassForm] = useState({ name: '', key: '' });
 
     useEffect(() => {
         let cancelled = false;
@@ -602,11 +922,16 @@ const ScheduleManager = () => {
             try {
                 setLoading(true);
                 setError('');
-                const response = await fakeScheduleApi.listSchedules();
+                const token = await auth.currentUser.getIdToken(true);
+                const [classResponse, scheduleResponse] = await Promise.all([
+                    scheduleAdminApi.listClasses(token),
+                    scheduleAdminApi.listSchedules(token)
+                ]);
                 if (cancelled) return;
-                setSchedules(response);
-                if (!selectedScheduleId && response.length > 0) {
-                    setSelectedScheduleId(response[0].id);
+                setClasses(classResponse);
+                setSchedules(scheduleResponse);
+                if (!selectedScheduleId && scheduleResponse.length > 0) {
+                    setSelectedScheduleId(String(scheduleResponse[0].id));
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -628,32 +953,84 @@ const ScheduleManager = () => {
 
     useEffect(() => {
         if (schedules.length === 0) return;
-        const selectedExists = schedules.some((schedule) => schedule.id === selectedScheduleId);
+        const selectedExists = schedules.some((schedule) => String(schedule.id) === String(selectedScheduleId));
         if (!selectedExists) {
-            setSelectedScheduleId(schedules[0].id);
+            setSelectedScheduleId(String(schedules[0].id));
         }
     }, [schedules, selectedScheduleId]);
+
+    useEffect(() => {
+        if (!selectedScheduleId || loading) return;
+        let cancelled = false;
+
+        const loadSelected = async () => {
+            try {
+                const token = await auth.currentUser.getIdToken(true);
+                const detail = await scheduleAdminApi.getManualSchedule(selectedScheduleId, token);
+                if (!cancelled) {
+                    setSchedules((prev) => replaceScheduleInList(prev, detail));
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message || 'Seçili ders programı yüklenemedi.');
+                }
+            }
+        };
+
+        loadSelected();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedScheduleId, loading]);
 
     useEffect(() => {
         setEditorState(null);
         setTimeSlotEditor(null);
         setError('');
         setNotice('');
-    }, [selectedScheduleId, selectedGradeKey]);
+    }, [selectedScheduleId, selectedClassKey]);
 
-    const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
-    const selectedGrade = selectedSchedule?.grades?.[selectedGradeKey];
-    const scheduleBoard = buildScheduleBoard(selectedGrade);
+    const selectedSchedule = schedules.find((schedule) => String(schedule.id) === String(selectedScheduleId)) || schedules[0];
+    const classOptions = getScheduleClassOptions(classes, selectedSchedule);
+    const selectedClass = buildClassScheduleView(selectedSchedule, selectedClassKey, classOptions);
+    const scheduleBoard = buildScheduleBoard(selectedClass);
     const selectedCell = editorState
         ? scheduleBoard.cellMap[makeScheduleCellKey(editorState.dayKey, editorState.time)] || createEmptyScheduleCell(editorState.dayKey, editorState.time)
         : null;
 
+    useEffect(() => {
+        if (classOptions.length === 0) {
+            if (selectedClassKey) setSelectedClassKey('');
+            return;
+        }
+
+        if (!classOptions.some((classItem) => classItem.key === selectedClassKey)) {
+            setSelectedClassKey(classOptions[0].key);
+        }
+    }, [classOptions, selectedClassKey]);
+
     const loadSchedules = async ({ successMessage = '' } = {}) => {
         try {
-            const response = await fakeScheduleApi.listSchedules();
-            setSchedules(response);
-            if (response.length > 0 && !response.some((schedule) => schedule.id === selectedScheduleId)) {
-                setSelectedScheduleId(response[0].id);
+            const token = await auth.currentUser.getIdToken(true);
+            const [classResponse, scheduleResponse] = await Promise.all([
+                scheduleAdminApi.listClasses(token),
+                scheduleAdminApi.listSchedules(token)
+            ]);
+            const activeScheduleId = selectedScheduleId || scheduleResponse[0]?.id || '';
+            const detailedSchedule = activeScheduleId
+                ? await scheduleAdminApi.getManualSchedule(activeScheduleId, token)
+                : null;
+            const nextSchedules = detailedSchedule
+                ? replaceScheduleInList(scheduleResponse, detailedSchedule)
+                : scheduleResponse;
+            setClasses(classResponse);
+            setSchedules(nextSchedules);
+            if (activeScheduleId) {
+                setSelectedScheduleId(String(activeScheduleId));
+            }
+            if (nextSchedules.length > 0 && !nextSchedules.some((schedule) => String(schedule.id) === String(activeScheduleId))) {
+                setSelectedScheduleId(String(nextSchedules[0].id));
             }
             if (successMessage) {
                 setNotice(successMessage);
@@ -663,14 +1040,27 @@ const ScheduleManager = () => {
         }
     };
 
+    const updateSelectedClassSchedule = async (nextClassSchedule, successMessage) => {
+        if (!selectedSchedule || !selectedClassKey) return;
+        const token = await auth.currentUser.getIdToken(true);
+        const updatedSchedule = await scheduleAdminApi.updateManualClassSchedule({
+            scheduleId: selectedSchedule.id,
+            classKey: selectedClassKey,
+            classSchedule: nextClassSchedule,
+            token
+        });
+        setSchedules((prev) => replaceScheduleInList(prev, updatedSchedule));
+        setNotice(successMessage);
+    };
+
     const openEditor = (cell) => {
-        const existingLesson = cell.manualLessons[0] || cell.effectiveLessons[0] || null;
+        const existingLesson = cell.manualLessons.find((lesson) => !lesson.isEmpty) || cell.effectiveLessons.find((lesson) => !lesson.isEmpty) || null;
         setError('');
         setNotice('');
         setEditorState({
             dayKey: cell.dayKey,
             time: cell.time,
-            manualLessonId: cell.manualLessons[0]?.id || '',
+            manualLessonId: cell.manualLessons[0]?.id || cell.manualLessons[0]?.time || '',
             courseCode: existingLesson?.courseCode || '',
             courseName: existingLesson?.courseName || '',
             instructor: existingLesson?.instructor || '',
@@ -689,16 +1079,16 @@ const ScheduleManager = () => {
         setTimeSlotEditor({
             slotId: slot.id,
             previousTime: slot.time,
-            sourceTime: slot.originalTime,
-            startTime: slot.time,
-            endTime: slot.endTime,
+            sourceTime: slot.time,
+            startTime: slot.startTime || extractStartTime(slot.time),
+            endTime: slot.endTime || extractEndTime(slot.time),
             isNew: false
         });
     };
 
     const openCreateTimeSlot = () => {
         const lastSlot = scheduleBoard.timeSlots[scheduleBoard.timeSlots.length - 1];
-        const defaultStart = lastSlot?.endTime || lastSlot?.time || '17:30';
+        const defaultStart = lastSlot?.endTime || extractStartTime(lastSlot?.time) || '17:30';
         setError('');
         setNotice('');
         setTimeSlotEditor({
@@ -726,15 +1116,10 @@ const ScheduleManager = () => {
 
     const handleSaveLesson = async (e) => {
         e.preventDefault();
-        if (!selectedSchedule || !editorState) return;
+        if (!selectedSchedule || !selectedClassKey || !editorState) return;
 
         if (!editorState.courseName.trim()) {
             setError('Ders adı zorunludur.');
-            return;
-        }
-
-        if (!isValidTime(editorState.time)) {
-            setError('Saat hücresi verisi geçersiz. Lütfen farklı bir kutu seçin.');
             return;
         }
 
@@ -743,25 +1128,16 @@ const ScheduleManager = () => {
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.upsertManualLesson({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                lesson: {
-                    id: editorState.manualLessonId || undefined,
-                    dayKey: editorState.dayKey,
-                    time: editorState.time.trim(),
-                    courseCode: editorState.courseCode.trim(),
-                    courseName: editorState.courseName.trim(),
-                    instructor: editorState.instructor.trim(),
-                    classroom: editorState.classroom.trim()
-                }
+            const nextClassSchedule = upsertManualLessonInClassSchedule(selectedClass.manualLessons, {
+                dayKey: editorState.dayKey,
+                time: editorState.time.trim(),
+                courseCode: editorState.courseCode.trim(),
+                courseName: editorState.courseName.trim(),
+                instructor: editorState.instructor.trim(),
+                classroom: editorState.classroom.trim()
             });
 
-            await loadSchedules({
-                successMessage: editorState.manualLessonId
-                    ? 'Hücredeki manuel ders güncellendi.'
-                    : 'Hücreye manuel ders eklendi.'
-            });
+            await updateSelectedClassSchedule(nextClassSchedule, 'Hücre kaydedildi.');
             setEditorState(null);
         } catch (err) {
             setError(err.message || 'Hücre kaydı güncellenemedi.');
@@ -771,24 +1147,24 @@ const ScheduleManager = () => {
     };
 
     const handleOverrideToggle = async () => {
-        if (!selectedSchedule || !selectedGrade) return;
+        if (!selectedSchedule) return;
 
         try {
             setSaving(true);
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.setOverride({
+            const token = await auth.currentUser.getIdToken(true);
+            const updatedSchedule = await scheduleAdminApi.setManualOverride({
                 scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                enabled: !selectedGrade.overrideEnabled
+                enabled: !selectedSchedule.manualOverrideEnabled,
+                token
             });
 
-            await loadSchedules({
-                successMessage: !selectedGrade.overrideEnabled
-                    ? 'Yalnızca kaydedilen dersler gösterilecek.'
-                    : 'Tüm ders akışı tekrar gösterilecek.'
-            });
+            setSchedules((prev) => replaceScheduleInList(prev, updatedSchedule));
+            setNotice(!selectedSchedule.manualOverrideEnabled
+                ? 'Manuel ders programı yayına alındı.'
+                : 'Otomatik ders programı tekrar yayına alındı.');
         } catch (err) {
             setError(err.message || 'Görünüm modu güncellenemedi.');
         } finally {
@@ -797,20 +1173,15 @@ const ScheduleManager = () => {
     };
 
     const handleDeleteLesson = async () => {
-        if (!selectedSchedule || !editorState?.manualLessonId) return;
+        if (!selectedSchedule || !selectedClassKey || !editorState) return;
 
         try {
             setSaving(true);
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.deleteManualLesson({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                lessonId: editorState.manualLessonId
-            });
-
-            await loadSchedules({ successMessage: 'Hücredeki manuel ders kaldırıldı.' });
+            const nextClassSchedule = removeManualLessonsForTime(selectedClass.manualLessons, editorState.dayKey, editorState.time);
+            await updateSelectedClassSchedule(nextClassSchedule, 'Hücredeki manuel kayıt kaldırıldı.');
             setEditorState(null);
         } catch (err) {
             setError(err.message || 'Manuel ders silinemedi.');
@@ -821,7 +1192,7 @@ const ScheduleManager = () => {
 
     const handleSaveTimeSlot = async (e) => {
         e.preventDefault();
-        if (!selectedSchedule || !timeSlotEditor) return;
+        if (!selectedSchedule || !selectedClassKey || !timeSlotEditor) return;
 
         if (!isValidTime(timeSlotEditor.startTime) || !isValidTime(timeSlotEditor.endTime)) {
             setError('Saat aralığı HH:MM formatında olmalıdır.');
@@ -833,36 +1204,21 @@ const ScheduleManager = () => {
             return;
         }
 
-        const hasDuplicate = scheduleBoard.timeSlots.some((slot) => (
-            slot.time === timeSlotEditor.startTime && slot.id !== timeSlotEditor.slotId
-        ));
-        if (hasDuplicate) {
-            setError('Bu başlangıç saati zaten kullanılıyor.');
-            return;
-        }
-
         try {
             setSaving(true);
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.upsertTimeSlot({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                slot: {
-                    id: timeSlotEditor.slotId || undefined,
-                    previousTime: timeSlotEditor.previousTime || undefined,
-                    sourceTime: timeSlotEditor.sourceTime || undefined,
-                    startTime: timeSlotEditor.startTime.trim(),
-                    endTime: timeSlotEditor.endTime.trim()
-                }
+            const nextTime = buildTimeLabel(timeSlotEditor.startTime.trim(), timeSlotEditor.endTime.trim());
+            const nextClassSchedule = upsertManualTimeRow(selectedClass.manualLessons, {
+                previousTime: timeSlotEditor.previousTime,
+                nextTime,
+                isNew: timeSlotEditor.isNew
             });
 
-            await loadSchedules({
-                successMessage: timeSlotEditor.isNew
-                    ? 'Yeni saat satırı eklendi.'
-                    : 'Saat satırı güncellendi.'
-            });
+            await updateSelectedClassSchedule(nextClassSchedule, timeSlotEditor.isNew
+                ? 'Yeni saat satırı eklendi.'
+                : 'Saat satırı güncellendi.');
             setEditorState(null);
             setTimeSlotEditor(null);
         } catch (err) {
@@ -873,24 +1229,63 @@ const ScheduleManager = () => {
     };
 
     const handleDeleteTimeSlot = async () => {
-        if (!selectedSchedule || !timeSlotEditor?.slotId) return;
+        if (!selectedSchedule || !selectedClassKey || !timeSlotEditor?.previousTime) return;
 
         try {
             setSaving(true);
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.deleteTimeSlot({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                slotId: timeSlotEditor.slotId
-            });
-
-            await loadSchedules({ successMessage: 'Saat satırı silindi.' });
+            const nextClassSchedule = removeManualTimeRow(selectedClass.manualLessons, timeSlotEditor.previousTime);
+            await updateSelectedClassSchedule(nextClassSchedule, 'Saat satırı silindi.');
             setEditorState(null);
             setTimeSlotEditor(null);
         } catch (err) {
             setError(err.message || 'Saat satırı silinemedi.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateClass = async (e) => {
+        e.preventDefault();
+        if (!classForm.name.trim()) return;
+
+        try {
+            setSaving(true);
+            setError('');
+            setNotice('');
+            const token = await auth.currentUser.getIdToken(true);
+            const createdClass = await scheduleAdminApi.createClass({
+                token,
+                name: classForm.name.trim(),
+                key: classForm.key.trim() || undefined
+            });
+            setClassForm({ name: '', key: '' });
+            setSelectedClassKey(createdClass.key);
+            await loadSchedules({ successMessage: 'Sınıf kaydı oluşturuldu.' });
+        } catch (err) {
+            setError(err.message || 'Sınıf kaydı oluşturulamadı.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteClass = async (classItem) => {
+        if (!classItem?.key) return;
+
+        try {
+            setSaving(true);
+            setError('');
+            setNotice('');
+            const token = await auth.currentUser.getIdToken(true);
+            await scheduleAdminApi.deleteClass({ token, idOrKey: classItem.id || classItem.key });
+            if (selectedClassKey === classItem.key) {
+                setSelectedClassKey('');
+            }
+            await loadSchedules({ successMessage: 'Sınıf kaydı silindi.' });
+        } catch (err) {
+            setError(err.message || 'Sınıf kaydı silinemedi.');
         } finally {
             setSaving(false);
         }
@@ -907,7 +1302,7 @@ const ScheduleManager = () => {
         );
     }
 
-    if (!selectedSchedule || !selectedGrade) {
+    if (!selectedSchedule) {
         return (
                 <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
                 Ders programı kaydı bulunamadı.
@@ -919,9 +1314,9 @@ const ScheduleManager = () => {
         <div className="space-y-6">
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Programı Düzenleyici</p>
-                <h3 className="mt-3 text-3xl font-bold text-white">Bir sınıf seçin, kademe belirleyin ve bir hücreye tıklayın</h3>
+                <h3 className="mt-3 text-3xl font-bold text-white">Sınıf kaydını seçin ve haftalık programı düzenleyin</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Haftalık tabloyu doğrudan düzenlemek için kutuya tıklayın. Seçilen sınıf düzeyi için sağ tarafta yalnızca son görünecek program akışını görürsünüz.
+                    Sınıflar artık backend kayıtlarından gelir. Manuel satırlar ve boş saatler seçili sınıf anahtarıyla kaydedilir.
                 </p>
             </section>
 
@@ -929,10 +1324,10 @@ const ScheduleManager = () => {
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Seçimi</p>
-                            <h4 className="text-xl font-bold text-white">Düzenlemek istediğiniz sınıfı seçin</h4>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Program Seçimi</p>
+                            <h4 className="text-xl font-bold text-white">Düzenlemek istediğiniz programı seçin</h4>
                             <p className="text-sm leading-7 text-slate-400">
-                                Açılır listeden sınıfı seçerek program görünümünü değiştirebilirsiniz.
+                                Açılır listeden programı seçerek ders programı kaydını değiştirin.
                             </p>
                         </div>
 
@@ -944,32 +1339,94 @@ const ScheduleManager = () => {
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Kayıtları</p>
+                            <h4 className="text-xl font-bold text-white">Backend sınıf listesini yönetin</h4>
+                            <p className="text-sm leading-7 text-slate-400">
+                                Anahtar, schedule içindeki sınıf anahtarıyla eşleşmelidir. Örnek: grade1.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleCreateClass} className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                            <input
+                                type="text"
+                                value={classForm.name}
+                                onChange={(e) => setClassForm((prev) => ({ ...prev, name: e.target.value }))}
+                                placeholder="1. Sınıf"
+                                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/40"
+                            />
+                            <input
+                                type="text"
+                                value={classForm.key}
+                                onChange={(e) => setClassForm((prev) => ({ ...prev, key: e.target.value }))}
+                                placeholder="grade1"
+                                className="rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400/40"
+                            />
+                            <button
+                                type="submit"
+                                disabled={saving || !classForm.name.trim()}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Plus size={16} />
+                                Sınıf Ekle
+                            </button>
+                        </form>
+
+                        <div className="mt-5 flex flex-wrap gap-3">
+                            {classOptions.length === 0 ? (
+                                <span className="text-sm text-slate-500">Henüz sınıf kaydı yok. Programdaki availableClassKeys kullanılacak.</span>
+                            ) : classOptions.map((classItem) => (
+                                <div key={classItem.key} className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedClassKey(classItem.key)}
+                                        className={`text-sm font-semibold transition ${selectedClassKey === classItem.key ? 'text-cyan-200' : 'text-slate-300 hover:text-white'}`}
+                                    >
+                                        {classItem.name || classItem.key}
+                                    </button>
+                                    {classItem.id && (
+                                        <button
+                                            type="button"
+                                            disabled={saving}
+                                            onClick={() => handleDeleteClass(classItem)}
+                                            className="rounded-full p-1 text-slate-500 transition hover:bg-red-400/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                            aria-label={`${classItem.name || classItem.key} sınıfını sil`}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                             <div>
                                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Seçili Görünüm</p>
                                 <h4 className="mt-2 text-xl font-bold text-white">
-                                    {selectedSchedule.programName} • {selectedSchedule.className}
+                                    {selectedSchedule.programName} {selectedSchedule.className ? `• ${selectedSchedule.className}` : ''}
                                 </h4>
                                 <p className="mt-2 text-sm leading-7 text-slate-400">
-                                    Sınıf düzeyini seçin, sonra tabloda bir kutuya tıklayıp dersi girin. Sağ panel seçili düzey için son akışı gösterir.
+                                    Seçili sınıf: <span className="text-slate-200">{selectedClass.label || selectedClassKey || 'Sınıf seçilmedi'}</span>
                                 </p>
                             </div>
 
                             <div className="flex flex-col gap-4 xl:items-end">
                                 <div className="space-y-2">
-                                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Düzeyi</span>
+                                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf</span>
                                     <div className="flex rounded-2xl border border-white/10 bg-slate-950/60 p-1">
-                                        {GRADE_OPTIONS.map((grade) => (
+                                        {classOptions.map((grade) => (
                                             <button
                                                 type="button"
                                                 key={grade.key}
-                                                onClick={() => setSelectedGradeKey(grade.key)}
-                                                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedGradeKey === grade.key
+                                                onClick={() => setSelectedClassKey(grade.key)}
+                                                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedClassKey === grade.key
                                                     ? 'bg-cyan-500 text-slate-950'
                                                     : 'text-slate-400 hover:text-white'
                                                     }`}
                                             >
-                                                {grade.label}
+                                                {grade.name || grade.key}
                                             </button>
                                         ))}
                                     </div>
@@ -979,19 +1436,19 @@ const ScheduleManager = () => {
                                     type="button"
                                     onClick={handleOverrideToggle}
                                     disabled={saving}
-                                    className={`inline-flex items-center justify-center rounded-2xl border px-5 py-3 text-sm font-bold transition ${selectedGrade.overrideEnabled
+                                    className={`inline-flex items-center justify-center rounded-2xl border px-5 py-3 text-sm font-bold transition ${selectedSchedule.manualOverrideEnabled
                                         ? 'border-amber-400/30 bg-amber-400/15 text-amber-200'
                                         : 'border-white/10 bg-white/5 text-slate-300'
                                         } ${saving ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01]'}`}
                                 >
-                                    {selectedGrade.overrideEnabled ? 'Yalnızca Kaydedilen Dersler' : 'Tüm Geçerli Dersler'}
+                                    {selectedSchedule.manualOverrideEnabled ? 'Manuel Program Yayında' : 'Otomatik Program Yayında'}
                                 </button>
                             </div>
                         </div>
 
-                        {selectedGrade.overrideEnabled && selectedGrade.counts.manual === 0 && (
+                        {selectedSchedule.manualOverrideEnabled && selectedClass.counts.manual === 0 && (
                             <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-6 text-amber-100">
-                                Bu mod açık ancak bu sınıf düzeyi için henüz kaydedilmiş ders yok.
+                                Manuel yayın açık ancak bu sınıf için henüz kaydedilmiş ders yok.
                             </div>
                         )}
                     </div>
@@ -1008,9 +1465,10 @@ const ScheduleManager = () => {
 
                 <div className="space-y-6">
                     <SchedulePreviewCard
-                        title="Seçili Sınıf Düzeyi Akışı"
-                        description="Sağdaki liste, seçili sınıf düzeyi için son görünecek akışı gösterir."
-                        lessonMap={selectedGrade.effectiveLessons}
+                        title="Seçili Sınıf Akışı"
+                        description="Sağdaki liste, seçili sınıf için öğrencinin göreceği son akışı gösterir."
+                        lessonMap={selectedClass.effectiveLessons}
+                        dayOptions={selectedClass.dayOptions}
                         emptyText="Bu seçim için gösterilecek ders yok."
                     />
                 </div>
@@ -1059,6 +1517,9 @@ const EventForm = ({ onBack, onCreated, user }) => {
     const [formData, setFormData] = useState({
         title: '',
         date: '',
+        dateTime: '',
+        registrationEndDate: '',
+        registrationEndTime: '',
         description: '',
         creatorName: 'AkademiZ Admin',
         location: '',
@@ -1072,8 +1533,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
     const [uploadingTarget, setUploadingTarget] = useState('');
     const [submitError, setSubmitError] = useState('');
 
-    const handleImageUpload = async (e, type) => {
-        const files = Array.from(e.target.files || []);
+    const uploadImageFiles = async (files, type) => {
         if (files.length === 0) return;
 
         setUploadingTarget(type);
@@ -1114,8 +1574,30 @@ const EventForm = ({ onBack, onCreated, user }) => {
             alert(err.message);
         } finally {
             setUploadingTarget('');
-            e.target.value = '';
         }
+    };
+
+    const handleImageUpload = async (e, type) => {
+        const files = Array.from(e.target.files || []);
+        await uploadImageFiles(files, type);
+        e.target.value = '';
+    };
+
+    const handleMediaPaste = async (e) => {
+        const clipboardItems = Array.from(e.clipboardData?.items || []);
+        const pastedFiles = clipboardItems
+            .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+            .map((item) => item.getAsFile())
+            .filter(Boolean);
+
+        const fallbackFiles = Array.from(e.clipboardData?.files || [])
+            .filter((file) => file.type.startsWith('image/'));
+
+        const files = pastedFiles.length > 0 ? pastedFiles : fallbackFiles;
+        if (files.length === 0 || uploadingTarget) return;
+
+        e.preventDefault();
+        await uploadImageFiles(files, 'gallery');
     };
 
     const removeGalleryImage = (index) => {
@@ -1125,26 +1607,39 @@ const EventForm = ({ onBack, onCreated, user }) => {
         }));
     };
 
+    const buildDateTimeValue = (dateValue, timeValue) => (
+        dateValue ? `${dateValue}T${timeValue || '00:00'}` : ''
+    );
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setSubmitError('');
         try {
+            const submitterStatus = e.nativeEvent?.submitter?.value;
+            const isActive = submitterStatus !== 'draft';
+            const draftDate = formData.date || new Date().toISOString().slice(0, 10);
             const token = await auth.currentUser.getIdToken(true);
             const parsedEventLength = parseFloat(formData.eventLength);
             const parsedMaxJoiners = parseInt(formData.maxJoiners, 10);
             const parsedTags = formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
 
             const payload = {
-                title: formData.title.trim(),
-                date: formData.date,
-                description: formData.description.trim(),
+                title: formData.title.trim() || (isActive ? '' : 'Başlıksız Taslak'),
+                date: buildDateTimeValue(isActive ? formData.date : draftDate, formData.dateTime),
+                description: formData.description.trim() || (isActive ? '' : 'Taslak açıklaması daha sonra eklenecek.'),
                 creatorName: formData.creatorName.trim() || 'AkademiZ Admin',
                 location: formData.location.trim(),
                 thumbnailUrl: formData.thumbnailUrl,
                 tags: JSON.stringify(parsedTags),
-                carouselImages: JSON.stringify(formData.carouselImages)
+                carouselImages: JSON.stringify(formData.carouselImages),
+                isActive,
+                status: isActive ? 'active' : 'draft'
             };
+
+            if (formData.registrationEndDate) {
+                payload.registrationEndDate = buildDateTimeValue(formData.registrationEndDate, formData.registrationEndTime);
+            }
 
             if (Number.isFinite(parsedEventLength)) {
                 payload.eventLength = parsedEventLength;
@@ -1163,9 +1658,13 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
+                const createdEvent = await res.json().catch(() => null);
                 setFormData({
                     title: '',
                     date: '',
+                    dateTime: '',
+                    registrationEndDate: '',
+                    registrationEndTime: '',
                     description: '',
                     creatorName: 'AkademiZ Admin',
                     location: '',
@@ -1175,7 +1674,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                     thumbnailUrl: '',
                     carouselImages: []
                 });
-                onCreated?.();
+                onCreated?.(createdEvent);
             } else {
                 const text = await res.text();
                 throw new Error(text || 'Etkinlik oluşturulamadı.');
@@ -1214,8 +1713,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 <section className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                     <div className="mb-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Temel Bilgiler</p>
-                        <h4 className="mt-2 text-xl font-bold text-white">Gerekli olan kısım kısa tutuldu</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-400">Yalnızca başlık ve tarih zorunlu. Açıklamayı kısa bırakabilirsiniz.</p>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">Başlık, tarih ve kısa açıklama yeterli. Diğer alanları sonra tamamlayabilirsiniz.</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1232,14 +1730,46 @@ const EventForm = ({ onBack, onCreated, user }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-300">Tarih ve Saat</label>
+                            <label className="text-sm font-medium text-slate-300">Tarih</label>
                             <input
                                 required
-                                type="datetime-local"
+                                type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                 className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-500/50"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Saat (Opsiyonel)</label>
+                            <input
+                                type="time"
+                                value={formData.dateTime}
+                                onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                            />
+                            <p className="text-xs text-slate-600">Boş bırakılırsa 00:00 kullanılır.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Kayıt Bitiş Tarihi</label>
+                            <input
+                                type="date"
+                                value={formData.registrationEndDate}
+                                onChange={(e) => setFormData({ ...formData, registrationEndDate: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-500">Kayıt Bitiş Saati (Opsiyonel)</label>
+                            <input
+                                type="time"
+                                value={formData.registrationEndTime}
+                                onChange={(e) => setFormData({ ...formData, registrationEndTime: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                            />
+                            <p className="text-xs text-slate-600">Boş bırakılırsa 00:00 kullanılır.</p>
                         </div>
 
                         <div className="space-y-2">
@@ -1256,6 +1786,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                         <div className="space-y-2 md:col-span-2">
                             <label className="text-sm font-medium text-slate-500">Kısa Açıklama</label>
                             <textarea
+                                required
                                 rows="4"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1269,7 +1800,6 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 <section className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6 backdrop-blur-xl">
                     <div className="mb-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">İsteğe Bağlı Özelleştirmeler</p>
-                        <h4 className="mt-2 text-xl font-bold text-slate-200">Detay isteyenler için hafif ikinci katman</h4>
                         <p className="mt-2 text-sm leading-7 text-slate-500">Bu ayarlar zorunlu değil. Girmeden de etkinlik oluşturabilirsiniz.</p>
                     </div>
 
@@ -1321,11 +1851,14 @@ const EventForm = ({ onBack, onCreated, user }) => {
                     </div>
                 </section>
 
-                <section className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 backdrop-blur-xl">
+                <section
+                    onPaste={handleMediaPaste}
+                    tabIndex={0}
+                    className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 backdrop-blur-xl outline-none transition focus:border-cyan-500/30"
+                >
                     <div className="mb-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Medya</p>
-                        <h4 className="mt-2 text-xl font-bold text-white">Kaybolan görsel seçeneklerini geri getirdim</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-500">Kapak görseli ekleyebilir, ayrıca etkinlik sayfası için küçük bir galeri oluşturabilirsiniz.</p>
+                        <p className="mt-2 text-sm leading-7 text-slate-500">Kapak görseli ekleyebilir, etkinlik galerisi için dosya seçebilir veya bu alana görsel yapıştırabilirsiniz.</p>
                     </div>
 
                     <div className="space-y-6">
@@ -1384,7 +1917,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                                     ) : (
                                         <Upload className="h-5 w-5" />
                                     )}
-                                    <span className="text-sm">Galeri için bir veya birden fazla görsel ekleyin</span>
+                                    <span className="text-sm">Galeri için bir veya birden fazla görsel ekleyin ya da bu alana yapıştırın</span>
                                 </div>
                             </div>
 
@@ -1424,11 +1957,22 @@ const EventForm = ({ onBack, onCreated, user }) => {
                     </button>
                     <button
                         type="submit"
+                        value="draft"
+                        formNoValidate
+                        disabled={isSubmitting || uploadingTarget !== ''}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-6 py-3 text-sm font-bold text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Pencil size={18} />}
+                        Taslak olarak Kaydet
+                    </button>
+                    <button
+                        type="submit"
+                        value="active"
                         disabled={isSubmitting || uploadingTarget !== ''}
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                        Etkinliği Oluştur
+                        Etkinliği Yayınla
                     </button>
                 </div>
             </form>
@@ -1448,7 +1992,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                         <div className="space-y-4 p-5">
                             <div>
                                 <div className="text-lg font-bold text-white">{formData.title || 'Etkinlik başlığı burada görünecek'}</div>
-                                <div className="mt-2 text-sm text-slate-500">{formData.date ? new Date(formData.date).toLocaleString('tr-TR') : 'Tarih seçilmedi'}</div>
+                                <div className="mt-2 text-sm text-slate-500">{formData.date ? new Date(buildDateTimeValue(formData.date, formData.dateTime)).toLocaleString('tr-TR') : 'Tarih seçilmedi'}</div>
                             </div>
 
                             <div className="text-sm leading-6 text-slate-400">
@@ -1458,6 +2002,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                             <div className="space-y-2 text-sm text-slate-500">
                                 <div>Oluşturan: <span className="text-slate-300">{formData.creatorName || 'AkademiZ Admin'}</span></div>
                                 <div>Konum: <span className="text-slate-300">{formData.location || 'Belirtilmedi'}</span></div>
+                                <div>Kayıt Bitiş: <span className="text-slate-300">{formData.registrationEndDate ? new Date(buildDateTimeValue(formData.registrationEndDate, formData.registrationEndTime)).toLocaleString('tr-TR') : 'Belirtilmedi'}</span></div>
                                 <div>Süre: <span className="text-slate-300">{formData.eventLength || 'Belirtilmedi'}</span></div>
                                 <div>Katılımcı: <span className="text-slate-300">{formData.maxJoiners || 'Belirtilmedi'}</span></div>
                             </div>
@@ -1827,8 +2372,9 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
 };
 
 const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot, saving }) => {
+    const dayOptions = board.dayOptions?.length ? board.dayOptions : SCHEDULE_DAYS;
     const template = {
-        gridTemplateColumns: `92px repeat(${SCHEDULE_DAYS.length}, minmax(152px, 1fr))`
+        gridTemplateColumns: `92px repeat(${dayOptions.length}, minmax(152px, 1fr))`
     };
 
     return (
@@ -1863,7 +2409,7 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                             <div className="mt-2 text-sm font-semibold text-slate-200">Gün</div>
                         </div>
 
-                        {SCHEDULE_DAYS.map((day) => (
+                        {dayOptions.map((day) => (
                             <div
                                 key={day.key}
                                 className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4"
@@ -1895,7 +2441,7 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                                     </div>
                                 </button>
 
-                                {SCHEDULE_DAYS.map((day) => {
+                                {dayOptions.map((day) => {
                                     const cell = board.cellMap[makeScheduleCellKey(day.key, slot.time)] || createEmptyScheduleCell(day.key, slot.time);
                                     return (
                                         <ScheduleBoardCell
@@ -1917,6 +2463,7 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
 
 const ScheduleBoardCell = ({ cell, saving, onClick }) => {
     const isEmpty = cell.mode === 'empty';
+    const isPersistentEmpty = cell.primaryLesson?.isEmpty;
     const styles = {
         empty: 'border-white/8 bg-slate-950/40 hover:border-cyan-400/20 hover:bg-cyan-400/6',
         generated: 'border-cyan-400/18 bg-cyan-400/10 hover:border-cyan-300/35 hover:bg-cyan-400/14',
@@ -1937,7 +2484,7 @@ const ScheduleBoardCell = ({ cell, saving, onClick }) => {
             className={`flex min-h-[122px] flex-col rounded-2xl border px-4 py-4 text-left transition ${styles[cell.mode] || styles.empty} ${saving ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
         >
             <div className={`text-sm font-bold leading-5 ${isEmpty ? 'text-slate-300' : 'text-white'}`}>
-                {isEmpty ? '+' : cell.primaryLesson?.courseName || 'Ders'}
+                {isEmpty ? '+' : isPersistentEmpty ? 'Boş satır' : cell.primaryLesson?.courseName || 'Ders'}
             </div>
 
             <div className="mt-auto pt-3 text-xs leading-5 text-slate-400">
@@ -2186,8 +2733,10 @@ const ScheduleTimeSlotModal = ({
     );
 };
 
-const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
-    const entries = getOrderedLessonEntries(lessonMap);
+const SchedulePreviewCard = ({ title, description, lessonMap, dayOptions, emptyText }) => {
+    const entries = getOrderedLessonEntries(lessonMap, dayOptions)
+        .map(([dayKey, lessons]) => [dayKey, lessons.filter((lesson) => !lesson.isEmpty)])
+        .filter(([, lessons]) => lessons.length > 0);
 
     return (
         <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
@@ -2236,296 +2785,242 @@ const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
     );
 };
 
-const fakeScheduleApi = {
-    async listSchedules() {
-        await wait(180);
-        return buildScheduleSnapshot();
+const scheduleAdminApi = {
+    async listClasses(token) {
+        return adminJsonFetch('/admin/classes', { token });
     },
 
-    async upsertManualLesson({ scheduleId, gradeKey, lesson }) {
-        await wait(180);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-        const currentDayLessons = (currentGrade.manualLessons || {})[lesson.dayKey] || [];
-
-        const nextLesson = {
-            id: lesson.id || `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            time: lesson.time,
-            courseCode: lesson.courseCode,
-            courseName: lesson.courseName,
-            instructor: lesson.instructor,
-            classroom: lesson.classroom,
-            source: 'manual'
-        };
-        const nextDayLessons = [
-            ...currentDayLessons.filter((item) => item.id !== lesson.id && item.time !== lesson.time),
-            nextLesson
-        ].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-
-        const nextStorage = {
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    manualLessons: {
-                        ...(currentGrade.manualLessons || {}),
-                        [lesson.dayKey]: nextDayLessons
-                    }
-                }
-            }
-        };
-
-        writeScheduleStorage(nextStorage);
-        return buildScheduleSnapshot();
-    },
-
-    async setOverride({ scheduleId, gradeKey, enabled }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    overrideEnabled: enabled
-                }
-            }
+    async createClass({ token, name, key }) {
+        return adminJsonFetch('/admin/classes', {
+            token,
+            method: 'POST',
+            body: { name, key }
         });
-
-        return buildScheduleSnapshot();
     },
 
-    async deleteManualLesson({ scheduleId, gradeKey, lessonId }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-
-        const nextManualLessons = Object.fromEntries(
-            Object.entries(currentGrade.manualLessons || {}).map(([dayKey, lessons]) => [
-                dayKey,
-                lessons.filter((lesson) => lesson.id !== lessonId)
-            ]).filter(([, lessons]) => lessons.length > 0)
-        );
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    manualLessons: nextManualLessons
-                }
-            }
+    async deleteClass({ token, idOrKey }) {
+        return adminJsonFetch(`/admin/classes/${encodeURIComponent(idOrKey)}`, {
+            token,
+            method: 'DELETE'
         });
-
-        return buildScheduleSnapshot();
     },
 
-    async upsertTimeSlot({ scheduleId, gradeKey, slot }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
-        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
-        const slotId = slot.id || `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const sourceTime = slot.sourceTime || slot.startTime;
-
-        const nextTimeSlots = [...timeSlots.filter((item) => item.id !== slotId), {
-            id: slotId,
-            originalTime: sourceTime,
-            startTime: slot.startTime,
-            endTime: slot.endTime
-        }].sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    timeSlots: nextTimeSlots,
-                    manualLessons: slot.previousTime && slot.previousTime !== slot.startTime
-                        ? moveManualLessonsToNewTime(currentGrade.manualLessons, slot.previousTime, slot.startTime)
-                        : currentGrade.manualLessons
-                }
-            }
-        });
-
-        return buildScheduleSnapshot();
+    async listSchedules(token) {
+        return adminJsonFetch('/schedules', { token });
     },
 
-    async deleteTimeSlot({ scheduleId, gradeKey, slotId }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
-        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
-        const targetSlot = timeSlots.find((slot) => slot.id === slotId);
-        if (!targetSlot) {
-            return buildScheduleSnapshot();
-        }
+    async getManualSchedule(scheduleId, token) {
+        return adminJsonFetch(`/schedules/${encodeURIComponent(scheduleId)}/manual`, { token });
+    },
 
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    timeSlots: timeSlots.filter((slot) => slot.id !== slotId),
-                    manualLessons: removeManualLessonsForTime(currentGrade.manualLessons, targetSlot.startTime)
-                }
-            }
+    async updateManualClassSchedule({ scheduleId, classKey, classSchedule, token }) {
+        return adminJsonFetch(`/schedules/${encodeURIComponent(scheduleId)}/manual/${encodeURIComponent(classKey)}`, {
+            token,
+            method: 'PUT',
+            body: { schedule: stripLessonEditorFields(classSchedule) }
         });
+    },
 
-        return buildScheduleSnapshot();
+    async setManualOverride({ scheduleId, enabled, token }) {
+        return adminJsonFetch(`/schedules/${encodeURIComponent(scheduleId)}/manual-override`, {
+            token,
+            method: 'PATCH',
+            body: { enabled }
+        });
     }
 };
 
-const buildScheduleSnapshot = () => {
-    const storage = readScheduleStorage();
-
-    return SCHEDULE_SEED_DATA.map((schedule) => {
-        const storedSchedule = storage[schedule.id] || {};
-        const grades = Object.fromEntries(
-            GRADE_OPTIONS.map(({ key }) => {
-                const gradeState = getStoredGradeState(storedSchedule, '', key);
-                const timeSlots = normalizeStoredTimeSlots(gradeState.timeSlots);
-                const generatedLessons = mapGeneratedLessonsToTimeSlots(schedule.generated[key] || {}, timeSlots);
-                const manualLessons = normalizeLessonMap(gradeState.manualLessons || {});
-                const overrideEnabled = gradeState.overrideEnabled === true;
-                const effectiveLessons = overrideEnabled
-                    ? normalizeLessonMap(markLessonsAsManual(manualLessons))
-                    : mergeLessonMaps(generatedLessons, manualLessons);
-
-                return [key, {
-                    overrideEnabled,
-                    timeSlots,
-                    generatedLessons,
-                    manualLessons: normalizeLessonMap(markLessonsAsManual(manualLessons)),
-                    effectiveLessons,
-                    counts: {
-                        generated: countLessons(generatedLessons),
-                        manual: countLessons(manualLessons),
-                        effective: countLessons(effectiveLessons)
-                    }
-                }];
-            })
-        );
-
-        return {
-            ...schedule,
-            grades
-        };
+const adminJsonFetch = async (path, { token, method = 'GET', body } = {}) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            ...(body ? { 'Content-Type': 'application/json' } : {})
+        },
+        ...(body ? { body: JSON.stringify(body) } : {})
     });
-};
 
-const readScheduleStorage = () => {
-    if (typeof window === 'undefined') return {};
-
-    try {
-        const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : {};
-    } catch (err) {
-        console.error('Failed to read fake schedule storage', err);
-        return {};
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `${path} isteği başarısız oldu: ${res.status}`);
     }
+
+    if (res.status === 204) return null;
+    return res.json();
 };
 
-const writeScheduleStorage = (value) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(value));
+const replaceScheduleInList = (schedules, nextSchedule) => {
+    if (!nextSchedule) return schedules;
+    const exists = schedules.some((schedule) => String(schedule.id) === String(nextSchedule.id));
+    if (!exists) return [...schedules, nextSchedule];
+    return schedules.map((schedule) => String(schedule.id) === String(nextSchedule.id) ? nextSchedule : schedule);
 };
 
-const getDefaultGradeState = () => ({
-    overrideEnabled: false,
-    manualLessons: {},
-    timeSlots: createDefaultTimeSlots()
-});
-
-const getStoredGradeState = (storage, scheduleId, gradeKey) => {
-    if (scheduleId) {
-        return {
-            ...getDefaultGradeState(),
-            ...(storage[scheduleId]?.[gradeKey] || {})
-        };
+const getScheduleClassOptions = (classes = [], schedule) => {
+    if (classes.length > 0) {
+        return [...classes].sort((left, right) => (left.sortOrder || 0) - (right.sortOrder || 0));
     }
+
+    const keys = schedule?.availableClassKeys?.length
+        ? schedule.availableClassKeys
+        : getClassKeysFromSchedule(schedule);
+
+    return keys.map((key) => ({ key, name: key }));
+};
+
+const getClassKeysFromSchedule = (schedule) => {
+    const keySet = new Set([
+        ...Object.keys(schedule?.schedule || {}),
+        ...Object.keys(schedule?.effectiveSchedule || {}),
+        ...Object.keys(schedule?.manualSchedule || {}),
+        ...Object.keys(schedule?.autoSchedule || {}),
+        ...Object.keys(schedule?.autoScheduleRaw || {})
+    ]);
+
+    return [...keySet];
+};
+
+const buildClassScheduleView = (schedule, selectedClassKey, classOptions = []) => {
+    const fallbackKey = classOptions[0]?.key || getClassKeysFromSchedule(schedule)[0] || '';
+    const classKey = selectedClassKey || fallbackKey;
+    const classMeta = classOptions.find((classItem) => classItem.key === classKey);
+    const autoLessons = normalizeLessonMap((schedule?.autoSchedule?.[classKey] || schedule?.autoScheduleRaw?.[classKey] || {}), 'generated');
+    const manualLessons = normalizeLessonMap(schedule?.manualSchedule?.[classKey] || {}, 'manual');
+    const effectiveLessons = normalizeLessonMap((schedule?.effectiveSchedule?.[classKey] || schedule?.schedule?.[classKey] || {}), schedule?.manualOverrideEnabled ? 'manual' : 'generated');
+    const dayOptions = getScheduleDayOptions(autoLessons, manualLessons, effectiveLessons);
 
     return {
-        ...getDefaultGradeState(),
-        ...(storage[gradeKey] || {})
+        key: classKey,
+        label: classMeta?.name || classKey,
+        dayOptions,
+        generatedLessons: autoLessons,
+        manualLessons,
+        effectiveLessons,
+        counts: {
+            generated: countLessons(autoLessons),
+            manual: countLessons(manualLessons),
+            effective: countLessons(effectiveLessons)
+        }
     };
+};
+
+const getScheduleDayOptions = (...lessonMaps) => {
+    const knownKeys = new Set(SCHEDULE_DAYS.map((day) => day.key));
+    const customKeys = new Set();
+
+    lessonMaps.forEach((lessonMap) => {
+        Object.keys(lessonMap || {}).forEach((dayKey) => {
+            if (!knownKeys.has(dayKey)) {
+                customKeys.add(dayKey);
+            }
+        });
+    });
+
+    return [
+        ...SCHEDULE_DAYS,
+        ...[...customKeys].map((key) => ({ key, label: key }))
+    ];
 };
 
 const createDefaultTimeSlots = () => DEFAULT_SCHEDULE_TIMES.map((time) => ({
     id: `slot-${time}`,
     originalTime: time,
+    time,
     startTime: time,
     endTime: addMinutesToTime(time, 50)
 }));
 
-const normalizeStoredTimeSlots = (timeSlots = []) => {
-    const source = timeSlots.length > 0 ? timeSlots : createDefaultTimeSlots();
-    return [...source]
-        .map((slot) => ({
-            id: slot.id || `slot-${slot.originalTime || slot.startTime}`,
-            originalTime: slot.originalTime || slot.startTime,
-            startTime: slot.startTime,
-            endTime: slot.endTime || addMinutesToTime(slot.startTime, 50)
-        }))
-        .filter((slot) => isValidTime(slot.startTime) && isValidTime(slot.endTime))
-        .sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
-};
-
-const normalizeLessonMap = (lessonMap = {}) => {
+const normalizeLessonMap = (lessonMap = {}, source = '') => {
     const result = {};
 
     Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
         result[dayKey] = [...lessons]
-            .map((lesson) => ({ ...lesson }))
+            .filter((lesson) => lesson?.time)
+            .map((lesson, index) => ({
+                ...lesson,
+                id: lesson.id || `${dayKey}-${lesson.time}-${index}`,
+                ...(source ? { source } : {})
+            }))
             .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
     });
 
     return result;
 };
 
-const moveManualLessonsToNewTime = (lessonMap = {}, previousTime, nextTime) => {
-    const result = {};
+const upsertManualLessonInClassSchedule = (lessonMap = {}, lesson) => {
+    const result = cloneLessonMap(lessonMap);
+    const currentLessons = result[lesson.dayKey] || [];
+    const nextLessons = [
+        ...currentLessons.filter((item) => item.time !== lesson.time),
+        { ...lesson, isEmpty: false }
+    ].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
 
-    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
-        const nextLessons = lessons
-            .map((lesson) => (
-                lesson.time === previousTime
-                    ? { ...lesson, time: nextTime }
-                    : { ...lesson }
-            ))
-            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-
-        if (nextLessons.length > 0) {
-            result[dayKey] = nextLessons;
-        }
-    });
-
+    result[lesson.dayKey] = nextLessons;
     return result;
 };
 
-const removeManualLessonsForTime = (lessonMap = {}, removedTime) => Object.fromEntries(
-    Object.entries(lessonMap || {})
+const removeManualLessonsForTime = (lessonMap = {}, dayKey, removedTime) => {
+    const result = cloneLessonMap(lessonMap);
+    result[dayKey] = (result[dayKey] || []).filter((lesson) => lesson.time !== removedTime);
+    if (result[dayKey].length === 0) {
+        delete result[dayKey];
+    }
+    return result;
+};
+
+const upsertManualTimeRow = (lessonMap = {}, { previousTime, nextTime, isNew }) => {
+    const result = cloneLessonMap(lessonMap);
+    let movedAny = false;
+
+    if (!isNew && previousTime) {
+        Object.entries(result).forEach(([dayKey, lessons]) => {
+            result[dayKey] = lessons.map((lesson) => {
+                if (lesson.time !== previousTime) return lesson;
+                movedAny = true;
+                return { ...lesson, time: nextTime };
+            });
+        });
+    }
+
+    if (isNew || !movedAny) {
+        const firstDayKey = SCHEDULE_DAYS[0].key;
+        result[firstDayKey] = [
+            ...(result[firstDayKey] || []).filter((lesson) => lesson.time !== nextTime),
+            { time: nextTime, courseCode: '', courseName: '', instructor: '', classroom: '', isEmpty: true }
+        ];
+    }
+
+    return sortLessonMap(result);
+};
+
+const removeManualTimeRow = (lessonMap = {}, removedTime) => Object.fromEntries(
+    Object.entries(cloneLessonMap(lessonMap))
         .map(([dayKey, lessons]) => [
             dayKey,
-            lessons.filter((lesson) => lesson.time !== removedTime).map((lesson) => ({ ...lesson }))
+            lessons.filter((lesson) => lesson.time !== removedTime)
         ])
         .filter(([, lessons]) => lessons.length > 0)
+);
+
+const cloneLessonMap = (lessonMap = {}) => Object.fromEntries(
+    Object.entries(lessonMap || {}).map(([dayKey, lessons]) => [
+        dayKey,
+        (lessons || []).map((lesson) => ({ ...lesson }))
+    ])
+);
+
+const sortLessonMap = (lessonMap = {}) => Object.fromEntries(
+    Object.entries(lessonMap).map(([dayKey, lessons]) => [
+        dayKey,
+        [...lessons].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time))
+    ])
+);
+
+const stripLessonEditorFields = (lessonMap = {}) => Object.fromEntries(
+    Object.entries(lessonMap || {}).map(([dayKey, lessons]) => [
+        dayKey,
+        (lessons || []).map(({ id, source, dayKey: _dayKey, ...lesson }) => lesson)
+    ])
 );
 
 const markLessonsAsManual = (lessonMap = {}) => Object.fromEntries(
@@ -2552,30 +3047,30 @@ const countLessons = (lessonMap = {}) => Object.values(lessonMap).reduce(
     0
 );
 
-const countLessonsAcrossSchedules = (schedules, key) => schedules.reduce(
-    (total, schedule) => total + GRADE_OPTIONS.reduce(
-        (gradeTotal, grade) => gradeTotal + (schedule.grades?.[grade.key]?.counts?.[key === 'manualLessons' ? 'manual' : 'effective'] || 0),
-        0
-    ),
-    0
-);
-
-const countOverridesAcrossSchedules = (schedules) => schedules.reduce(
-    (total, schedule) => total + GRADE_OPTIONS.reduce(
-        (gradeTotal, grade) => gradeTotal + (schedule.grades?.[grade.key]?.overrideEnabled ? 1 : 0),
-        0
-    ),
-    0
-);
-
 const timeToMinutes = (value = '') => {
-    const parts = value.split(':');
+    const parts = extractStartTime(value).split(':');
     if (parts.length !== 2) return 9999;
 
     const hours = Number(parts[0]);
     const minutes = Number(parts[1]);
     return Number.isNaN(hours) || Number.isNaN(minutes) ? 9999 : (hours * 60) + minutes;
 };
+
+const extractStartTime = (value = '') => {
+    const match = String(value).match(/(\d{1,2}):(\d{2})/);
+    if (!match) return '';
+    return `${match[1].padStart(2, '0')}:${match[2]}`;
+};
+
+const extractEndTime = (value = '') => {
+    const matches = [...String(value).matchAll(/(\d{1,2}):(\d{2})/g)];
+    if (matches.length < 2) return '';
+    return `${matches[1][1].padStart(2, '0')}:${matches[1][2]}`;
+};
+
+const buildTimeLabel = (startTime, endTime) => (
+    endTime ? `${startTime}-${endTime}` : startTime
+);
 
 const isValidTime = (value = '') => {
     const parts = value.trim().split(':');
@@ -2587,6 +3082,7 @@ const isValidTime = (value = '') => {
 };
 
 const formatLessonMeta = (lesson) => {
+    if (lesson?.isEmpty) return 'Boş satır';
     return [lesson.courseCode, lesson.classroom, lesson.instructor].filter(Boolean).join(' • ') || 'Detay belirtilmedi';
 };
 
@@ -2655,15 +3151,36 @@ const mapGeneratedLessonsToTimeSlots = (lessonMap = {}, timeSlots = []) => {
     return result;
 };
 
+const createTimeSlotsFromLessonMaps = (...lessonMaps) => {
+    const slotMap = new Map(createDefaultTimeSlots().map((slot) => [slot.time, slot]));
+
+    lessonMaps.forEach((lessonMap) => {
+        Object.values(lessonMap || {}).forEach((lessons) => {
+            lessons.forEach((lesson) => {
+                if (!lesson?.time || slotMap.has(lesson.time)) return;
+                const startTime = extractStartTime(lesson.time);
+                const endTime = extractEndTime(lesson.time);
+                slotMap.set(lesson.time, {
+                    id: `slot-${lesson.time}`,
+                    originalTime: lesson.time,
+                    time: lesson.time,
+                    startTime,
+                    endTime
+                });
+            });
+        });
+    });
+
+    return [...slotMap.values()].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+};
+
 const buildScheduleBoard = (grade) => {
+    const dayOptions = grade?.dayOptions?.length ? grade.dayOptions : SCHEDULE_DAYS;
+
     if (!grade) {
         return {
-            timeSlots: createDefaultTimeSlots().map((slot) => ({
-                id: slot.id,
-                originalTime: slot.originalTime,
-                time: slot.startTime,
-                endTime: slot.endTime
-            })),
+            dayOptions,
+            timeSlots: createDefaultTimeSlots(),
             cellMap: {},
             filledCells: 0
         };
@@ -2672,16 +3189,15 @@ const buildScheduleBoard = (grade) => {
     const generatedByCell = indexLessonsByCell(grade.generatedLessons);
     const manualByCell = indexLessonsByCell(grade.manualLessons);
     const effectiveByCell = indexLessonsByCell(grade.effectiveLessons);
-    const normalizedTimeSlots = normalizeStoredTimeSlots(grade.timeSlots).map((slot) => ({
-        id: slot.id,
-        originalTime: slot.originalTime,
-        time: slot.startTime,
-        endTime: slot.endTime
-    }));
+    const normalizedTimeSlots = createTimeSlotsFromLessonMaps(
+        grade.generatedLessons,
+        grade.manualLessons,
+        grade.effectiveLessons
+    );
     const cellMap = {};
 
     normalizedTimeSlots.forEach(({ time }) => {
-        SCHEDULE_DAYS.forEach((day) => {
+        dayOptions.forEach((day) => {
             const key = makeScheduleCellKey(day.key, time);
             const generatedLessons = generatedByCell[key] || [];
             const manualLessons = manualByCell[key] || [];
@@ -2708,17 +3224,18 @@ const buildScheduleBoard = (grade) => {
     });
 
     return {
+        dayOptions,
         timeSlots: normalizedTimeSlots,
         cellMap,
         filledCells: Object.values(cellMap).filter((cell) => cell.mode !== 'empty').length
     };
 };
 
-const getOrderedLessonEntries = (lessonMap = {}) => {
+const getOrderedLessonEntries = (lessonMap = {}, dayOptions = SCHEDULE_DAYS) => {
     const usedKeys = new Set();
     const ordered = [];
 
-    SCHEDULE_DAYS.forEach((day) => {
+    dayOptions.forEach((day) => {
         const lessons = lessonMap[day.key];
         if (lessons && lessons.length > 0) {
             ordered.push([day.key, lessons]);
