@@ -20,6 +20,7 @@ Authorization: Bearer <FIREBASE_ID_TOKEN>
 ```
 
 ---
+
 ## Endpoints
 
 ### 🏥 Health Check
