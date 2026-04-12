@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Rocket, ChevronDown, Globe } from 'lucide-react';
+import { Menu, X, ChevronDown, Globe } from 'lucide-react';
 
 export default function Navbar({ lang = 'en' }) {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -16,11 +16,12 @@ export default function Navbar({ lang = 'en' }) {
     }, []);
 
     const languages = [
-        { code: 'en', name: 'English', flag: '🇬🇧' },
-        { code: 'tr', name: 'Türkçe', flag: '🇹🇷' }
+        { code: 'en', name: 'English' },
+        { code: 'tr', name: 'Türkçe' }
     ];
 
-    const currentLang = languages.find(l => l.code === lang) || languages[0];
+    const currentLang = languages.find((language) => language.code === lang) || languages[0];
+    const contactHref = lang === 'en' ? '/#contact' : '/tr#contact';
 
     const localizedLinks = {
         en: [
@@ -29,6 +30,7 @@ export default function Navbar({ lang = 'en' }) {
             { name: 'About', href: '/#about' },
             { name: 'Careers', href: '/careers' },
             { name: 'AkademiZ', href: '/akademiz' },
+            { name: 'BillTicket', href: '/billticket' },
             { name: 'Contact', href: '/#contact' },
         ],
         tr: [
@@ -37,6 +39,7 @@ export default function Navbar({ lang = 'en' }) {
             { name: 'Hakkımızda', href: '/tr#about' },
             { name: 'Kariyer', href: '/tr/careers' },
             { name: 'AkademiZ', href: '/tr/akademiz' },
+            { name: 'BillTicket', href: '/tr/billticket' },
             { name: 'İletişim', href: '/tr#contact' },
         ]
     };
@@ -46,30 +49,17 @@ export default function Navbar({ lang = 'en' }) {
     const changeLang = (newLangCode) => {
         const currentPath = window.location.pathname;
         const pathSegments = currentPath.split('/').filter(Boolean);
-
-        // Find if the first segment is an existing language code
         const firstSegment = pathSegments[0];
-        const existingLang = languages.find(l => l.code === firstSegment);
+        const existingLang = languages.find((language) => language.code === firstSegment);
 
         let newPath;
         if (existingLang) {
-            // Replace existing lang code
             const remainingPath = pathSegments.slice(1).join('/');
-            if (newLangCode === 'en') {
-                newPath = `/${remainingPath}`;
-            } else {
-                newPath = `/${newLangCode}/${remainingPath}`;
-            }
+            newPath = newLangCode === 'en' ? `/${remainingPath}` : `/${newLangCode}/${remainingPath}`;
         } else {
-            // No existing lang code found (defaulting to EN)
-            if (newLangCode === 'en') {
-                newPath = currentPath;
-            } else {
-                newPath = `/${newLangCode}${currentPath === '/' ? '' : currentPath}`;
-            }
+            newPath = newLangCode === 'en' ? currentPath : `/${newLangCode}${currentPath === '/' ? '' : currentPath}`;
         }
 
-        // Clean up double slashes and ensure absolute path
         newPath = '/' + newPath.split('/').filter(Boolean).join('/');
         window.location.href = newPath;
     };
@@ -91,7 +81,6 @@ export default function Navbar({ lang = 'en' }) {
                     </span>
                 </a>
 
-                {/* Desktop Menu */}
                 <div className="hidden md:flex items-center gap-8">
                     {navLinks.map((link) => (
                         <a
@@ -103,7 +92,6 @@ export default function Navbar({ lang = 'en' }) {
                         </a>
                     ))}
 
-                    {/* Language Dropdown */}
                     <div className="relative">
                         <button
                             onClick={() => setIsLangOpen(!isLangOpen)}
@@ -124,16 +112,16 @@ export default function Navbar({ lang = 'en' }) {
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                         className="absolute right-0 mt-2 w-32 bg-slate-900 border border-white/10 rounded-xl overflow-hidden shadow-2xl z-20"
                                     >
-                                        {languages.map((l) => (
+                                        {languages.map((language) => (
                                             <button
-                                                key={l.code}
+                                                key={language.code}
                                                 onClick={() => {
-                                                    changeLang(l.code);
+                                                    changeLang(language.code);
                                                     setIsLangOpen(false);
                                                 }}
-                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-200 ${l.code === lang ? 'bg-violet-600/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-200 ${language.code === lang ? 'bg-violet-600/20 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                                             >
-                                                <span className="text-sm">{l.name}</span>
+                                                <span className="text-sm">{language.name}</span>
                                             </button>
                                         ))}
                                     </motion.div>
@@ -143,14 +131,13 @@ export default function Navbar({ lang = 'en' }) {
                     </div>
 
                     <a
-                        href="#contact"
+                        href={contactHref}
                         className="px-5 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/50 transition-all duration-300 text-sm font-medium text-white"
                     >
                         {lang === 'en' ? 'Get in Touch' : 'İletişime Geç'}
                     </a>
                 </div>
 
-                {/* Mobile Toggle */}
                 <button
                     className="md:hidden text-slate-300 hover:text-white"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -159,7 +146,6 @@ export default function Navbar({ lang = 'en' }) {
                 </button>
             </div>
 
-            {/* Mobile Menu */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <motion.div
@@ -185,18 +171,18 @@ export default function Navbar({ lang = 'en' }) {
                                     {lang === 'en' ? 'Language' : 'Dil'}
                                 </span>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {languages.map((l) => (
+                                    {languages.map((language) => (
                                         <button
-                                            key={l.code}
+                                            key={language.code}
                                             onClick={() => {
-                                                changeLang(l.code);
+                                                changeLang(language.code);
                                                 setIsMobileMenuOpen(false);
                                             }}
-                                            className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 ${l.code === lang
+                                            className={`px-4 py-3 rounded-xl border text-sm font-bold transition-all duration-300 ${language.code === lang
                                                 ? 'bg-violet-600/20 border-violet-500/50 text-white'
                                                 : 'bg-white/5 border-white/10 text-slate-400'}`}
                                         >
-                                            {l.name}
+                                            {language.name}
                                         </button>
                                     ))}
                                 </div>

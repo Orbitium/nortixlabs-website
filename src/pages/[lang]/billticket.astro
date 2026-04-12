@@ -1,0 +1,16 @@
+---
+import BillTicketPage from '../../components/pages/BillTicketPage.astro';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'tr' } },
+  ];
+}
+
+const { lang } = Astro.params;
+---
+
+<BillTicketPage lang={lang as 'en' | 'tr'} />
