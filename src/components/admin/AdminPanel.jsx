@@ -8,11 +8,17 @@ import {
     ChevronDown, RefreshCw
 } from 'lucide-react';
 
-const API_BASE_URL = 'https://akademiz-api.nortixlabs.com';
-const SCHEDULE_STORAGE_KEY = 'akademiz_fake_schedule_admin_v1';
+const API_BASE_URL = import.meta.env.PUBLIC_AKADEMIZ_API_URL || 'https://akademiz-api.nortixlabs.com';
+const DEFAULT_CLASS_KEY = 'grade1';
+const ADMIN_TAB_ROUTES = {
+    dashboard: '/akademiz/admin',
+    schedule: '/akademiz/admin/ders-programlari',
+    'class-management': '/akademiz/admin/sinif-yonetimi'
+};
 
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Genel Bakış', icon: LayoutDashboard },
+    { id: 'class-management', label: 'Sınıf Yönetimi', icon: Users },
     { id: 'schedule', label: 'Ders Programları', icon: Settings },
     { id: 'events', label: 'Etkinlikler', icon: Calendar },
     { id: 'community', label: 'Topluluk', icon: Users },
@@ -44,113 +50,13 @@ const DEFAULT_SCHEDULE_TIMES = [
     '15:30',
     '16:30'
 ];
+const DEFAULT_LESSON_DURATION_MINUTES = 45;
 
-const createSeedLesson = (id, time, courseCode, courseName, instructor, classroom) => ({
-    id,
-    time,
-    courseCode,
-    courseName,
-    instructor,
-    classroom,
-    source: 'generated'
-});
-
-const SCHEDULE_SEED_DATA = [
-    {
-        id: 'sgt-a',
-        programName: 'Siber Güvenlik Teknolojileri',
-        className: '1. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-a-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi A', 'Lab 3'),
-                    createSeedLesson('sgt-a-g1-2', '10:30', 'SGT103', 'Linux Uygulamaları', 'Öğretim Görevlisi C', 'Lab 1')
-                ],
-                SALI: [
-                    createSeedLesson('sgt-a-g1-3', '09:30', 'SGT105', 'Temel Programlama', 'Dr. B', 'Derslik 12')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('sgt-a-g1-4', '13:30', 'SGT109', 'Siber Hijyen', 'Öğretim Görevlisi D', 'Atölye 2')
-                ]
-            },
-            grade2: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-a-g2-1', '09:30', 'SGT204', 'Web Güvenliği', 'Öğretim Görevlisi F', 'Lab 2')
-                ],
-                SALI: [
-                    createSeedLesson('sgt-a-g2-2', '13:30', 'SGT208', 'Zafiyet Analizi', 'Dr. G', 'Lab 4')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('sgt-a-g2-3', '10:30', 'SGT210', 'Adli Bilişim', 'Öğretim Görevlisi H', 'Derslik 8')
-                ]
-            }
-        }
-    },
-    {
-        id: 'sgt-b',
-        programName: 'Siber Güvenlik Teknolojileri',
-        className: '2. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('sgt-b-g1-1', '08:30', 'SGT101', 'Ağ Temelleri', 'Öğretim Görevlisi N', 'Lab 5')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('sgt-b-g1-2', '11:30', 'SGT111', 'Temel Kriptografi', 'Dr. P', 'B-204')
-                ]
-            },
-            grade2: {
-                SALI: [
-                    createSeedLesson('sgt-b-g2-1', '08:30', 'SGT206', 'SIEM Operasyonları', 'Öğretim Görevlisi R', 'SOC Lab')
-                ],
-                CUMA: [
-                    createSeedLesson('sgt-b-g2-2', '13:30', 'SGT214', 'Pentest Lab', 'Dr. S', 'Lab 7')
-                ]
-            }
-        }
-    },
-    {
-        id: 'bpr-a',
-        programName: 'Bilgisayar Programcılığı',
-        className: '1. Grup',
-        academicYear: '2025-2026',
-        semester: 'Bahar',
-        generated: {
-            grade1: {
-                PAZARTESI: [
-                    createSeedLesson('bpr-a-g1-1', '08:30', 'BPR101', 'Algoritma Mantığı', 'Dr. I', 'B-101')
-                ],
-                SALI: [
-                    createSeedLesson('bpr-a-g1-2', '10:30', 'BPR103', 'Veritabanı Temelleri', 'Öğretim Görevlisi J', 'Lab 5')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('bpr-a-g1-3', '13:30', 'BPR107', 'Nesne Tabanlı Programlama', 'Dr. K', 'Lab 6')
-                ]
-            },
-            grade2: {
-                SALI: [
-                    createSeedLesson('bpr-a-g2-1', '08:30', 'BPR202', 'Mobil Programlama', 'Dr. L', 'Lab 2')
-                ],
-                CARSAMBA: [
-                    createSeedLesson('bpr-a-g2-2', '11:30', 'BPR204', 'API Geliştirme', 'Öğretim Görevlisi M', 'Lab 3')
-                ],
-                PERSEMBE: [
-                    createSeedLesson('bpr-a-g2-3', '09:30', 'BPR206', 'Bulut Tabanlı Sistemler', 'Dr. N', 'A-303')
-                ]
-            }
-        }
-    }
-];
-
-const AdminPanel = () => {
+const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState(''); // 'post'
     const [eventView, setEventView] = useState('list');
@@ -193,6 +99,10 @@ const AdminPanel = () => {
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        setActiveTab(initialTab);
+    }, [initialTab]);
 
     useEffect(() => {
         const handlePointerDown = (event) => {
@@ -458,6 +368,12 @@ const AdminPanel = () => {
                                     <h3 className="text-lg font-semibold text-white mb-6">Hızlı İşlemler</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <QuickActionButton
+                                            label="Sınıf Yönetimi"
+                                            color="bg-cyan-500/20 text-cyan-400"
+                                            icon={<Users size={20} />}
+                                            onClick={() => setActiveTab('class-management')}
+                                        />
+                                        <QuickActionButton
                                             label="Programları Düzenle"
                                             color="bg-cyan-500/20 text-cyan-400"
                                             icon={<Settings size={20} />}
@@ -490,6 +406,8 @@ const AdminPanel = () => {
                             </div>
                         </>
                     )}
+
+                    {activeTab === 'class-management' && <ClassManagementManager />}
 
                     {activeTab === 'schedule' && <ScheduleManager />}
 
@@ -584,46 +502,30 @@ const AdminPanel = () => {
     );
 };
 
-const ScheduleManager = () => {
+const useScheduleWorkspace = () => {
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
+    const [loadError, setLoadError] = useState('');
     const [selectedScheduleId, setSelectedScheduleId] = useState('');
-    const [selectedGradeKey, setSelectedGradeKey] = useState('grade1');
-    const [editorState, setEditorState] = useState(null);
-    const [timeSlotEditor, setTimeSlotEditor] = useState(null);
+    const [selectedClassKey, setSelectedClassKey] = useState(DEFAULT_CLASS_KEY);
+
+    const loadSchedules = async () => {
+        try {
+            setLoading(true);
+            setLoadError('');
+            const response = await scheduleApi.listSchedules();
+            setSchedules(response);
+            return response;
+        } catch (err) {
+            setLoadError(err.message || 'Ders programı yönetim verisi yüklenemedi.');
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        let cancelled = false;
-
-        const initialLoad = async () => {
-            try {
-                setLoading(true);
-                setError('');
-                const response = await fakeScheduleApi.listSchedules();
-                if (cancelled) return;
-                setSchedules(response);
-                if (!selectedScheduleId && response.length > 0) {
-                    setSelectedScheduleId(response[0].id);
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    setError(err.message || 'Ders programı yönetim verisi yüklenemedi.');
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        initialLoad();
-
-        return () => {
-            cancelled = true;
-        };
+        loadSchedules();
     }, []);
 
     useEffect(() => {
@@ -634,34 +536,594 @@ const ScheduleManager = () => {
         }
     }, [schedules, selectedScheduleId]);
 
-    useEffect(() => {
-        setEditorState(null);
-        setTimeSlotEditor(null);
-        setError('');
-        setNotice('');
-    }, [selectedScheduleId, selectedGradeKey]);
-
     const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
-    const selectedGrade = selectedSchedule?.grades?.[selectedGradeKey];
-    const scheduleBoard = buildScheduleBoard(selectedGrade);
+    const availableClassKeys = selectedSchedule?.availableClassKeys || [];
+
+    useEffect(() => {
+        if (availableClassKeys.length === 0) return;
+        if (!availableClassKeys.includes(selectedClassKey)) {
+            setSelectedClassKey(availableClassKeys[0]);
+        }
+    }, [availableClassKeys, selectedClassKey]);
+
+    return {
+        schedules,
+        loading,
+        loadError,
+        selectedScheduleId,
+        setSelectedScheduleId,
+        selectedClassKey,
+        setSelectedClassKey,
+        selectedSchedule,
+        availableClassKeys,
+        reloadSchedules: loadSchedules
+    };
+};
+
+const ClassManagementManager = () => {
+    const {
+        schedules,
+        loading,
+        loadError,
+        selectedScheduleId,
+        setSelectedScheduleId,
+        reloadSchedules
+    } = useScheduleWorkspace();
+    const [classes, setClasses] = useState([]);
+    const [classesLoading, setClassesLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [notice, setNotice] = useState('');
+    const [error, setError] = useState('');
+    const [draftSchedules, setDraftSchedules] = useState([]);
+    const [draftClasses, setDraftClasses] = useState([]);
+    const [scheduleForm, setScheduleForm] = useState({
+        programName: '',
+        academicYear: '2025-2026',
+        semester: 'Bahar'
+    });
+    const [formState, setFormState] = useState({
+        classKey: '',
+        className: '',
+        sortOrder: ''
+    });
+
+    useEffect(() => {
+        setNotice('');
+        setError('');
+    }, [selectedScheduleId]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadClasses = async () => {
+            try {
+                setClassesLoading(true);
+                const response = await classApi.listAdminClasses();
+                if (!cancelled) {
+                    setClasses(response);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message || 'Sınıf listesi yüklenemedi.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setClassesLoading(false);
+                }
+            }
+        };
+
+        loadClasses();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        setDraftSchedules(
+            schedules.map((schedule) => ({
+                id: String(schedule.id),
+                programName: schedule.programName,
+                academicYear: schedule.academicYear,
+                semester: schedule.semester,
+                isNew: false
+            }))
+        );
+    }, [schedules]);
+
+    useEffect(() => {
+        setDraftClasses(
+            classes.map((item) => ({
+                id: String(item.id),
+                key: item.key,
+                name: item.name,
+                sortOrder: item.sortOrder ?? 0,
+                isNew: false
+            }))
+        );
+    }, [classes]);
+
+    const reloadClasses = async () => {
+        const response = await classApi.listAdminClasses();
+        setClasses(response);
+        return response;
+    };
+
+    const updateFormField = (field, value) => {
+        setFormState((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const updateScheduleFormField = (field, value) => {
+        setScheduleForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleAddScheduleDraft = (e) => {
+        e.preventDefault();
+
+        if (!scheduleForm.programName.trim() || !scheduleForm.academicYear.trim() || !scheduleForm.semester.trim()) {
+            setError('Program adı, akademik yıl ve dönem zorunludur.');
+            return;
+        }
+
+        const tempId = `new-schedule-${Date.now()}`;
+        setError('');
+        setNotice('Kaydedilmemiş program değişiklikleri var.');
+        setDraftSchedules((prev) => [
+            ...prev,
+            {
+                id: tempId,
+                programName: scheduleForm.programName.trim(),
+                academicYear: scheduleForm.academicYear.trim(),
+                semester: scheduleForm.semester.trim(),
+                isNew: true
+            }
+        ]);
+        setScheduleForm((prev) => ({ ...prev, programName: '' }));
+    };
+
+    const handleAddClassDraft = (e) => {
+        e.preventDefault();
+
+        if (!formState.className.trim()) {
+            setError('Sınıf adı zorunludur.');
+            return;
+        }
+
+        const candidateKey = formState.classKey.trim();
+        const existingKeys = new Set(draftClasses.map((item) => item.key).filter(Boolean));
+
+        if (candidateKey && existingKeys.has(candidateKey)) {
+            setError('Bu sınıf anahtarı taslak listede zaten var.');
+            return;
+        }
+
+        setError('');
+        setNotice('Kaydedilmemiş sınıf değişiklikleri var.');
+        setDraftClasses((prev) => [
+            ...prev,
+            {
+                id: `new-class-${Date.now()}`,
+                key: candidateKey,
+                name: formState.className.trim(),
+                sortOrder: formState.sortOrder === '' ? undefined : Number(formState.sortOrder),
+                isNew: true
+            }
+        ]);
+        setFormState({ classKey: '', className: '', sortOrder: '' });
+    };
+
+    const handleRemoveClassDraft = (idOrKey) => {
+        setError('');
+        setNotice('Kaydedilmemiş sınıf değişiklikleri var.');
+        setDraftClasses((prev) => prev.filter((item) => String(item.id) !== String(idOrKey) && item.key !== idOrKey));
+    };
+
+    const handleRemoveScheduleDraft = (scheduleId) => {
+        setError('');
+        setNotice('Kaydedilmemiş program değişiklikleri var.');
+        setDraftSchedules((prev) => prev.filter((schedule) => schedule.id !== scheduleId));
+        if (selectedScheduleId === scheduleId) {
+            const nextSchedule = draftSchedules.find((item) => item.id !== scheduleId && !item.isNew);
+            setSelectedScheduleId(nextSchedule?.id || '');
+        }
+    };
+
+    const hasPendingChanges = areDraftItemsChanged(
+        draftSchedules,
+        schedules,
+        (item) => item.id,
+        (item) => `${item.programName}|${item.academicYear}|${item.semester}`
+    ) || areDraftItemsChanged(
+        draftClasses,
+        classes,
+        (item) => item.key || item.id,
+        (item) => `${item.key || ''}|${item.name}|${item.sortOrder ?? ''}`
+    );
+
+    const handleSaveChanges = async () => {
+        try {
+            setSaving(true);
+            setError('');
+            setNotice('');
+
+            const originalScheduleIds = new Set(schedules.map((item) => String(item.id)));
+            const draftScheduleIds = new Set(draftSchedules.filter((item) => !item.isNew).map((item) => String(item.id)));
+            const originalClassKeys = new Set(classes.map((item) => item.key));
+            const draftClassKeys = new Set(draftClasses.filter((item) => !item.isNew).map((item) => item.key));
+
+            const schedulesToCreate = draftSchedules.filter((item) => item.isNew);
+            const schedulesToDelete = schedules.filter((item) => originalScheduleIds.has(String(item.id)) && !draftScheduleIds.has(String(item.id)));
+            const classesToCreate = draftClasses.filter((item) => item.isNew);
+            const classesToDelete = classes.filter((item) => originalClassKeys.has(item.key) && !draftClassKeys.has(item.key));
+
+            for (const item of classesToCreate) {
+                await classApi.createClass({
+                    key: item.key || undefined,
+                    name: item.name,
+                    sortOrder: item.sortOrder === undefined ? undefined : Number(item.sortOrder)
+                });
+            }
+
+            for (const item of schedulesToCreate) {
+                await scheduleApi.createSchedule({
+                    programName: item.programName,
+                    academicYear: item.academicYear,
+                    semester: item.semester
+                });
+            }
+
+            for (const item of schedulesToDelete) {
+                await scheduleApi.deleteSchedule(item.id);
+            }
+
+            for (const item of classesToDelete) {
+                await classApi.deleteClass(item.key);
+            }
+
+            const [nextSchedules, nextClasses] = await Promise.all([
+                reloadSchedules(),
+                reloadClasses()
+            ]);
+            setSelectedScheduleId((current) => nextSchedules.some((item) => item.id === current) ? current : (nextSchedules[0]?.id || ''));
+            setDraftSchedules(nextSchedules.map((schedule) => ({
+                id: String(schedule.id),
+                programName: schedule.programName,
+                academicYear: schedule.academicYear,
+                semester: schedule.semester,
+                isNew: false
+            })));
+            setDraftClasses(nextClasses.map((item) => ({
+                id: String(item.id),
+                key: item.key,
+                name: item.name,
+                sortOrder: item.sortOrder ?? 0,
+                isNew: false
+            })));
+            setNotice('Sınıf ve program değişiklikleri kaydedildi.');
+        } catch (err) {
+            setError(err.message || 'Değişiklikler kaydedilemedi.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading || classesLoading) {
+        return (
+            <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
+                <div className="flex items-center gap-3 text-slate-400">
+                    <Loader2 className="animate-spin text-cyan-400" />
+                    Program yükleniyor...
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Sınıf Yönetimi</p>
+                <h3 className="mt-3 text-3xl font-bold text-white">Sınıfları ekleyin veya kaldırın</h3>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                    Bu sayfa yalnızca sınıf listesini yönetir. Program akışını düzenlemek için ayrı `Ders Programları` sayfasını kullanın.
+                </p>
+            </section>
+
+            <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
+                <div className="space-y-6">
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Yeni Program</p>
+                            <h4 className="text-xl font-bold text-white">Top-level ders programı oluştur</h4>
+                            <p className="text-sm leading-7 text-slate-400">
+                                Formu doldurup listeye ekleyin. API isteği yalnızca sayfadaki kaydet butonuna basınca gönderilir.
+                            </p>
+                        </div>
+
+                        <form className="mt-6 grid gap-4" onSubmit={handleAddScheduleDraft}>
+                            <ScheduleField label="Program Adı">
+                                <input
+                                    type="text"
+                                    value={scheduleForm.programName}
+                                    onChange={(e) => updateScheduleFormField('programName', e.target.value)}
+                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    placeholder="Bilgisayar Programcılığı"
+                                />
+                            </ScheduleField>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ScheduleField label="Akademik Yıl">
+                                    <input
+                                        type="text"
+                                        value={scheduleForm.academicYear}
+                                        onChange={(e) => updateScheduleFormField('academicYear', e.target.value)}
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    />
+                                </ScheduleField>
+                                <ScheduleField label="Dönem">
+                                    <input
+                                        type="text"
+                                        value={scheduleForm.semester}
+                                        onChange={(e) => updateScheduleFormField('semester', e.target.value)}
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    />
+                                </ScheduleField>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                Listeye Ekle
+                            </button>
+                        </form>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Programlar</p>
+                            <h4 className="text-xl font-bold text-white">Mevcut program kayıtları</h4>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                            {draftSchedules.map((schedule) => (
+                                <div
+                                    key={schedule.id}
+                                    className={`flex flex-col gap-4 rounded-2xl border px-4 py-4 md:flex-row md:items-center md:justify-between ${selectedScheduleId === schedule.id
+                                        ? 'border-cyan-400/25 bg-cyan-400/10'
+                                        : 'border-white/8 bg-slate-950/50'
+                                        }`}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedScheduleId(schedule.id)}
+                                        className="flex-1 text-left"
+                                    >
+                                        <div className="text-sm font-semibold text-white">{schedule.programName}</div>
+                                        <div className="mt-1 text-xs text-slate-500">{schedule.academicYear} • {schedule.semester}</div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => handleRemoveScheduleDraft(schedule.id)}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <Trash2 size={16} />
+                                        {schedule.isNew ? 'Taslaktan Çıkar' : 'Silmek İçin İşaretle'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Yeni Sınıf</p>
+                            <h4 className="text-xl font-bold text-white">Global sınıf kaydı oluştur</h4>
+                            <p className="text-sm leading-7 text-slate-400">
+                                Formu doldurup listeye ekleyin. API isteği yalnızca sayfadaki kaydet butonuna basınca gönderilir.
+                            </p>
+                        </div>
+
+                        <form className="mt-6 grid gap-4" onSubmit={handleAddClassDraft}>
+                            <ScheduleField label="Sınıf Adı">
+                                <input
+                                    type="text"
+                                    value={formState.className}
+                                    onChange={(e) => updateFormField('className', e.target.value)}
+                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    placeholder="1. Sınıf"
+                                />
+                            </ScheduleField>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ScheduleField label="Sınıf Anahtarı">
+                                    <input
+                                        type="text"
+                                        value={formState.classKey}
+                                        onChange={(e) => updateFormField('classKey', e.target.value)}
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                        placeholder="grade1"
+                                    />
+                                </ScheduleField>
+
+                                <ScheduleField label="Sıra">
+                                    <input
+                                        type="number"
+                                        value={formState.sortOrder}
+                                        onChange={(e) => updateFormField('sortOrder', e.target.value)}
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                        placeholder="0"
+                                    />
+                                </ScheduleField>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                Listeye Ekle
+                            </button>
+                        </form>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Mevcut Sınıflar</p>
+                            <h4 className="text-xl font-bold text-white">Kayıtlı sınıf listesi</h4>
+                            <p className="text-sm leading-7 text-slate-400">
+                                Bu kayıtlar tüm schedule yanıtlarında kullanılan resmi sınıf anahtarlarıdır.
+                            </p>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                            {draftClasses.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                                >
+                                    <div className="flex-1 text-left">
+                                        <div className="text-sm font-semibold text-white">{item.name}</div>
+                                        <div className="mt-1 text-xs text-slate-500">{item.key} • sıra {item.sortOrder ?? 0}</div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => handleRemoveClassDraft(item.key || item.id)}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <Trash2 size={16} />
+                                        {item.isNew ? 'Taslaktan Çıkar' : 'Silmek İçin İşaretle'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {(loadError || error || notice) && (
+                        <div className={`rounded-[2rem] border px-5 py-4 text-sm ${(loadError || error)
+                            ? 'border-red-400/20 bg-red-400/10 text-red-100'
+                            : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+                            }`}>
+                            {loadError || error || notice}
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-6">
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Kaydet</p>
+                        <h4 className="mt-2 text-xl font-bold text-white">Taslak değişiklikleri backend'e gönder</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                            Bu sayfadaki ekleme ve silmeler siz kaydetmeden API'ye gönderilmez.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleSaveChanges}
+                            disabled={saving || !hasPendingChanges}
+                            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {saving ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                            Değişiklikleri Kaydet
+                        </button>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Hızlı Geçiş</p>
+                        <h4 className="mt-2 text-xl font-bold text-white">Program düzenleyicisini aç</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                            Seçiminiz kaydedildi. Program tablosunu düzenlemek için ayrı sayfaya geçebilirsiniz.
+                        </p>
+                        <a
+                            href={ADMIN_TAB_ROUTES.schedule}
+                            className="mt-5 inline-flex items-center justify-center rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+                        >
+                            Ders Programları Sayfasına Git
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
+};
+
+const ScheduleManager = () => {
+    const {
+        loading,
+        loadError,
+        selectedSchedule,
+        schedules,
+        selectedScheduleId,
+        setSelectedScheduleId,
+        selectedClassKey,
+        setSelectedClassKey,
+        reloadSchedules
+    } = useScheduleWorkspace();
+    const [editorDrafts, setEditorDrafts] = useState({});
+    const [loadedScheduleIds, setLoadedScheduleIds] = useState({});
+    const [dirtyScheduleIds, setDirtyScheduleIds] = useState({});
+    const [editorLoading, setEditorLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+    const [editorState, setEditorState] = useState(null);
+    const [timeSlotState, setTimeSlotState] = useState(null);
+    const [quickAddState, setQuickAddState] = useState(null);
+    const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
+    const selectedClassState = buildEditorClassState(editorPayload, selectedClassKey);
+    const scheduleBoard = buildScheduleBoard(selectedClassState);
     const selectedCell = editorState
         ? scheduleBoard.cellMap[makeScheduleCellKey(editorState.dayKey, editorState.time)] || createEmptyScheduleCell(editorState.dayKey, editorState.time)
         : null;
+    const hasUnsavedChanges = Boolean(selectedSchedule && dirtyScheduleIds[selectedSchedule.id]);
 
-    const loadSchedules = async ({ successMessage = '' } = {}) => {
-        try {
-            const response = await fakeScheduleApi.listSchedules();
-            setSchedules(response);
-            if (response.length > 0 && !response.some((schedule) => schedule.id === selectedScheduleId)) {
-                setSelectedScheduleId(response[0].id);
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadEditor = async () => {
+            if (!selectedSchedule) {
+                setEditorLoading(false);
+                return;
             }
-            if (successMessage) {
-                setNotice(successMessage);
+            if (loadedScheduleIds[selectedSchedule.id]) {
+                setEditorLoading(false);
+                return;
             }
-        } catch (err) {
-            setError(err.message || 'Ders programı verisi güncellenemedi.');
-        }
-    };
+            try {
+                setEditorLoading(true);
+                const response = await scheduleApi.getScheduleEditor(selectedSchedule.id);
+                if (!cancelled) {
+                    setEditorDrafts((prev) => ({ ...prev, [selectedSchedule.id]: response }));
+                    setLoadedScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setError(err.message || 'Ders programı düzenleyici verisi yüklenemedi.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setEditorLoading(false);
+                }
+            }
+        };
+
+        setEditorState(null);
+        setTimeSlotState(null);
+        setQuickAddState(null);
+        setError('');
+        setNotice('');
+        loadEditor();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedSchedule?.id, loadedScheduleIds]);
 
     const openEditor = (cell) => {
         const existingLesson = cell.manualLessons[0] || cell.effectiveLessons[0] || null;
@@ -683,48 +1145,64 @@ const ScheduleManager = () => {
         setEditorState(null);
     };
 
-    const openTimeSlotEditor = (slot) => {
+    const openNewTimeSlotEditor = () => {
+        setEditorState(null);
         setError('');
         setNotice('');
-        setTimeSlotEditor({
-            slotId: slot.id,
-            previousTime: slot.time,
-            sourceTime: slot.originalTime,
-            startTime: slot.time,
-            endTime: slot.endTime,
-            isNew: false
+        setTimeSlotState({
+            isNew: true,
+            previousTime: '',
+            startTime: '',
+            endTime: ''
         });
     };
 
-    const openCreateTimeSlot = () => {
-        const lastSlot = scheduleBoard.timeSlots[scheduleBoard.timeSlots.length - 1];
-        const defaultStart = lastSlot?.endTime || lastSlot?.time || '17:30';
+    const openTimeSlotEditor = (slot) => {
+        setEditorState(null);
         setError('');
         setNotice('');
-        setTimeSlotEditor({
-            slotId: '',
-            previousTime: '',
-            sourceTime: '',
-            startTime: defaultStart,
-            endTime: addMinutesToTime(defaultStart, 50) || '',
-            isNew: true
+        setTimeSlotState({
+            isNew: false,
+            previousTime: slot.time,
+            startTime: slot.time,
+            endTime: slot.endTime || addMinutesToTime(slot.time, DEFAULT_LESSON_DURATION_MINUTES)
         });
     };
 
     const closeTimeSlotEditor = () => {
         if (saving) return;
-        setTimeSlotEditor(null);
+        setTimeSlotState(null);
     };
 
-    const updateTimeSlotEditorField = (field, value) => {
-        setTimeSlotEditor((prev) => (prev ? { ...prev, [field]: value } : prev));
+    const openQuickAddEditor = () => {
+        setEditorState(null);
+        setTimeSlotState(null);
+        setError('');
+        setNotice('');
+        setQuickAddState({
+            dayKey: SCHEDULE_DAYS[0]?.key || 'PAZARTESI',
+            rawText: ''
+        });
+    };
+
+    const closeQuickAddEditor = () => {
+        if (saving) return;
+        setQuickAddState(null);
     };
 
     const updateEditorField = (field, value) => {
         setEditorState((prev) => (prev ? { ...prev, [field]: value } : prev));
     };
 
-    const handleSaveLesson = async (e) => {
+    const updateTimeSlotField = (field, value) => {
+        setTimeSlotState((prev) => (prev ? { ...prev, [field]: value } : prev));
+    };
+
+    const updateQuickAddField = (field, value) => {
+        setQuickAddState((prev) => (prev ? { ...prev, [field]: value } : prev));
+    };
+
+    const handleSaveLesson = (e) => {
         e.preventDefault();
         if (!selectedSchedule || !editorState) return;
 
@@ -738,165 +1216,164 @@ const ScheduleManager = () => {
             return;
         }
 
-        try {
-            setSaving(true);
-            setError('');
-            setNotice('');
+        const nextClassSchedule = upsertLessonInSchedule(
+            selectedClassState.manualSchedule,
+            {
+                id: editorState.manualLessonId || undefined,
+                dayKey: editorState.dayKey,
+                time: editorState.time.trim(),
+                courseCode: editorState.courseCode.trim(),
+                courseName: editorState.courseName.trim(),
+                instructor: editorState.instructor.trim(),
+                classroom: editorState.classroom.trim()
+            }
+        );
 
-            await fakeScheduleApi.upsertManualLesson({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                lesson: {
-                    id: editorState.manualLessonId || undefined,
-                    dayKey: editorState.dayKey,
-                    time: editorState.time.trim(),
-                    courseCode: editorState.courseCode.trim(),
-                    courseName: editorState.courseName.trim(),
-                    instructor: editorState.instructor.trim(),
-                    classroom: editorState.classroom.trim()
-                }
-            });
-
-            await loadSchedules({
-                successMessage: editorState.manualLessonId
-                    ? 'Hücredeki manuel ders güncellendi.'
-                    : 'Hücreye manuel ders eklendi.'
-            });
-            setEditorState(null);
-        } catch (err) {
-            setError(err.message || 'Hücre kaydı güncellenemedi.');
-        } finally {
-            setSaving(false);
-        }
+        setEditorDrafts((prev) => ({
+            ...prev,
+            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
+        }));
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        setError('');
+        setNotice('Program taslağı güncellendi. API isteği için sayfadaki kaydet butonunu kullanın.');
+        setEditorState(null);
     };
 
-    const handleOverrideToggle = async () => {
-        if (!selectedSchedule || !selectedGrade) return;
-
-        try {
-            setSaving(true);
-            setError('');
-            setNotice('');
-
-            await fakeScheduleApi.setOverride({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                enabled: !selectedGrade.overrideEnabled
-            });
-
-            await loadSchedules({
-                successMessage: !selectedGrade.overrideEnabled
-                    ? 'Yalnızca kaydedilen dersler gösterilecek.'
-                    : 'Tüm ders akışı tekrar gösterilecek.'
-            });
-        } catch (err) {
-            setError(err.message || 'Görünüm modu güncellenemedi.');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleDeleteLesson = async () => {
+    const handleDeleteLesson = () => {
         if (!selectedSchedule || !editorState?.manualLessonId) return;
 
-        try {
-            setSaving(true);
-            setError('');
-            setNotice('');
+        const nextClassSchedule = deleteLessonFromSchedule(
+            selectedClassState.manualSchedule,
+            editorState.dayKey,
+            editorState.manualLessonId,
+            editorState.time
+        );
 
-            await fakeScheduleApi.deleteManualLesson({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                lessonId: editorState.manualLessonId
-            });
-
-            await loadSchedules({ successMessage: 'Hücredeki manuel ders kaldırıldı.' });
-            setEditorState(null);
-        } catch (err) {
-            setError(err.message || 'Manuel ders silinemedi.');
-        } finally {
-            setSaving(false);
-        }
+        setEditorDrafts((prev) => ({
+            ...prev,
+            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
+        }));
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        setError('');
+        setNotice('Program taslağından manuel ders kaldırıldı. API isteği için sayfadaki kaydet butonunu kullanın.');
+        setEditorState(null);
     };
 
-    const handleSaveTimeSlot = async (e) => {
+    const handleSaveTimeSlot = (e) => {
         e.preventDefault();
-        if (!selectedSchedule || !timeSlotEditor) return;
+        if (!selectedSchedule || !timeSlotState) return;
 
-        if (!isValidTime(timeSlotEditor.startTime) || !isValidTime(timeSlotEditor.endTime)) {
-            setError('Saat aralığı HH:MM formatında olmalıdır.');
+        if (!isValidTime(timeSlotState.startTime)) {
+            setError('Başlangıç saati geçersiz.');
             return;
         }
 
-        if (timeToMinutes(timeSlotEditor.endTime) <= timeToMinutes(timeSlotEditor.startTime)) {
+        if (!isValidTime(timeSlotState.endTime)) {
+            setError('Bitiş saati geçersiz.');
+            return;
+        }
+
+        if (timeToMinutes(timeSlotState.endTime) <= timeToMinutes(timeSlotState.startTime)) {
             setError('Bitiş saati başlangıç saatinden sonra olmalıdır.');
             return;
         }
 
-        const hasDuplicate = scheduleBoard.timeSlots.some((slot) => (
-            slot.time === timeSlotEditor.startTime && slot.id !== timeSlotEditor.slotId
-        ));
-        if (hasDuplicate) {
-            setError('Bu başlangıç saati zaten kullanılıyor.');
+        let nextClassSchedule;
+
+        if (timeSlotState.isNew) {
+            nextClassSchedule = upsertEmptySlotInSchedule(
+                selectedClassState.manualSchedule,
+                timeSlotState.startTime
+            );
+        } else {
+            nextClassSchedule = renameTimeInSchedule(
+                selectedClassState.manualSchedule,
+                timeSlotState.previousTime,
+                timeSlotState.startTime
+            );
+        }
+
+        setEditorDrafts((prev) => ({
+            ...prev,
+            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
+        }));
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        setError('');
+        setNotice(timeSlotState.isNew
+            ? 'Saat satırı taslağa eklendi. API isteği için sayfadaki kaydet butonunu kullanın.'
+            : 'Saat satırı taslakta güncellendi. API isteği için sayfadaki kaydet butonunu kullanın.');
+        setTimeSlotState(null);
+    };
+
+    const handleDeleteTimeSlot = () => {
+        if (!selectedSchedule || !timeSlotState?.previousTime) return;
+
+        const nextClassSchedule = deleteTimeFromSchedule(
+            selectedClassState.manualSchedule,
+            timeSlotState.previousTime
+        );
+
+        setEditorDrafts((prev) => ({
+            ...prev,
+            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
+        }));
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        setError('');
+        setNotice('Saat satırı ve bu saate bağlı manuel kayıtlar taslaktan kaldırıldı. API isteği için sayfadaki kaydet butonunu kullanın.');
+        setTimeSlotState(null);
+    };
+
+    const handleApplyQuickAdd = (e) => {
+        e.preventDefault();
+        if (!selectedSchedule || !quickAddState) return;
+
+        const parsedLessons = parseQuickAddScheduleText(quickAddState.rawText);
+        if (parsedLessons.length === 0) {
+            setError('Yapıştırılan metinden ders satırı çözülemedi.');
             return;
         }
 
-        try {
-            setSaving(true);
-            setError('');
-            setNotice('');
+        const nextClassSchedule = replaceDayInSchedule(
+            selectedClassState.manualSchedule,
+            quickAddState.dayKey,
+            parsedLessons
+        );
 
-            await fakeScheduleApi.upsertTimeSlot({
-                scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                slot: {
-                    id: timeSlotEditor.slotId || undefined,
-                    previousTime: timeSlotEditor.previousTime || undefined,
-                    sourceTime: timeSlotEditor.sourceTime || undefined,
-                    startTime: timeSlotEditor.startTime.trim(),
-                    endTime: timeSlotEditor.endTime.trim()
-                }
-            });
-
-            await loadSchedules({
-                successMessage: timeSlotEditor.isNew
-                    ? 'Yeni saat satırı eklendi.'
-                    : 'Saat satırı güncellendi.'
-            });
-            setEditorState(null);
-            setTimeSlotEditor(null);
-        } catch (err) {
-            setError(err.message || 'Saat satırı kaydedilemedi.');
-        } finally {
-            setSaving(false);
-        }
+        setEditorDrafts((prev) => ({
+            ...prev,
+            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
+        }));
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        setError('');
+        setNotice(`${getDayLabel(quickAddState.dayKey)} günü için hızlı ekleme taslağa uygulandı. API isteği için sayfadaki kaydet butonunu kullanın.`);
+        setQuickAddState(null);
     };
 
-    const handleDeleteTimeSlot = async () => {
-        if (!selectedSchedule || !timeSlotEditor?.slotId) return;
+    const handleSaveSchedule = async () => {
+        if (!selectedSchedule || !editorPayload || !hasUnsavedChanges) return;
 
         try {
             setSaving(true);
             setError('');
             setNotice('');
 
-            await fakeScheduleApi.deleteTimeSlot({
+            const response = await scheduleApi.saveManualSchedule({
                 scheduleId: selectedSchedule.id,
-                gradeKey: selectedGradeKey,
-                slotId: timeSlotEditor.slotId
+                manualSchedule: editorPayload.manualSchedule || {}
             });
 
-            await loadSchedules({ successMessage: 'Saat satırı silindi.' });
-            setEditorState(null);
-            setTimeSlotEditor(null);
+            setEditorDrafts((prev) => ({ ...prev, [selectedSchedule.id]: response }));
+            setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: false }));
+            await reloadSchedules();
+            setNotice('Ders programı değişiklikleri kaydedildi.');
         } catch (err) {
-            setError(err.message || 'Saat satırı silinemedi.');
+            setError(err.message || 'Program kaydedilemedi.');
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) {
+    if (loading || editorLoading) {
         return (
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
                 <div className="flex items-center gap-3 text-slate-400">
@@ -907,110 +1384,87 @@ const ScheduleManager = () => {
         );
     }
 
-    if (!selectedSchedule || !selectedGrade) {
+    if (!selectedSchedule || !selectedClassState) {
         return (
-                <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
-                Ders programı kaydı bulunamadı.
-                </div>
-            );
-        }
+            <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
+                Düzenlenebilir ders programı bulunamadı.
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Programı Düzenleyici</p>
-                <h3 className="mt-3 text-3xl font-bold text-white">Bir sınıf seçin, kademe belirleyin ve bir hücreye tıklayın</h3>
+                <h3 className="mt-3 text-3xl font-bold text-white">{selectedSchedule.programName}</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Haftalık tabloyu doğrudan düzenlemek için kutuya tıklayın. Seçilen sınıf düzeyi için sağ tarafta yalnızca son görünecek program akışını görürsünüz.
+                    Aktif sınıf anahtarı {formatClassKeyLabel(selectedClassKey)} olarak seçildi. Hücre düzenlemeleri önce taslakta tutulur, ardından tek kaydet işlemiyle backend'e gönderilir.
                 </p>
+                <a
+                    href={ADMIN_TAB_ROUTES['class-management']}
+                    className="mt-5 inline-flex items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/30 hover:bg-cyan-400/15"
+                >
+                    Sınıf Yönetimine Git
+                </a>
+                <button
+                    type="button"
+                    onClick={handleSaveSchedule}
+                    disabled={saving || !hasUnsavedChanges}
+                    className="mt-5 ml-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    {saving ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                    Değişiklikleri Kaydet
+                </button>
             </section>
+
+            {(loadError || error || notice) && (
+                <div className={`rounded-[2rem] border px-5 py-4 text-sm ${(loadError || error)
+                    ? 'border-red-400/20 bg-red-400/10 text-red-100'
+                    : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+                    }`}>
+                    {loadError || error || notice}
+                </div>
+            )}
 
             <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Seçimi</p>
-                            <h4 className="text-xl font-bold text-white">Düzenlemek istediğiniz sınıfı seçin</h4>
-                            <p className="text-sm leading-7 text-slate-400">
-                                Açılır listeden sınıfı seçerek program görünümünü değiştirebilirsiniz.
-                            </p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Program Seçimi</p>
+                            <h4 className="text-xl font-bold text-white">Düzenlenecek ders programı</h4>
                         </div>
-
                         <ScheduleClassPicker
                             schedules={schedules}
-                            selectedScheduleId={selectedSchedule.id}
+                            selectedScheduleId={selectedScheduleId}
                             onSelect={setSelectedScheduleId}
                         />
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Seçili Görünüm</p>
-                                <h4 className="mt-2 text-xl font-bold text-white">
-                                    {selectedSchedule.programName} • {selectedSchedule.className}
-                                </h4>
-                                <p className="mt-2 text-sm leading-7 text-slate-400">
-                                    Sınıf düzeyini seçin, sonra tabloda bir kutuya tıklayıp dersi girin. Sağ panel seçili düzey için son akışı gösterir.
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col gap-4 xl:items-end">
-                                <div className="space-y-2">
-                                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Düzeyi</span>
-                                    <div className="flex rounded-2xl border border-white/10 bg-slate-950/60 p-1">
-                                        {GRADE_OPTIONS.map((grade) => (
-                                            <button
-                                                type="button"
-                                                key={grade.key}
-                                                onClick={() => setSelectedGradeKey(grade.key)}
-                                                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedGradeKey === grade.key
-                                                    ? 'bg-cyan-500 text-slate-950'
-                                                    : 'text-slate-400 hover:text-white'
-                                                    }`}
-                                            >
-                                                {grade.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Anahtarı</p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                            {(editorPayload?.availableClassKeys || []).map((classKey) => (
                                 <button
+                                    key={classKey}
                                     type="button"
-                                    onClick={handleOverrideToggle}
-                                    disabled={saving}
-                                    className={`inline-flex items-center justify-center rounded-2xl border px-5 py-3 text-sm font-bold transition ${selectedGrade.overrideEnabled
-                                        ? 'border-amber-400/30 bg-amber-400/15 text-amber-200'
-                                        : 'border-white/10 bg-white/5 text-slate-300'
-                                        } ${saving ? 'cursor-not-allowed opacity-60' : 'hover:scale-[1.01]'}`}
+                                    onClick={() => setSelectedClassKey(classKey)}
+                                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedClassKey === classKey
+                                        ? 'bg-cyan-500 text-slate-950'
+                                        : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white'
+                                        }`}
                                 >
-                                    {selectedGrade.overrideEnabled ? 'Yalnızca Kaydedilen Dersler' : 'Tüm Geçerli Dersler'}
+                                    {formatClassKeyLabel(classKey)}
                                 </button>
-                            </div>
+                            ))}
                         </div>
-
-                        {selectedGrade.overrideEnabled && selectedGrade.counts.manual === 0 && (
-                            <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-6 text-amber-100">
-                                Bu mod açık ancak bu sınıf düzeyi için henüz kaydedilmiş ders yok.
-                            </div>
-                        )}
                     </div>
-
-                    {(error || notice) && (
-                        <div className={`rounded-[2rem] border px-5 py-4 text-sm ${error
-                            ? 'border-red-400/20 bg-red-400/10 text-red-100'
-                            : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
-                            }`}>
-                            {error || notice}
-                        </div>
-                    )}
                 </div>
 
                 <div className="space-y-6">
                     <SchedulePreviewCard
                         title="Seçili Sınıf Düzeyi Akışı"
                         description="Sağdaki liste, seçili sınıf düzeyi için son görünecek akışı gösterir."
-                        lessonMap={selectedGrade.effectiveLessons}
+                        lessonMap={selectedClassState.effectiveLessons}
                         emptyText="Bu seçim için gösterilecek ders yok."
                     />
                 </div>
@@ -1019,8 +1473,9 @@ const ScheduleManager = () => {
                     <ScheduleBoardCard
                         board={scheduleBoard}
                         onCellClick={openEditor}
+                        onAddTimeSlot={openNewTimeSlotEditor}
+                        onQuickAdd={openQuickAddEditor}
                         onTimeSlotClick={openTimeSlotEditor}
-                        onAddTimeSlot={openCreateTimeSlot}
                         saving={saving}
                     />
                 </div>
@@ -1039,15 +1494,26 @@ const ScheduleManager = () => {
                 />
             )}
 
-            {timeSlotEditor && (
+            {timeSlotState && (
                 <ScheduleTimeSlotModal
-                    state={timeSlotEditor}
+                    state={timeSlotState}
                     saving={saving}
                     error={error}
                     onClose={closeTimeSlotEditor}
-                    onFieldChange={updateTimeSlotEditorField}
+                    onFieldChange={updateTimeSlotField}
                     onDelete={handleDeleteTimeSlot}
                     onSubmit={handleSaveTimeSlot}
+                />
+            )}
+
+            {quickAddState && (
+                <ScheduleQuickAddModal
+                    state={quickAddState}
+                    saving={saving}
+                    error={error}
+                    onClose={closeQuickAddEditor}
+                    onFieldChange={updateQuickAddField}
+                    onSubmit={handleApplyQuickAdd}
                 />
             )}
         </div>
@@ -1491,6 +1957,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
 
 const PostForm = ({ onClose, user }) => {
     const [formData, setFormData] = useState({
+        authorName: user?.displayName || 'AkademiZ Admin',
         content: '',
         imageUrl: '',
         poll: {
@@ -1501,6 +1968,7 @@ const PostForm = ({ onClose, user }) => {
     const [showPoll, setShowPoll] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [submitError, setSubmitError] = useState('');
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -1564,16 +2032,37 @@ const PostForm = ({ onClose, user }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setSubmitError('');
         try {
             const token = await auth.currentUser.getIdToken(true);
+            const trimmedAuthorName = formData.authorName.trim() || user?.displayName || 'AkademiZ Admin';
+            const trimmedContent = formData.content.trim();
+            const pollQuestion = formData.poll.question.trim();
+            const pollOptions = formData.poll.options.map((option) => option.trim()).filter(Boolean);
+
+            if (!trimmedContent) {
+                throw new Error('Gönderi metni zorunludur.');
+            }
+
             const body = {
-                content: formData.content,
+                authorName: trimmedAuthorName,
+                content: trimmedContent,
                 imageUrl: formData.imageUrl
             };
-            if (showPoll && formData.poll.question) {
+
+            if (showPoll) {
+                if (!pollQuestion) {
+                    throw new Error('Anket sorusu zorunludur.');
+                }
+
+                if (pollOptions.length < 2) {
+                    throw new Error('Anket için en az 2 seçenek girin.');
+                }
+
                 body.poll = {
-                    question: formData.poll.question,
-                    options: formData.poll.options.filter(o => o.trim())
+                    question: pollQuestion,
+                    options: pollOptions,
+                    closesAt: null
                 };
             }
 
@@ -1587,9 +2076,13 @@ const PostForm = ({ onClose, user }) => {
             });
             if (res.ok) {
                 onClose();
+            } else {
+                const text = await res.text();
+                throw new Error(text || 'Gönderi oluşturulamadı.');
             }
         } catch (err) {
             console.error('Gönderi oluşturma başarısız oldu', err);
+            setSubmitError(err.message || 'Gönderi oluşturulamadı.');
         } finally {
             setIsSubmitting(false);
         }
@@ -1607,10 +2100,21 @@ const PostForm = ({ onClose, user }) => {
             <div className="space-y-4">
                 <div className="flex items-center gap-3">
                     <img src={user.photoURL} className="w-12 h-12 rounded-full border border-white/10" />
-                    <div>
-                        <div className="font-bold text-white">{user.displayName}</div>
+                    <div className="min-w-0 flex-1">
+                        <div className="font-bold text-white">{formData.authorName.trim() || user.displayName}</div>
                         <div className="text-xs text-slate-500">Yönetici olarak paylaşılıyor</div>
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">Yazar</label>
+                    <input
+                        type="text"
+                        value={formData.authorName}
+                        onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
+                        className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-emerald-500/40"
+                        placeholder="AkademiZ Admin"
+                    />
                 </div>
 
                 <textarea
@@ -1679,19 +2183,29 @@ const PostForm = ({ onClose, user }) => {
                 </div>
             )}
 
+            {submitError && (
+                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                    {submitError}
+                </div>
+            )}
+
+            <div className="rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-xs leading-6 text-slate-500">
+                `authorName` alanı frontend tarafından gönderilir. Backend create endpointi şu an bunu resmi olarak dokümante etmiyor; kayıt yanıtında yine oturum sahibinin adı dönüyorsa backend tarafında ayrıca destek eklenmesi gerekir.
+            </div>
+
             <div className="flex items-center justify-between border-t border-white/5 pt-6">
                 <div className="flex items-center gap-4">
-                    <div className="relative h-12 w-12 shrink-0">
+                    <label className="relative h-12 w-12 shrink-0 cursor-pointer">
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleImageUpload}
                             className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                         />
-                        <button type="button" className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${formData.imageUrl ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}>
+                        <span className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all ${formData.imageUrl ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}>
                             {uploadingImage ? <Loader2 className="animate-spin" size={20} /> : <ImageIcon size={20} />}
-                        </button>
-                    </div>
+                        </span>
+                    </label>
                     <button
                         type="button"
                         onClick={() => setShowPoll((prev) => !prev)}
@@ -1799,7 +2313,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
 
     return (
         <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-slate-950/50 p-5">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sınıflar</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Programlar</div>
             <select
                 value={selectedScheduleId}
                 onChange={(e) => onSelect(e.target.value)}
@@ -1807,7 +2321,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
             >
                 {schedules.map((schedule) => (
                     <option key={schedule.id} value={schedule.id}>
-                        {schedule.programName} - {schedule.className}
+                        {schedule.programName}
                     </option>
                 ))}
             </select>
@@ -1818,7 +2332,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
                         {selectedSchedule.academicYear} • {selectedSchedule.semester}
                     </div>
                     <div className="mt-1 text-sm text-slate-300">
-                        {selectedSchedule.programName}
+                        {(selectedSchedule.availableClassKeys || []).length} sınıf anahtarı
                     </div>
                 </>
             )}
@@ -1826,7 +2340,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
     );
 };
 
-const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot, saving }) => {
+const ScheduleBoardCard = ({ board, onCellClick, onAddTimeSlot, onQuickAdd, onTimeSlotClick, saving }) => {
     const template = {
         gridTemplateColumns: `92px repeat(${SCHEDULE_DAYS.length}, minmax(152px, 1fr))`
     };
@@ -1837,21 +2351,29 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Haftalık Tablo</p>
                 <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <h4 className="text-xl font-bold text-white">Ders bilgisi eklemek veya düzenlemek için bir hücreye tıklayın</h4>
-                    <button
-                        type="button"
-                        onClick={onAddTimeSlot}
-                        disabled={saving}
-                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${saving
-                            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500 opacity-60'
-                            : 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100 hover:border-cyan-300/30 hover:bg-cyan-400/15'
-                            }`}
-                    >
-                        <Plus size={16} />
-                        Yeni Saat Satırı
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={onQuickAdd}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/30 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Upload size={16} />
+                            Quick Add
+                        </button>
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={onAddTimeSlot}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/30 hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <Plus size={16} />
+                            Saat Ekle
+                        </button>
+                    </div>
                 </div>
                 <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-400">
-                    Omusiber'deki haftalık görünüme benzer şekilde saatler solda, günler üstte yer alır. Saat kutusuna tıklayarak aralığı düzenleyebilir, satır ekleyebilir veya silebilirsiniz.
+                    Haftalık görünüm backend'den gelen veri üstünde yerel taslak olarak düzenlenir. Sayfadan kaydetmeden API'ye istek gönderilmez.
                 </p>
             </div>
 
@@ -1881,17 +2403,16 @@ const ScheduleBoardCard = ({ board, onCellClick, onTimeSlotClick, onAddTimeSlot,
                                     type="button"
                                     disabled={saving}
                                     onClick={() => onTimeSlotClick(slot)}
-                                    className={`rounded-2xl border border-white/8 bg-slate-950/70 px-3 py-4 text-left transition ${saving
-                                        ? 'cursor-not-allowed opacity-60'
-                                        : 'hover:border-cyan-300/25 hover:bg-cyan-400/8'
-                                        }`}
+                                    className="rounded-2xl border border-white/8 bg-slate-950/70 px-3 py-4 text-left transition hover:border-cyan-300/25 hover:bg-cyan-400/8 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
                                             <div className="text-sm font-bold text-white">{slot.time}</div>
                                             <div className="mt-2 text-xs text-slate-500">{slot.endTime}</div>
                                         </div>
-                                        <Pencil size={15} className="text-slate-500" />
+                                        <div className="rounded-full border border-white/10 bg-white/5 p-1.5 text-slate-400">
+                                            <Pencil size={12} />
+                                        </div>
                                     </div>
                                 </button>
 
@@ -1970,7 +2491,7 @@ const ScheduleLessonModal = ({
                             <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Saati Düzenle</div>
                             <h4 className="mt-2 text-2xl font-bold text-white">{getDayLabel(state.dayKey)} • {state.time}</h4>
                             <p className="mt-2 text-sm leading-6 text-slate-300">
-                                Bu kutu için dersi kaydedin, güncelleyin veya isterseniz temizleyin.
+                                Bu kutu için dersi taslağa ekleyin, güncelleyin veya temizleyin. Sayfa kaydetmesi yapılana kadar backend değişmez.
                             </p>
                         </div>
 
@@ -2056,11 +2577,11 @@ const ScheduleLessonModal = ({
                                 onClick={onDelete}
                                 className="inline-flex items-center justify-center rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Kaydedilen Değişikliği Temizle
+                                Taslaktaki Değişikliği Temizle
                             </button>
                         ) : (
                             <div className="text-sm text-slate-500">
-                                Bu hücre henüz kaydedilmemiş.
+                                Bu hücre için henüz manuel taslak yok.
                             </div>
                         )}
 
@@ -2078,7 +2599,7 @@ const ScheduleLessonModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                Hücreyi Kaydet
+                                Taslağa Uygula
                             </button>
                         </div>
                     </div>
@@ -2186,6 +2707,91 @@ const ScheduleTimeSlotModal = ({
     );
 };
 
+const ScheduleQuickAddModal = ({
+    state,
+    saving,
+    error,
+    onClose,
+    onFieldChange,
+    onSubmit
+}) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-8 backdrop-blur-sm">
+            <div className="w-full max-w-3xl rounded-[2rem] border border-white/10 bg-slate-900/95 p-6 shadow-[0_30px_80px_rgba(2,6,23,0.65)]">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Quick Add</p>
+                        <h4 className="mt-2 text-2xl font-bold text-white">Metinden günü hızlıca doldur</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                            Bir gün seçin ve tabloyu yapıştırın. Saat ilk sütundan, derslik son 4 karakterden alınır; kalan metin ders kodu, ders adı ve öğretim görevlisi olarak çözümlenir.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-full border border-white/10 p-2 text-slate-400 transition hover:text-white"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form className="mt-6 space-y-5" onSubmit={onSubmit}>
+                    <ScheduleField label="Gün">
+                        <select
+                            value={state.dayKey}
+                            onChange={(e) => onFieldChange('dayKey', e.target.value)}
+                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                        >
+                            {SCHEDULE_DAYS.map((day) => (
+                                <option key={day.key} value={day.key}>
+                                    {day.label}
+                                </option>
+                            ))}
+                        </select>
+                    </ScheduleField>
+
+                    <ScheduleField label="Ders Metni">
+                        <textarea
+                            rows="12"
+                            value={state.rawText}
+                            onChange={(e) => onFieldChange('rawText', e.target.value)}
+                            className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 font-mono text-sm text-white outline-none transition focus:border-cyan-400/40"
+                            placeholder={'Saat\tDers Kodu\tDers Adı\tÖğretim Görevlisi\tDerslik\n9:15\tSGP216\tMüşteri İlişkileri Yönetimi\tÖğr. Gör. Elif ATAMAN ERDOĞDU\tD102'}
+                        />
+                    </ScheduleField>
+
+                    <div className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4 text-sm leading-7 text-slate-400">
+                        Başlık satırı otomatik atlanır. Boş satırlar yok sayılır. Yalnızca saat olan satırlar boş ders satırı olarak eklenir.
+                    </div>
+
+                    <div className="min-h-6 text-sm">
+                        {error && <p className="text-red-300">{error}</p>}
+                    </div>
+
+                    <div className="flex flex-col gap-3 border-t border-white/5 pt-4 sm:flex-row sm:items-center sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                        >
+                            İptal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {saving ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                            Taslağa Uygula
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
     const entries = getOrderedLessonEntries(lessonMap);
 
@@ -2236,335 +2842,165 @@ const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
     );
 };
 
-const fakeScheduleApi = {
-    async listSchedules() {
-        await wait(180);
-        return buildScheduleSnapshot();
-    },
+const createEmptyWeekSchedule = () => Object.fromEntries(
+    SCHEDULE_DAYS.map((day) => [day.key, []])
+);
 
-    async upsertManualLesson({ scheduleId, gradeKey, lesson }) {
-        await wait(180);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-        const currentDayLessons = (currentGrade.manualLessons || {})[lesson.dayKey] || [];
-
-        const nextLesson = {
-            id: lesson.id || `manual-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            time: lesson.time,
-            courseCode: lesson.courseCode,
-            courseName: lesson.courseName,
-            instructor: lesson.instructor,
-            classroom: lesson.classroom,
-            source: 'manual'
-        };
-        const nextDayLessons = [
-            ...currentDayLessons.filter((item) => item.id !== lesson.id && item.time !== lesson.time),
-            nextLesson
-        ].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-
-        const nextStorage = {
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    manualLessons: {
-                        ...(currentGrade.manualLessons || {}),
-                        [lesson.dayKey]: nextDayLessons
-                    }
-                }
-            }
-        };
-
-        writeScheduleStorage(nextStorage);
-        return buildScheduleSnapshot();
-    },
-
-    async setOverride({ scheduleId, gradeKey, enabled }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    overrideEnabled: enabled
-                }
-            }
-        });
-
-        return buildScheduleSnapshot();
-    },
-
-    async deleteManualLesson({ scheduleId, gradeKey, lessonId }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = storage[scheduleId]?.[gradeKey] || {
-            overrideEnabled: false,
-            manualLessons: {}
-        };
-
-        const nextManualLessons = Object.fromEntries(
-            Object.entries(currentGrade.manualLessons || {}).map(([dayKey, lessons]) => [
-                dayKey,
-                lessons.filter((lesson) => lesson.id !== lessonId)
-            ]).filter(([, lessons]) => lessons.length > 0)
-        );
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    manualLessons: nextManualLessons
-                }
-            }
-        });
-
-        return buildScheduleSnapshot();
-    },
-
-    async upsertTimeSlot({ scheduleId, gradeKey, slot }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
-        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
-        const slotId = slot.id || `slot-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        const sourceTime = slot.sourceTime || slot.startTime;
-
-        const nextTimeSlots = [...timeSlots.filter((item) => item.id !== slotId), {
-            id: slotId,
-            originalTime: sourceTime,
-            startTime: slot.startTime,
-            endTime: slot.endTime
-        }].sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    timeSlots: nextTimeSlots,
-                    manualLessons: slot.previousTime && slot.previousTime !== slot.startTime
-                        ? moveManualLessonsToNewTime(currentGrade.manualLessons, slot.previousTime, slot.startTime)
-                        : currentGrade.manualLessons
-                }
-            }
-        });
-
-        return buildScheduleSnapshot();
-    },
-
-    async deleteTimeSlot({ scheduleId, gradeKey, slotId }) {
-        await wait(120);
-        const storage = readScheduleStorage();
-        const currentGrade = getStoredGradeState(storage, scheduleId, gradeKey);
-        const timeSlots = normalizeStoredTimeSlots(currentGrade.timeSlots);
-        const targetSlot = timeSlots.find((slot) => slot.id === slotId);
-        if (!targetSlot) {
-            return buildScheduleSnapshot();
+const getAuthHeaders = async (authRequired = false) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        if (authRequired) {
+            throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
         }
-
-        writeScheduleStorage({
-            ...storage,
-            [scheduleId]: {
-                ...(storage[scheduleId] || {}),
-                [gradeKey]: {
-                    ...currentGrade,
-                    timeSlots: timeSlots.filter((slot) => slot.id !== slotId),
-                    manualLessons: removeManualLessonsForTime(currentGrade.manualLessons, targetSlot.startTime)
-                }
-            }
-        });
-
-        return buildScheduleSnapshot();
-    }
-};
-
-const buildScheduleSnapshot = () => {
-    const storage = readScheduleStorage();
-
-    return SCHEDULE_SEED_DATA.map((schedule) => {
-        const storedSchedule = storage[schedule.id] || {};
-        const grades = Object.fromEntries(
-            GRADE_OPTIONS.map(({ key }) => {
-                const gradeState = getStoredGradeState(storedSchedule, '', key);
-                const timeSlots = normalizeStoredTimeSlots(gradeState.timeSlots);
-                const generatedLessons = mapGeneratedLessonsToTimeSlots(schedule.generated[key] || {}, timeSlots);
-                const manualLessons = normalizeLessonMap(gradeState.manualLessons || {});
-                const overrideEnabled = gradeState.overrideEnabled === true;
-                const effectiveLessons = overrideEnabled
-                    ? normalizeLessonMap(markLessonsAsManual(manualLessons))
-                    : mergeLessonMaps(generatedLessons, manualLessons);
-
-                return [key, {
-                    overrideEnabled,
-                    timeSlots,
-                    generatedLessons,
-                    manualLessons: normalizeLessonMap(markLessonsAsManual(manualLessons)),
-                    effectiveLessons,
-                    counts: {
-                        generated: countLessons(generatedLessons),
-                        manual: countLessons(manualLessons),
-                        effective: countLessons(effectiveLessons)
-                    }
-                }];
-            })
-        );
-
-        return {
-            ...schedule,
-            grades
-        };
-    });
-};
-
-const readScheduleStorage = () => {
-    if (typeof window === 'undefined') return {};
-
-    try {
-        const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY);
-        return raw ? JSON.parse(raw) : {};
-    } catch (err) {
-        console.error('Failed to read fake schedule storage', err);
         return {};
     }
+
+    const token = await currentUser.getIdToken();
+    return { Authorization: `Bearer ${token}` };
 };
 
-const writeScheduleStorage = (value) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(value));
-};
+const apiFetch = async (path, { method = 'GET', body, authRequired = false } = {}) => {
+    const headers = await getAuthHeaders(authRequired);
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        headers: body === undefined ? headers : {
+            ...headers,
+            'Content-Type': 'application/json'
+        },
+        body: body === undefined ? undefined : JSON.stringify(body)
+    });
 
-const getDefaultGradeState = () => ({
-    overrideEnabled: false,
-    manualLessons: {},
-    timeSlots: createDefaultTimeSlots()
-});
-
-const getStoredGradeState = (storage, scheduleId, gradeKey) => {
-    if (scheduleId) {
-        return {
-            ...getDefaultGradeState(),
-            ...(storage[scheduleId]?.[gradeKey] || {})
-        };
+    if (!response.ok) {
+        let message = 'İstek başarısız oldu.';
+        try {
+            const payload = await response.json();
+            message = payload.error || payload.message || message;
+        } catch {
+            const text = await response.text();
+            if (text) message = text;
+        }
+        throw new Error(message);
     }
 
-    return {
-        ...getDefaultGradeState(),
-        ...(storage[gradeKey] || {})
-    };
+    return response.json();
 };
 
-const createDefaultTimeSlots = () => DEFAULT_SCHEDULE_TIMES.map((time) => ({
-    id: `slot-${time}`,
-    originalTime: time,
-    startTime: time,
-    endTime: addMinutesToTime(time, 50)
-}));
+const scheduleApi = {
+    async listSchedules() {
+        const data = await apiFetch('/schedules');
+        return data.map(normalizeScheduleSummary);
+    },
 
-const normalizeStoredTimeSlots = (timeSlots = []) => {
-    const source = timeSlots.length > 0 ? timeSlots : createDefaultTimeSlots();
-    return [...source]
-        .map((slot) => ({
-            id: slot.id || `slot-${slot.originalTime || slot.startTime}`,
-            originalTime: slot.originalTime || slot.startTime,
-            startTime: slot.startTime,
-            endTime: slot.endTime || addMinutesToTime(slot.startTime, 50)
-        }))
-        .filter((slot) => isValidTime(slot.startTime) && isValidTime(slot.endTime))
-        .sort((left, right) => timeToMinutes(left.startTime) - timeToMinutes(right.startTime));
+    async createSchedule(payload) {
+        const data = await apiFetch('/schedules', {
+            method: 'POST',
+            body: payload,
+            authRequired: true
+        });
+        return normalizeScheduleEditor(data);
+    },
+
+    async deleteSchedule(scheduleId) {
+        return apiFetch(`/schedules/${scheduleId}`, {
+            method: 'DELETE',
+            authRequired: true
+        });
+    },
+
+    async getScheduleEditor(scheduleId) {
+        const data = await apiFetch(`/schedules/${scheduleId}/manual`, { authRequired: true });
+        return normalizeScheduleEditor(data);
+    },
+
+    async saveManualSchedule({ scheduleId, manualSchedule }) {
+        const data = await apiFetch(`/schedules/${scheduleId}/manual`, {
+            method: 'PUT',
+            body: { manualSchedule },
+            authRequired: true
+        });
+        return normalizeScheduleEditor(data);
+    },
+
+    async saveClassSchedule({ scheduleId, classKey, schedule }) {
+        const data = await apiFetch(`/schedules/${scheduleId}/manual/${encodeURIComponent(classKey)}`, {
+            method: 'PUT',
+            body: { schedule },
+            authRequired: true
+        });
+        return normalizeScheduleEditor(data);
+    },
+
+    async deleteClassSchedule({ scheduleId, classKey }) {
+        const data = await apiFetch(`/schedules/${scheduleId}/manual/${encodeURIComponent(classKey)}`, {
+            method: 'DELETE',
+            authRequired: true
+        });
+        return normalizeScheduleEditor(data);
+    },
+
+    async setOverride({ scheduleId, enabled }) {
+        const data = await apiFetch(`/schedules/${scheduleId}/manual-override`, {
+            method: 'PATCH',
+            body: { enabled },
+            authRequired: true
+        });
+        return normalizeScheduleEditor(data);
+    }
+};
+
+const classApi = {
+    async listAdminClasses() {
+        return apiFetch('/admin/classes', { authRequired: true });
+    },
+
+    async createClass(payload) {
+        return apiFetch('/admin/classes', {
+            method: 'POST',
+            body: payload,
+            authRequired: true
+        });
+    },
+
+    async deleteClass(idOrKey) {
+        return apiFetch(`/admin/classes/${encodeURIComponent(idOrKey)}`, {
+            method: 'DELETE',
+            authRequired: true
+        });
+    }
 };
 
 const normalizeLessonMap = (lessonMap = {}) => {
     const result = {};
 
-    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
-        result[dayKey] = [...lessons]
-            .map((lesson) => ({ ...lesson }))
+    SCHEDULE_DAYS.forEach((day) => {
+        const lessons = lessonMap?.[day.key] || [];
+        result[day.key] = [...lessons]
+            .map((lesson, index) => ({
+                id: lesson.id || `${day.key}-${lesson.time || '00:00'}-${index}`,
+                time: normalizeTimeValue(lesson.time || ''),
+                courseCode: lesson.courseCode || '',
+                courseName: lesson.courseName || '',
+                instructor: lesson.instructor || '',
+                classroom: lesson.classroom || '',
+                source: lesson.source,
+                isEmpty: lesson.isEmpty === true || (!lesson.courseName && Boolean(lesson.time))
+            }))
+            .filter((lesson) => isValidTime(lesson.time) && (lesson.courseName || lesson.isEmpty))
             .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
     });
 
     return result;
 };
 
-const moveManualLessonsToNewTime = (lessonMap = {}, previousTime, nextTime) => {
-    const result = {};
-
-    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
-        const nextLessons = lessons
-            .map((lesson) => (
-                lesson.time === previousTime
-                    ? { ...lesson, time: nextTime }
-                    : { ...lesson }
-            ))
-            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-
-        if (nextLessons.length > 0) {
-            result[dayKey] = nextLessons;
-        }
-    });
-
-    return result;
-};
-
-const removeManualLessonsForTime = (lessonMap = {}, removedTime) => Object.fromEntries(
-    Object.entries(lessonMap || {})
-        .map(([dayKey, lessons]) => [
-            dayKey,
-            lessons.filter((lesson) => lesson.time !== removedTime).map((lesson) => ({ ...lesson }))
-        ])
-        .filter(([, lessons]) => lessons.length > 0)
-);
-
-const markLessonsAsManual = (lessonMap = {}) => Object.fromEntries(
-    Object.entries(lessonMap).map(([dayKey, lessons]) => [
+const addSourceToLessonMap = (lessonMap = {}, source) => Object.fromEntries(
+    Object.entries(normalizeLessonMap(lessonMap)).map(([dayKey, lessons]) => [
         dayKey,
-        lessons.map((lesson) => ({ ...lesson, source: 'manual' }))
+        lessons.map((lesson) => ({ ...lesson, source }))
     ])
 );
 
-const mergeLessonMaps = (generatedLessons, manualLessons) => {
-    const result = normalizeLessonMap(generatedLessons);
-
-    Object.entries(markLessonsAsManual(manualLessons)).forEach(([dayKey, lessons]) => {
-        const existingLessons = result[dayKey] || [];
-        result[dayKey] = [...existingLessons, ...lessons]
-            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-    });
-
-    return result;
-};
-
 const countLessons = (lessonMap = {}) => Object.values(lessonMap).reduce(
-    (total, lessons) => total + lessons.length,
-    0
-);
-
-const countLessonsAcrossSchedules = (schedules, key) => schedules.reduce(
-    (total, schedule) => total + GRADE_OPTIONS.reduce(
-        (gradeTotal, grade) => gradeTotal + (schedule.grades?.[grade.key]?.counts?.[key === 'manualLessons' ? 'manual' : 'effective'] || 0),
-        0
-    ),
-    0
-);
-
-const countOverridesAcrossSchedules = (schedules) => schedules.reduce(
-    (total, schedule) => total + GRADE_OPTIONS.reduce(
-        (gradeTotal, grade) => gradeTotal + (schedule.grades?.[grade.key]?.overrideEnabled ? 1 : 0),
-        0
-    ),
+    (total, lessons) => total + lessons.filter((lesson) => !lesson.isEmpty).length,
     0
 );
 
@@ -2591,6 +3027,20 @@ const formatLessonMeta = (lesson) => {
 };
 
 const getDayLabel = (dayKey) => SCHEDULE_DAYS.find((day) => day.key === dayKey)?.label || dayKey;
+const formatClassKeyLabel = (classKey = '') => {
+    const gradeMatch = /^grade(\d+)$/i.exec(classKey);
+    if (gradeMatch) {
+        return `${gradeMatch[1]}. Sınıf`;
+    }
+    return classKey;
+};
+
+const normalizeTimeValue = (value = '') => {
+    const normalizedValue = value.trim().replace('.', ':');
+    const [hours, minutes] = normalizedValue.split(':');
+    if (!Number.isInteger(Number(hours)) || !Number.isInteger(Number(minutes))) return value;
+    return `${String(Number(hours)).padStart(2, '0')}:${String(Number(minutes)).padStart(2, '0')}`;
+};
 
 const makeScheduleCellKey = (dayKey, time) => `${dayKey}__${time}`;
 
@@ -2633,62 +3083,59 @@ const addMinutesToTime = (time, minutesToAdd) => {
     return `${hours}:${minutePart}`;
 };
 
-const mapGeneratedLessonsToTimeSlots = (lessonMap = {}, timeSlots = []) => {
-    const slotLookup = new Map(timeSlots.map((slot) => [slot.originalTime, slot]));
-    const result = {};
-
-    Object.entries(lessonMap || {}).forEach(([dayKey, lessons]) => {
-        const mappedLessons = lessons
-            .map((lesson) => {
-                const slot = slotLookup.get(lesson.time);
-                if (!slot) return null;
-                return { ...lesson, time: slot.startTime };
-            })
-            .filter(Boolean)
-            .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
-
-        if (mappedLessons.length > 0) {
-            result[dayKey] = mappedLessons;
-        }
+const deriveBoardTimes = (classState) => {
+    const times = new Set();
+    [classState?.autoLessons, classState?.manualLessons, classState?.effectiveLessons].forEach((lessonMap) => {
+        Object.values(lessonMap || {}).forEach((lessons) => {
+            lessons.forEach((lesson) => {
+                if (isValidTime(lesson.time)) {
+                    times.add(lesson.time);
+                }
+            });
+        });
     });
 
-    return result;
+    if (times.size === 0) {
+        DEFAULT_SCHEDULE_TIMES.forEach((time) => times.add(time));
+    }
+
+    return [...times]
+        .sort((left, right) => timeToMinutes(left) - timeToMinutes(right))
+        .map((time) => ({
+            id: `slot-${time}`,
+            time,
+            endTime: addMinutesToTime(time, DEFAULT_LESSON_DURATION_MINUTES)
+        }));
 };
 
-const buildScheduleBoard = (grade) => {
-    if (!grade) {
+const buildScheduleBoard = (classState) => {
+    if (!classState) {
         return {
-            timeSlots: createDefaultTimeSlots().map((slot) => ({
-                id: slot.id,
-                originalTime: slot.originalTime,
-                time: slot.startTime,
-                endTime: slot.endTime
-            })),
+            timeSlots: deriveBoardTimes({
+                autoLessons: createEmptyWeekSchedule(),
+                manualLessons: createEmptyWeekSchedule(),
+                effectiveLessons: createEmptyWeekSchedule()
+            }),
             cellMap: {},
             filledCells: 0
         };
     }
 
-    const generatedByCell = indexLessonsByCell(grade.generatedLessons);
-    const manualByCell = indexLessonsByCell(grade.manualLessons);
-    const effectiveByCell = indexLessonsByCell(grade.effectiveLessons);
-    const normalizedTimeSlots = normalizeStoredTimeSlots(grade.timeSlots).map((slot) => ({
-        id: slot.id,
-        originalTime: slot.originalTime,
-        time: slot.startTime,
-        endTime: slot.endTime
-    }));
+    const generatedByCell = indexLessonsByCell(classState.autoLessons);
+    const manualByCell = indexLessonsByCell(classState.manualLessons);
+    const effectiveByCell = indexLessonsByCell(classState.effectiveLessons);
+    const normalizedTimeSlots = deriveBoardTimes(classState);
     const cellMap = {};
 
     normalizedTimeSlots.forEach(({ time }) => {
         SCHEDULE_DAYS.forEach((day) => {
             const key = makeScheduleCellKey(day.key, time);
-            const generatedLessons = generatedByCell[key] || [];
-            const manualLessons = manualByCell[key] || [];
-            const effectiveLessons = effectiveByCell[key] || [];
+            const generatedLessons = (generatedByCell[key] || []).filter((lesson) => !lesson.isEmpty);
+            const manualLessons = (manualByCell[key] || []).filter((lesson) => !lesson.isEmpty);
+            const effectiveLessons = (effectiveByCell[key] || []).filter((lesson) => !lesson.isEmpty);
             const primaryLesson = manualLessons[0] || effectiveLessons[0] || generatedLessons[0] || null;
             const mode = manualLessons.length > 0
-                ? (grade.overrideEnabled ? 'override' : generatedLessons.length > 0 ? 'mixed' : 'manual')
+                ? (classState.overrideEnabled ? 'override' : generatedLessons.length > 0 ? 'mixed' : 'manual')
                 : generatedLessons.length > 0
                     ? 'generated'
                     : 'empty';
@@ -2719,7 +3166,7 @@ const getOrderedLessonEntries = (lessonMap = {}) => {
     const ordered = [];
 
     SCHEDULE_DAYS.forEach((day) => {
-        const lessons = lessonMap[day.key];
+        const lessons = (lessonMap[day.key] || []).filter((lesson) => !lesson.isEmpty);
         if (lessons && lessons.length > 0) {
             ordered.push([day.key, lessons]);
             usedKeys.add(day.key);
@@ -2727,12 +3174,333 @@ const getOrderedLessonEntries = (lessonMap = {}) => {
     });
 
     Object.entries(lessonMap).forEach(([dayKey, lessons]) => {
-        if (!usedKeys.has(dayKey) && lessons.length > 0) {
-            ordered.push([dayKey, lessons]);
+        const visibleLessons = lessons.filter((lesson) => !lesson.isEmpty);
+        if (!usedKeys.has(dayKey) && visibleLessons.length > 0) {
+            ordered.push([dayKey, visibleLessons]);
         }
     });
 
     return ordered;
+};
+
+const normalizeClassSchedule = (schedule = {}) => normalizeLessonMap(schedule);
+
+const normalizeScheduleSummary = (schedule) => ({
+    ...schedule,
+    id: String(schedule.id),
+    availableClassKeys: Array.isArray(schedule.availableClassKeys) ? schedule.availableClassKeys : Object.keys(schedule.schedule || {}),
+    manualClassKeys: Array.isArray(schedule.manualClassKeys) ? schedule.manualClassKeys : [],
+    schedule: Object.fromEntries(
+        Object.entries(schedule.schedule || {}).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
+    )
+});
+
+const normalizeScheduleEditor = (schedule) => ({
+    ...normalizeScheduleSummary(schedule),
+    autoSchedule: Object.fromEntries(
+        Object.entries(schedule.autoSchedule || {}).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
+    ),
+    manualSchedule: Object.fromEntries(
+        Object.entries(schedule.manualSchedule || {}).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
+    ),
+    effectiveSchedule: Object.fromEntries(
+        Object.entries((schedule.effectiveSchedule || schedule.schedule || {})).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
+    )
+});
+
+const areDraftItemsChanged = (draftItems, originalItems, getId, getValue) => {
+    if (draftItems.length !== originalItems.length) return true;
+
+    const originalMap = new Map(originalItems.map((item) => [String(getId(item)), getValue(item)]));
+
+    return draftItems.some((item) => {
+        const id = String(getId(item));
+        if (!originalMap.has(id)) return true;
+        return originalMap.get(id) !== getValue(item);
+    });
+};
+
+const mergeClassSchedules = (autoSchedule, manualSchedule, overrideEnabled) => {
+    const normalizedAuto = normalizeClassSchedule(autoSchedule || createEmptyWeekSchedule());
+    const normalizedManual = normalizeClassSchedule(manualSchedule || createEmptyWeekSchedule());
+
+    if (!overrideEnabled) {
+        return normalizedAuto;
+    }
+
+    const merged = { ...createEmptyWeekSchedule() };
+
+    Object.keys(merged).forEach((dayKey) => {
+        merged[dayKey] = Object.prototype.hasOwnProperty.call(normalizedManual, dayKey)
+            ? normalizedManual[dayKey]
+            : normalizedAuto[dayKey] || [];
+    });
+
+    Object.entries(normalizedAuto).forEach(([dayKey, lessons]) => {
+        if (!Object.prototype.hasOwnProperty.call(merged, dayKey)) {
+            merged[dayKey] = lessons;
+        }
+    });
+
+    Object.entries(normalizedManual).forEach(([dayKey, lessons]) => {
+        if (!Object.prototype.hasOwnProperty.call(merged, dayKey)) {
+            merged[dayKey] = lessons;
+        }
+    });
+
+    return merged;
+};
+
+const applyLocalClassScheduleToPayload = (payload, classKey, nextClassSchedule) => {
+    if (!payload || !classKey) return payload;
+
+    const nextManualSchedule = {
+        ...(payload.manualSchedule || {}),
+        [classKey]: normalizeClassSchedule(nextClassSchedule)
+    };
+    const nextEffectiveClassSchedule = mergeClassSchedules(
+        payload.autoSchedule?.[classKey],
+        nextManualSchedule[classKey],
+        payload.manualOverrideEnabled === true
+    );
+
+    return normalizeScheduleEditor({
+        ...payload,
+        manualSchedule: nextManualSchedule,
+        effectiveSchedule: {
+            ...(payload.effectiveSchedule || {}),
+            [classKey]: nextEffectiveClassSchedule
+        },
+        schedule: {
+            ...(payload.schedule || {}),
+            [classKey]: nextEffectiveClassSchedule
+        }
+    });
+};
+
+const buildEditorClassState = (editorPayload, classKey) => {
+    if (!editorPayload || !classKey) return null;
+
+    const autoSchedule = normalizeClassSchedule(editorPayload.autoSchedule?.[classKey] || createEmptyWeekSchedule());
+    const manualSchedule = normalizeClassSchedule(editorPayload.manualSchedule?.[classKey] || createEmptyWeekSchedule());
+    const effectiveSchedule = normalizeClassSchedule(editorPayload.effectiveSchedule?.[classKey] || editorPayload.schedule?.[classKey] || createEmptyWeekSchedule());
+
+    return {
+        overrideEnabled: editorPayload.manualOverrideEnabled === true,
+        autoLessons: addSourceToLessonMap(autoSchedule, 'generated'),
+        manualLessons: addSourceToLessonMap(manualSchedule, 'manual'),
+        effectiveLessons: normalizeLessonMap(effectiveSchedule),
+        manualSchedule
+    };
+};
+
+const upsertLessonInSchedule = (schedule, lesson) => {
+    const normalized = normalizeClassSchedule(schedule);
+    const dayLessons = normalized[lesson.dayKey] || [];
+    const nextDayLessons = [
+        ...dayLessons.filter((item) => item.id !== lesson.id && item.time !== lesson.time),
+        {
+            id: lesson.id || `manual-${Date.now()}`,
+            time: normalizeTimeValue(lesson.time),
+            courseCode: lesson.courseCode || '',
+            courseName: lesson.courseName || '',
+            instructor: lesson.instructor || '',
+            classroom: lesson.classroom || '',
+            source: 'manual',
+            isEmpty: false
+        }
+    ].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+
+    return {
+        ...createEmptyWeekSchedule(),
+        ...normalized,
+        [lesson.dayKey]: nextDayLessons.map(({ id, source, ...rest }) => rest)
+    };
+};
+
+const deleteLessonFromSchedule = (schedule, dayKey, lessonId, time) => {
+    const normalized = normalizeClassSchedule(schedule);
+    return {
+        ...createEmptyWeekSchedule(),
+        ...normalized,
+        [dayKey]: (normalized[dayKey] || [])
+            .filter((lesson) => lesson.id !== lessonId && lesson.time !== time)
+            .map(({ id, source, ...rest }) => rest)
+    };
+};
+
+const TIME_SLOT_ANCHOR_DAY = SCHEDULE_DAYS[0].key;
+
+const upsertEmptySlotInSchedule = (schedule, time, anchorDay = TIME_SLOT_ANCHOR_DAY) => {
+    const normalized = normalizeClassSchedule(schedule);
+    const dayLessons = normalized[anchorDay] || [];
+    const nextDayLessons = [
+        ...dayLessons.filter((lesson) => lesson.time !== time),
+        {
+            time: normalizeTimeValue(time),
+            courseCode: '',
+            courseName: '',
+            instructor: '',
+            classroom: '',
+            isEmpty: true
+        }
+    ].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+
+    return {
+        ...createEmptyWeekSchedule(),
+        ...normalized,
+        [anchorDay]: nextDayLessons
+    };
+};
+
+const renameTimeInSchedule = (schedule, previousTime, nextTime) => {
+    const normalized = normalizeClassSchedule(schedule);
+    let changed = false;
+    const nextSchedule = Object.fromEntries(
+        Object.entries({ ...createEmptyWeekSchedule(), ...normalized }).map(([dayKey, lessons]) => [
+            dayKey,
+            lessons
+                .map((lesson) => {
+                    if (lesson.time !== previousTime) return lesson;
+                    changed = true;
+                    return { ...lesson, time: normalizeTimeValue(nextTime) };
+                })
+                .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time))
+        ])
+    );
+
+    if (!changed) {
+        return upsertEmptySlotInSchedule(normalized, nextTime);
+    }
+
+    return nextSchedule;
+};
+
+const deleteTimeFromSchedule = (schedule, time) => {
+    const normalized = normalizeClassSchedule(schedule);
+    return Object.fromEntries(
+        Object.entries({ ...createEmptyWeekSchedule(), ...normalized }).map(([dayKey, lessons]) => [
+            dayKey,
+            lessons.filter((lesson) => lesson.time !== time)
+        ])
+    );
+};
+
+const replaceDayInSchedule = (schedule, dayKey, lessons) => {
+    const normalized = normalizeClassSchedule(schedule);
+    return {
+        ...createEmptyWeekSchedule(),
+        ...normalized,
+        [dayKey]: normalizeClassSchedule({ [dayKey]: lessons })[dayKey] || []
+    };
+};
+
+const INSTRUCTOR_MARKERS = [
+    'Öğr. Gör. Dr.',
+    'Dr. Öğr. Üyesi',
+    'Öğr. Gör.',
+    'Doç. Dr.',
+    'Prof. Dr.',
+    'Arş. Gör.',
+    'Dr.',
+    'Öğr. Üyesi'
+];
+
+const parseQuickAddScheduleText = (rawText) => {
+    return rawText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line) => !/^saat\b/i.test(line))
+        .map(parseQuickAddLine)
+        .filter(Boolean)
+        .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+};
+
+const parseQuickAddLine = (line) => {
+    const timeMatch = line.match(/^(\d{1,2}[:.]\d{2})/);
+    if (!timeMatch) return null;
+
+    const time = normalizeTimeValue(timeMatch[1]);
+    if (!isValidTime(time)) return null;
+
+    const remainder = line.slice(timeMatch[0].length).trim();
+    if (!remainder) {
+        return createEmptyParsedLesson(time);
+    }
+
+    const tabParts = remainder
+        .split('\t')
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+    if (tabParts.length >= 4) {
+        return {
+            time,
+            courseCode: tabParts[0] || '',
+            courseName: tabParts[1] || '',
+            instructor: tabParts[2] || '',
+            classroom: (tabParts[3] || '').slice(-4),
+            isEmpty: false
+        };
+    }
+
+    const classroom = remainder.slice(-4).trim();
+    const withoutClassroom = remainder.slice(0, Math.max(0, remainder.length - 4)).trim();
+
+    if (!withoutClassroom) {
+        return createEmptyParsedLesson(time);
+    }
+
+    const instructorIndex = findInstructorStartIndex(withoutClassroom);
+    const instructor = instructorIndex >= 0 ? withoutClassroom.slice(instructorIndex).trim() : '';
+    const beforeInstructor = instructorIndex >= 0 ? withoutClassroom.slice(0, instructorIndex).trim() : withoutClassroom;
+
+    const firstSpaceIndex = beforeInstructor.indexOf(' ');
+    if (firstSpaceIndex === -1) {
+        return {
+            time,
+            courseCode: beforeInstructor,
+            courseName: '',
+            instructor,
+            classroom,
+            isEmpty: false
+        };
+    }
+
+    const courseCode = beforeInstructor.slice(0, firstSpaceIndex).trim();
+    const courseName = beforeInstructor.slice(firstSpaceIndex + 1).trim();
+
+    if (!courseCode && !courseName && !instructor && !classroom) {
+        return createEmptyParsedLesson(time);
+    }
+
+    return {
+        time,
+        courseCode,
+        courseName,
+        instructor,
+        classroom,
+        isEmpty: false
+    };
+};
+
+const createEmptyParsedLesson = (time) => ({
+    time,
+    courseCode: '',
+    courseName: '',
+    instructor: '',
+    classroom: '',
+    isEmpty: true
+});
+
+const findInstructorStartIndex = (value) => {
+    const indexes = INSTRUCTOR_MARKERS
+        .map((marker) => value.indexOf(marker))
+        .filter((index) => index >= 0);
+
+    if (indexes.length === 0) return -1;
+    return Math.min(...indexes);
 };
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

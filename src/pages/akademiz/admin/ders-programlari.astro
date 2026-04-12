@@ -1,0 +1,16 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminPanel from '../../../components/admin/AdminPanel.jsx';
+
+export const prerender = false;
+---
+
+<Layout title="Ders Programları | AkademiZ Yönetim | NortixLabs">
+    <AdminPanel client:only="react" initialTab="schedule" />
+</Layout>
+
+<style is:global>
+    body {
+        background-color: #020617;
+    }
+</style>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Rocket, Twitter, Github, Linkedin } from 'lucide-react';
 
 export default function Footer({ lang = 'en' }) {
+    const buildVersion = typeof __BUILD_VERSION__ === 'string' ? __BUILD_VERSION__ : 'V-dev';
     const labels = {
         en: {
             desc: 'Pioneering digital experiences through innovative software solutions.',
@@ -23,7 +24,8 @@ export default function Footer({ lang = 'en' }) {
             accountDeletion: 'Account Deletion',
             rights: 'All rights reserved.',
             designed: 'Designed with',
-            by: 'by Nortixlabs Team.'
+            by: 'by Nortixlabs Team.',
+            version: 'Version'
         },
         tr: {
             desc: 'Yenilikçi yazılım çözümleriyle dijital deneyimlere öncülük ediyoruz.',
@@ -45,7 +47,8 @@ export default function Footer({ lang = 'en' }) {
             accountDeletion: 'Hesap Silme',
             rights: 'Tüm hakları saklıdır.',
             designed: 'Tasarım:',
-            by: 'Nortixlabs Ekibi tarafından.'
+            by: 'Nortixlabs Ekibi tarafından.',
+            version: 'Version'
         }
     };
 
@@ -127,9 +130,14 @@ export default function Footer({ lang = 'en' }) {
                     <p className="text-slate-500 text-sm">
                         &copy; {new Date().getFullYear()} Nortixlabs LLC. {t.rights}
                     </p>
-                    <p className="text-slate-600 text-xs">
+                    <div className="flex flex-col items-center gap-1 md:items-end">
+                        <p className="text-slate-600 text-xs">
+                            {t.version}: {buildVersion}
+                        </p>
+                        <p className="text-slate-600 text-xs">
                         {t.designed} <span className="text-red-500">♥</span> {t.by}
-                    </p>
+                        </p>
+                    </div>
                 </div>
             </div>
         </footer>
