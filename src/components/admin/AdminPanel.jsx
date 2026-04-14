@@ -62,6 +62,15 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const [eventView, setEventView] = useState('list');
     const [eventNotice, setEventNotice] = useState('');
     const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+    const [communityPosts, setCommunityPosts] = useState([]);
+    const [communityLoading, setCommunityLoading] = useState(false);
+    const [communityError, setCommunityError] = useState('');
+    const [communityLoaded, setCommunityLoaded] = useState(false);
+    const [deletingPostId, setDeletingPostId] = useState(null);
+    const [newsItems, setNewsItems] = useState([]);
+    const [newsLoading, setNewsLoading] = useState(false);
+    const [newsError, setNewsError] = useState('');
+    const [newsLoaded, setNewsLoaded] = useState(false);
     const accountMenuRef = useRef(null);
     const activeNavItem = NAV_ITEMS.find((item) => item.id === activeTab);
 
@@ -125,6 +134,22 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
         }
     }, [activeTab]);
 
+    useEffect(() => {
+        if (!user || activeTab !== 'community' || communityLoaded) {
+            return;
+        }
+
+        loadCommunityPosts();
+    }, [user, activeTab, communityLoaded]);
+
+    useEffect(() => {
+        if (!user || activeTab !== 'news' || newsLoaded) {
+            return;
+        }
+
+        loadNewsItems();
+    }, [user, activeTab, newsLoaded]);
+
     const handleGoogleSignIn = async () => {
         try {
             setError(null);
@@ -167,9 +192,59 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
         setEventNotice('');
     };
 
+    const loadCommunityPosts = async () => {
+        try {
+            setCommunityLoading(true);
+            setCommunityError('');
+            const posts = await communityApi.listPosts();
+            setCommunityPosts(posts);
+            setCommunityLoaded(true);
+        } catch (err) {
+            setCommunityError(err.message || 'Topluluk gönderileri yüklenemedi.');
+        } finally {
+            setCommunityLoading(false);
+        }
+    };
+
     const handleEventCreated = () => {
         setEventView('list');
         setEventNotice('Etkinlik taslağı oluşturuldu. Liste bağlantısı geldiğinde burada görünecek.');
+    };
+
+    const loadNewsItems = async () => {
+        try {
+            setNewsLoading(true);
+            setNewsError('');
+            const items = await newsApi.listItems();
+            setNewsItems(items);
+            setNewsLoaded(true);
+        } catch (err) {
+            setNewsError(err.message || 'Haberler yüklenemedi.');
+        } finally {
+            setNewsLoading(false);
+        }
+    };
+
+    const handlePostCreated = async () => {
+        setIsModalOpen(false);
+        setActiveTab('community');
+        await loadCommunityPosts();
+    };
+
+    const handleDeletePost = async (postId) => {
+        const confirmed = window.confirm('Bu gönderiyi silmek istediğinizden emin misiniz?');
+        if (!confirmed) return;
+
+        try {
+            setDeletingPostId(postId);
+            setCommunityError('');
+            await communityApi.deletePost(postId);
+            setCommunityPosts((prev) => prev.filter((post) => String(post.id) !== String(postId)));
+        } catch (err) {
+            setCommunityError(err.message || 'Gönderi silinemedi.');
+        } finally {
+            setDeletingPostId(null);
+        }
     };
 
     const avatarInitial = (user?.displayName || user?.email || 'A').charAt(0).toUpperCase();
@@ -380,11 +455,6 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
                                             onClick={() => setActiveTab('schedule')}
                                         />
                                         <QuickActionButton
-                                            label="Haber Oluştur"
-                                            color="bg-violet-500/20 text-violet-400"
-                                            icon={<Plus size={20} />}
-                                        />
-                                        <QuickActionButton
                                             label="Etkinlik Ekle"
                                             color="bg-cyan-500/20 text-cyan-400"
                                             icon={<Plus size={20} />}
@@ -453,36 +523,208 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
 
                     {activeTab === 'community' && (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <h3 className="text-2xl font-bold text-white">Topluluk Gönderileri</h3>
-                                <button
-                                    onClick={() => openModal('post')}
-                                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20"
-                                >
-                                    <Plus size={20} />
-                                    Yeni Gönderi
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={loadCommunityPosts}
+                                        disabled={communityLoading}
+                                        className="flex items-center gap-2 px-4 py-3 border border-white/10 bg-white/5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 text-slate-200 rounded-xl font-semibold transition-all"
+                                    >
+                                        <RefreshCw size={18} className={communityLoading ? 'animate-spin' : ''} />
+                                        Yenile
+                                    </button>
+                                    <button
+                                        onClick={() => openModal('post')}
+                                        className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20"
+                                    >
+                                        <Plus size={20} />
+                                        Yeni Gönderi
+                                    </button>
+                                </div>
                             </div>
                             <div className="max-w-3xl mx-auto space-y-6">
-                                {/* Placeholder for community list */}
-                                <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                    Topluluk gönderileri burada yüklenecek...
-                                </div>
+                                {communityError && (
+                                    <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                                        {communityError}
+                                    </div>
+                                )}
+
+                                {communityLoading && communityPosts.length === 0 && (
+                                    <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                        Gönderiler yükleniyor...
+                                    </div>
+                                )}
+
+                                {!communityLoading && communityPosts.length === 0 && !communityError && (
+                                    <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                        Henüz topluluk gönderisi bulunmuyor.
+                                    </div>
+                                )}
+
+                                {communityPosts.map((post) => (
+                                    <article key={post.id} className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/45 backdrop-blur-xl">
+                                        <div className="flex items-start gap-4 border-b border-white/5 px-6 py-5">
+                                            {post.authorImage ? (
+                                                <img
+                                                    src={post.authorImage}
+                                                    alt={post.authorName || 'Yazar'}
+                                                    className="h-12 w-12 rounded-full border border-white/10 object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-sm font-bold text-emerald-200">
+                                                    {(post.authorName || 'A').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-base font-semibold text-white">{post.authorName || 'İsimsiz kullanıcı'}</div>
+                                                <div className="mt-1 text-xs text-slate-500">{formatAdminDateTime(post.createdAt)}</div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeletePost(post.id)}
+                                                disabled={deletingPostId === post.id}
+                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                            >
+                                                {deletingPostId === post.id ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                                                Sil
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-5 px-6 py-5">
+                                            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-200">{post.content}</p>
+
+                                            {post.imageUrl && (
+                                                <div className="overflow-hidden rounded-2xl border border-white/8 bg-slate-950/60">
+                                                    <img
+                                                        src={post.imageUrl.startsWith('/') ? `${API_BASE_URL}${post.imageUrl}` : post.imageUrl}
+                                                        alt="Topluluk gönderisi görseli"
+                                                        className="w-full object-cover"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {post.poll && (
+                                                <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-5">
+                                                    <div className="text-sm font-semibold text-white">{post.poll.question}</div>
+                                                    <div className="mt-4 space-y-3">
+                                                        {post.poll.options?.map((option) => (
+                                                            <div key={option.id} className="rounded-2xl border border-white/5 bg-slate-950/50 px-4 py-3">
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <span className="text-sm text-slate-200">{option.text}</span>
+                                                                    <span className="text-xs font-semibold text-emerald-300">{option.votes ?? 0} oy</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-6 border-t border-white/5 pt-4 text-sm text-slate-400">
+                                                <span>{post.likes ?? 0} beğeni</span>
+                                                <span>{post.comments ?? 0} yorum</span>
+                                                {post.poll && <span>{post.poll.isClosed ? 'Anket kapalı' : 'Anket açık'}</span>}
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'news' && (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <h3 className="text-2xl font-bold text-white">Haber Akışı</h3>
-                                <button className="flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-violet-900/20">
-                                    <Plus size={20} />
-                                    Haber Oluştur
+                                <button
+                                    onClick={loadNewsItems}
+                                    disabled={newsLoading}
+                                    className="flex items-center gap-2 px-4 py-3 border border-white/10 bg-white/5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 text-slate-200 rounded-xl font-semibold transition-all"
+                                >
+                                    <RefreshCw size={18} className={newsLoading ? 'animate-spin' : ''} />
+                                    Yenile
                                 </button>
                             </div>
-                            <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                Haber yönetim araçları burada görünecek...
+
+                            <div className="max-w-5xl mx-auto space-y-6">
+                                {newsError && (
+                                    <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                                        {newsError}
+                                    </div>
+                                )}
+
+                                {newsLoading && newsItems.length === 0 && (
+                                    <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                        Haberler yükleniyor...
+                                    </div>
+                                )}
+
+                                {!newsLoading && newsItems.length === 0 && !newsError && (
+                                    <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                        Henüz haber bulunmuyor.
+                                    </div>
+                                )}
+
+                                {newsItems.map((item) => (
+                                    <article key={item.id} className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/45 backdrop-blur-xl">
+                                        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+                                            <div className="space-y-5 px-6 py-6">
+                                                <div className="space-y-2">
+                                                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                                                        {item.authorName || 'AkademiZ Haber Kaynağı'}
+                                                    </div>
+                                                    <h4 className="text-2xl font-bold text-white">{item.title || 'Başlıksız haber'}</h4>
+                                                    <div className="text-sm text-slate-500">
+                                                        {item.publishedAtText || formatAdminDateTime(item.publishedAt || item.createdAt)}
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-sm leading-7 text-slate-300">
+                                                    {item.summary || item.fullText || 'Özet içeriği bulunmuyor.'}
+                                                </p>
+
+                                                {parseJsonArray(item.tags).length > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {parseJsonArray(item.tags).map((tag) => (
+                                                            <span key={`${item.id}-${tag}`} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+                                                                #{tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex flex-wrap items-center gap-6 border-t border-white/5 pt-4 text-sm text-slate-400">
+                                                    <span>{item.views ?? 0} görüntülenme</span>
+                                                    <span>{item.likes ?? 0} beğeni</span>
+                                                    {item.detailUrl && (
+                                                        <a
+                                                            href={item.detailUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-cyan-300 transition hover:text-cyan-200 hover:underline"
+                                                        >
+                                                            Kaynağı Aç
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="border-t border-white/5 bg-slate-950/40 lg:border-l lg:border-t-0">
+                                                {item.heroImage ? (
+                                                    <img
+                                                        src={item.heroImage}
+                                                        alt={item.title || 'Haber görseli'}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full min-h-56 items-center justify-center px-6 text-sm italic text-slate-500">
+                                                        Haber görseli bulunmuyor.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -494,7 +736,7 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
                     <div className="relative bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <PostForm onClose={() => setIsModalOpen(false)} user={user} />
+                        <PostForm onClose={() => setIsModalOpen(false)} onSubmitted={handlePostCreated} user={user} />
                     </div>
                 </div>
             )}
@@ -581,11 +823,6 @@ const ClassManagementManager = () => {
         academicYear: '2025-2026',
         semester: 'Bahar'
     });
-    const [formState, setFormState] = useState({
-        classKey: '',
-        className: '',
-        sortOrder: ''
-    });
 
     useEffect(() => {
         setNotice('');
@@ -650,10 +887,6 @@ const ClassManagementManager = () => {
         return response;
     };
 
-    const updateFormField = (field, value) => {
-        setFormState((prev) => ({ ...prev, [field]: value }));
-    };
-
     const updateScheduleFormField = (field, value) => {
         setScheduleForm((prev) => ({ ...prev, [field]: value }));
     };
@@ -680,37 +913,6 @@ const ClassManagementManager = () => {
             }
         ]);
         setScheduleForm((prev) => ({ ...prev, programName: '' }));
-    };
-
-    const handleAddClassDraft = (e) => {
-        e.preventDefault();
-
-        if (!formState.className.trim()) {
-            setError('Sınıf adı zorunludur.');
-            return;
-        }
-
-        const candidateKey = formState.classKey.trim();
-        const existingKeys = new Set(draftClasses.map((item) => item.key).filter(Boolean));
-
-        if (candidateKey && existingKeys.has(candidateKey)) {
-            setError('Bu sınıf anahtarı taslak listede zaten var.');
-            return;
-        }
-
-        setError('');
-        setNotice('Kaydedilmemiş sınıf değişiklikleri var.');
-        setDraftClasses((prev) => [
-            ...prev,
-            {
-                id: `new-class-${Date.now()}`,
-                key: candidateKey,
-                name: formState.className.trim(),
-                sortOrder: formState.sortOrder === '' ? undefined : Number(formState.sortOrder),
-                isNew: true
-            }
-        ]);
-        setFormState({ classKey: '', className: '', sortOrder: '' });
     };
 
     const handleRemoveClassDraft = (idOrKey) => {
@@ -917,59 +1119,6 @@ const ClassManagementManager = () => {
                                 </div>
                             ))}
                         </div>
-                    </div>
-
-                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Yeni Sınıf</p>
-                            <h4 className="text-xl font-bold text-white">Global sınıf kaydı oluştur</h4>
-                            <p className="text-sm leading-7 text-slate-400">
-                                Formu doldurup listeye ekleyin. API isteği yalnızca sayfadaki kaydet butonuna basınca gönderilir.
-                            </p>
-                        </div>
-
-                        <form className="mt-6 grid gap-4" onSubmit={handleAddClassDraft}>
-                            <ScheduleField label="Sınıf Adı">
-                                <input
-                                    type="text"
-                                    value={formState.className}
-                                    onChange={(e) => updateFormField('className', e.target.value)}
-                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                    placeholder="1. Sınıf"
-                                />
-                            </ScheduleField>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <ScheduleField label="Sınıf Anahtarı">
-                                    <input
-                                        type="text"
-                                        value={formState.classKey}
-                                        onChange={(e) => updateFormField('classKey', e.target.value)}
-                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                        placeholder="grade1"
-                                    />
-                                </ScheduleField>
-
-                                <ScheduleField label="Sıra">
-                                    <input
-                                        type="number"
-                                        value={formState.sortOrder}
-                                        onChange={(e) => updateFormField('sortOrder', e.target.value)}
-                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                        placeholder="0"
-                                    />
-                                </ScheduleField>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                Listeye Ekle
-                            </button>
-                        </form>
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
@@ -1525,13 +1674,13 @@ const EventForm = ({ onBack, onCreated, user }) => {
     const [formData, setFormData] = useState({
         title: '',
         date: '',
-        description: '',
-        creatorName: 'AkademiZ Admin',
         location: '',
+        description: '',
+        thumbnailUrl: '',
+        creatorName: user?.displayName || 'AkademiZ Admin',
         eventLength: '',
         maxJoiners: '',
         tags: '',
-        thumbnailUrl: '',
         carouselImages: []
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1605,11 +1754,13 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 title: formData.title.trim(),
                 date: formData.date,
                 description: formData.description.trim(),
-                creatorName: formData.creatorName.trim() || 'AkademiZ Admin',
                 location: formData.location.trim(),
                 thumbnailUrl: formData.thumbnailUrl,
+                creatorName: formData.creatorName.trim() || user?.displayName || 'AkademiZ Admin',
                 tags: JSON.stringify(parsedTags),
-                carouselImages: JSON.stringify(formData.carouselImages)
+                carouselImages: JSON.stringify(formData.carouselImages),
+                saveAsDraft: true,
+                status: 'draft'
             };
 
             if (Number.isFinite(parsedEventLength)) {
@@ -1632,13 +1783,13 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 setFormData({
                     title: '',
                     date: '',
-                    description: '',
-                    creatorName: 'AkademiZ Admin',
                     location: '',
+                    description: '',
+                    thumbnailUrl: '',
+                    creatorName: user?.displayName || 'AkademiZ Admin',
                     eventLength: '',
                     maxJoiners: '',
                     tags: '',
-                    thumbnailUrl: '',
                     carouselImages: []
                 });
                 onCreated?.();
@@ -1655,33 +1806,35 @@ const EventForm = ({ onBack, onCreated, user }) => {
     };
 
     return (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_rgba(15,23,42,0.92)_58%)] p-6 md:p-8">
-                    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Etkinlik Oluşturucu</p>
-                            <h3 className="mt-3 text-2xl font-bold text-white">Yeni Etkinlik</h3>
-                            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-                                Başlık ve tarih önde. Konum, medya ve diğer ayrıntılar opsiyonel olarak aşağıda duruyor.
-                            </p>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={onBack}
-                            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
-                        >
-                            Listeye Dön
-                        </button>
+        <div className="mx-auto max-w-4xl space-y-6">
+            <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_rgba(15,23,42,0.92)_58%)] p-6 md:p-8">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Etkinlik Oluşturucu</p>
+                        <h3 className="mt-3 text-2xl font-bold text-white">Yeni Etkinlik</h3>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                            Oluşturma adımı artık kısa tutuldu. Yalnızca başlık, konum, tarih, açıklama ve kapak görseli istenir; yeni kayıt doğrudan taslak olarak açılır.
+                        </p>
                     </div>
-                </section>
 
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                    >
+                        Listeye Dön
+                    </button>
+                </div>
+            </section>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <section className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                     <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Temel Bilgiler</p>
-                        <h4 className="mt-2 text-xl font-bold text-white">Gerekli olan kısım kısa tutuldu</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-400">Yalnızca başlık ve tarih zorunlu. Açıklamayı kısa bırakabilirsiniz.</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Gerekli Alanlar</p>
+                        <h4 className="mt-2 text-xl font-bold text-white">Tek ekranda temel etkinlik kaydı</h4>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                            Taslağı oluşturmak için gereken her şey burada. İkincil veriler aşağıdaki açılır bölümde kaldı.
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1709,37 +1862,78 @@ const EventForm = ({ onBack, onCreated, user }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-500">Konum</label>
+                            <label className="text-sm font-medium text-slate-300">Konum</label>
                             <input
+                                required
                                 type="text"
                                 value={formData.location}
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-500/50"
                                 placeholder="Ana yerleşke konferans salonu"
                             />
                         </div>
 
+                        <div className="space-y-3 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-300">Kapak Görseli</label>
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                                <div className="relative flex-1 group">
+                                    <input
+                                        required={!formData.thumbnailUrl}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleImageUpload(e, 'thumbnail')}
+                                        className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                                    />
+                                    <div className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-white/10 bg-slate-950/50 px-4 py-6 transition-all group-hover:border-cyan-500/30">
+                                        {uploadingTarget === 'thumbnail' ? (
+                                            <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
+                                        ) : formData.thumbnailUrl ? (
+                                            <>
+                                                <ImageIcon className="shrink-0 text-cyan-400" />
+                                                <span className="truncate text-sm text-cyan-200">{formData.thumbnailUrl}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="h-6 w-6 text-slate-400" />
+                                                <span className="text-sm font-medium text-slate-300">Kapak görseli yüklemek için tıklayın</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shrink-0">
+                                    {formData.thumbnailUrl ? (
+                                        <img src={formData.thumbnailUrl.startsWith('/') ? `${API_BASE_URL}${formData.thumbnailUrl}` : formData.thumbnailUrl} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center px-3 text-center text-xs text-slate-500">Görsel gerekli</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-2 md:col-span-2">
-                            <label className="text-sm font-medium text-slate-500">Kısa Açıklama</label>
+                            <label className="text-sm font-medium text-slate-300">Açıklama</label>
                             <textarea
-                                rows="4"
+                                required
+                                rows="5"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/40"
-                                placeholder="İsterseniz kısa bir özet girin. Detayı sonradan da geliştirebilirsiniz."
+                                className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-500/50"
+                                placeholder="Etkinliğin amacı, içeriği ve kimler için olduğu gibi temel bilgileri yazın."
                             />
                         </div>
                     </div>
                 </section>
 
-                <section className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6 backdrop-blur-xl">
-                    <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">İsteğe Bağlı Özelleştirmeler</p>
-                        <h4 className="mt-2 text-xl font-bold text-slate-200">Detay isteyenler için hafif ikinci katman</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-500">Bu ayarlar zorunlu değil. Girmeden de etkinlik oluşturabilirsiniz.</p>
-                    </div>
+                <details className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6 backdrop-blur-xl">
+                    <summary className="cursor-pointer list-none text-sm font-semibold text-slate-300">
+                        İsteğe bağlı ayrıntılar
+                    </summary>
+                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                        Etiket, süre, maksimum katılımcı ve galeri gibi alanlar gerekli değil. Taslağı oluşturduktan sonra da ekleyebilirsiniz.
+                    </p>
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-500">Oluşturan</label>
                             <input
@@ -1784,55 +1978,10 @@ const EventForm = ({ onBack, onCreated, user }) => {
                                 placeholder="teknoloji, kampüs, atölye"
                             />
                         </div>
-                    </div>
-                </section>
 
-                <section className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 backdrop-blur-xl">
-                    <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Medya</p>
-                        <h4 className="mt-2 text-xl font-bold text-white">Kaybolan görsel seçeneklerini geri getirdim</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-500">Kapak görseli ekleyebilir, ayrıca etkinlik sayfası için küçük bir galeri oluşturabilirsiniz.</p>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-3">
-                            <label className="text-sm font-medium text-slate-400">Kapak Görseli</label>
-                            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                                <div className="flex-1 relative group">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => handleImageUpload(e, 'thumbnail')}
-                                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10"
-                                    />
-                                    <div className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-white/10 bg-slate-950/40 px-4 py-6 transition-all group-hover:border-cyan-500/30">
-                                        {uploadingTarget === 'thumbnail' ? (
-                                            <Loader2 className="h-6 w-6 animate-spin text-cyan-500" />
-                                        ) : formData.thumbnailUrl ? (
-                                            <>
-                                                <ImageIcon className="shrink-0 text-cyan-400" />
-                                                <span className="truncate text-sm text-cyan-200">{formData.thumbnailUrl}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload className="h-6 w-6 text-slate-500" />
-                                                <span className="text-sm font-medium text-slate-500">Kapak görseli yüklemek için tıklayın</span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {formData.thumbnailUrl && (
-                                    <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shrink-0">
-                                        <img src={formData.thumbnailUrl.startsWith('/') ? `${API_BASE_URL}${formData.thumbnailUrl}` : formData.thumbnailUrl} className="h-full w-full object-cover" />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
+                        <div className="space-y-3 md:col-span-2">
                             <div className="flex items-center justify-between gap-3">
-                                <label className="text-sm font-medium text-slate-400">Galeri Görselleri</label>
+                                <label className="text-sm font-medium text-slate-500">Galeri Görselleri</label>
                                 <span className="text-xs text-slate-500">{formData.carouselImages.length} görsel</span>
                             </div>
 
@@ -1872,7 +2021,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                             )}
                         </div>
                     </div>
-                </section>
+                </details>
 
                 {submitError && (
                     <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
@@ -1880,28 +2029,8 @@ const EventForm = ({ onBack, onCreated, user }) => {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
-                    >
-                        Vazgeç
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={isSubmitting || uploadingTarget !== ''}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                        Etkinliği Oluştur
-                    </button>
-                </div>
-            </form>
-
-            <aside className="space-y-6">
-                <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Canlı Önizleme</p>
+                <div className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 backdrop-blur-xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Önizleme</p>
                     <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-white/8 bg-slate-950/70">
                         <div className="aspect-[4/3] w-full bg-slate-900">
                             {formData.thumbnailUrl ? (
@@ -1917,45 +2046,40 @@ const EventForm = ({ onBack, onCreated, user }) => {
                                 <div className="mt-2 text-sm text-slate-500">{formData.date ? new Date(formData.date).toLocaleString('tr-TR') : 'Tarih seçilmedi'}</div>
                             </div>
 
+                            <div className="text-sm text-slate-400">
+                                {formData.location || 'Konum belirtilmedi'}
+                            </div>
+
                             <div className="text-sm leading-6 text-slate-400">
-                                {formData.description || 'Kısa açıklama girerseniz burada önizlemesini göreceksiniz.'}
+                                {formData.description || 'Açıklama burada görünecek.'}
                             </div>
-
-                            <div className="space-y-2 text-sm text-slate-500">
-                                <div>Oluşturan: <span className="text-slate-300">{formData.creatorName || 'AkademiZ Admin'}</span></div>
-                                <div>Konum: <span className="text-slate-300">{formData.location || 'Belirtilmedi'}</span></div>
-                                <div>Süre: <span className="text-slate-300">{formData.eventLength || 'Belirtilmedi'}</span></div>
-                                <div>Katılımcı: <span className="text-slate-300">{formData.maxJoiners || 'Belirtilmedi'}</span></div>
-                            </div>
-
-                            {formData.tags && (
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean).map((tag) => (
-                                        <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                                            #{tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
-                <div className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/35 p-6">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Düzen Notu</p>
-                    <p className="mt-3 text-sm leading-7 text-slate-500">
-                        İkincil alanları özellikle daha gri tuttum. Böylece kullanıcı önce etkinliği yayına alır, detay seviyesini isterse sonra artırır.
-                    </p>
-                    <div className="mt-4 text-sm text-slate-400">
-                        Varsayılan oluşturucu: <span className="text-white">{formData.creatorName || 'AkademiZ Admin'}</span>
-                    </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                    >
+                        Vazgeç
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || uploadingTarget !== ''}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                        Taslak Etkinlik Oluştur
+                    </button>
                 </div>
-            </aside>
+            </form>
         </div>
     );
 };
 
-const PostForm = ({ onClose, user }) => {
+const PostForm = ({ onClose, onSubmitted, user }) => {
     const [formData, setFormData] = useState({
         authorName: user?.displayName || 'AkademiZ Admin',
         content: '',
@@ -2075,7 +2199,11 @@ const PostForm = ({ onClose, user }) => {
                 body: JSON.stringify(body)
             });
             if (res.ok) {
-                onClose();
+                if (onSubmitted) {
+                    await onSubmitted();
+                } else {
+                    onClose();
+                }
             } else {
                 const text = await res.text();
                 throw new Error(text || 'Gönderi oluşturulamadı.');
@@ -2882,7 +3010,35 @@ const apiFetch = async (path, { method = 'GET', body, authRequired = false } = {
         throw new Error(message);
     }
 
-    return response.json();
+    if (response.status === 204) {
+        return null;
+    }
+
+    const text = await response.text();
+    if (!text) {
+        return null;
+    }
+
+    return JSON.parse(text);
+};
+
+const communityApi = {
+    async listPosts(limit = 20) {
+        return apiFetch(`/community/posts?limit=${limit}`);
+    },
+
+    async deletePost(postId) {
+        return apiFetch(`/community/posts/${encodeURIComponent(postId)}`, {
+            method: 'DELETE',
+            authRequired: true
+        });
+    }
+};
+
+const newsApi = {
+    async listItems() {
+        return apiFetch('/news');
+    }
 };
 
 const scheduleApi = {
@@ -3033,6 +3189,32 @@ const formatClassKeyLabel = (classKey = '') => {
         return `${gradeMatch[1]}. Sınıf`;
     }
     return classKey;
+};
+
+const formatAdminDateTime = (value) => {
+    if (!value) return 'Tarih bilgisi yok';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return new Intl.DateTimeFormat('tr-TR', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    }).format(date);
+};
+
+const parseJsonArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || value.trim() === '') return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
 };
 
 const normalizeTimeValue = (value = '') => {
