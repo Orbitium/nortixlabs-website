@@ -803,54 +803,51 @@ const useScheduleWorkspace = () => {
 };
 
 const ClassManagementManager = () => {
-    const {
-        schedules,
-        loading,
-        loadError,
-        selectedScheduleId,
-        setSelectedScheduleId,
-        reloadSchedules
-    } = useScheduleWorkspace();
+    const [loading, setLoading] = useState(true);
     const [classes, setClasses] = useState([]);
-    const [classesLoading, setClassesLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [faculties, setFaculties] = useState([]);
+    const [selectedStep, setSelectedStep] = useState('faculties');
+    const [selectedFacultyKey, setSelectedFacultyKey] = useState('');
+    const [selectedDepartmentKey, setSelectedDepartmentKey] = useState('');
+    const [gradeForm, setGradeForm] = useState({
+        gradeNumber: ''
+    });
+    const [facultyForm, setFacultyForm] = useState(createEmptyFacultyFormState());
+    const [facultyFormMode, setFacultyFormMode] = useState('create');
+    const [departmentForm, setDepartmentForm] = useState(createEmptyDepartmentConfig());
+    const [departmentFormMode, setDepartmentFormMode] = useState('edit');
+    const [gradeMappingDraft, setGradeMappingDraft] = useState([]);
+    const [submittingAction, setSubmittingAction] = useState('');
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
-    const [draftSchedules, setDraftSchedules] = useState([]);
-    const [draftClasses, setDraftClasses] = useState([]);
-    const [scheduleForm, setScheduleForm] = useState({
-        programName: '',
-        academicYear: '2025-2026',
-        semester: 'Bahar'
-    });
-
-    useEffect(() => {
-        setNotice('');
-        setError('');
-    }, [selectedScheduleId]);
 
     useEffect(() => {
         let cancelled = false;
 
-        const loadClasses = async () => {
+        const loadManagementData = async () => {
             try {
-                setClassesLoading(true);
-                const response = await classApi.listAdminClasses();
+                setLoading(true);
+                setError('');
+                const [classResponse, facultyResponse] = await Promise.all([
+                    classApi.listAdminClasses(),
+                    academicFacultyApi.listFaculties()
+                ]);
                 if (!cancelled) {
-                    setClasses(response);
+                    setClasses(classResponse);
+                    setFaculties(facultyResponse);
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(err.message || 'Sınıf listesi yüklenemedi.');
+                    setError(err.message || 'Sınıf ve fakülte verileri yüklenemedi.');
                 }
             } finally {
                 if (!cancelled) {
-                    setClassesLoading(false);
+                    setLoading(false);
                 }
             }
         };
 
-        loadClasses();
+        loadManagementData();
 
         return () => {
             cancelled = true;
@@ -858,336 +855,876 @@ const ClassManagementManager = () => {
     }, []);
 
     useEffect(() => {
-        setDraftSchedules(
-            schedules.map((schedule) => ({
-                id: String(schedule.id),
-                programName: schedule.programName,
-                academicYear: schedule.academicYear,
-                semester: schedule.semester,
-                isNew: false
-            }))
-        );
-    }, [schedules]);
-
-    useEffect(() => {
-        setDraftClasses(
-            classes.map((item) => ({
-                id: String(item.id),
-                key: item.key,
-                name: item.name,
-                sortOrder: item.sortOrder ?? 0,
-                isNew: false
-            }))
-        );
-    }, [classes]);
-
-    const reloadClasses = async () => {
-        const response = await classApi.listAdminClasses();
-        setClasses(response);
-        return response;
-    };
-
-    const updateScheduleFormField = (field, value) => {
-        setScheduleForm((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleAddScheduleDraft = (e) => {
-        e.preventDefault();
-
-        if (!scheduleForm.programName.trim() || !scheduleForm.academicYear.trim() || !scheduleForm.semester.trim()) {
-            setError('Program adı, akademik yıl ve dönem zorunludur.');
+        if (faculties.length === 0) {
+            setSelectedFacultyKey('');
             return;
         }
 
-        const tempId = `new-schedule-${Date.now()}`;
-        setError('');
-        setNotice('Kaydedilmemiş program değişiklikleri var.');
-        setDraftSchedules((prev) => [
-            ...prev,
-            {
-                id: tempId,
-                programName: scheduleForm.programName.trim(),
-                academicYear: scheduleForm.academicYear.trim(),
-                semester: scheduleForm.semester.trim(),
-                isNew: true
-            }
-        ]);
-        setScheduleForm((prev) => ({ ...prev, programName: '' }));
-    };
-
-    const handleRemoveClassDraft = (idOrKey) => {
-        setError('');
-        setNotice('Kaydedilmemiş sınıf değişiklikleri var.');
-        setDraftClasses((prev) => prev.filter((item) => String(item.id) !== String(idOrKey) && item.key !== idOrKey));
-    };
-
-    const handleRemoveScheduleDraft = (scheduleId) => {
-        setError('');
-        setNotice('Kaydedilmemiş program değişiklikleri var.');
-        setDraftSchedules((prev) => prev.filter((schedule) => schedule.id !== scheduleId));
-        if (selectedScheduleId === scheduleId) {
-            const nextSchedule = draftSchedules.find((item) => item.id !== scheduleId && !item.isNew);
-            setSelectedScheduleId(nextSchedule?.id || '');
+        const selectedExists = faculties.some((faculty) => faculty.key === selectedFacultyKey);
+        if (!selectedExists) {
+            setSelectedFacultyKey(faculties[0].key);
         }
+    }, [faculties, selectedFacultyKey]);
+
+    const selectedFaculty = faculties.find((faculty) => faculty.key === selectedFacultyKey) || null;
+    const selectedDepartment = selectedFaculty?.departments.find((department) => department.key === selectedDepartmentKey) || null;
+    const selectedDepartmentGrades = classes.filter((item) => (selectedDepartment?.gradeKeys || []).includes(item.key));
+    const canOpenDepartmentStep = Boolean(selectedFaculty);
+    const canOpenGradeStep = Boolean(selectedFaculty && selectedDepartment);
+    const facultyFormHasInvalidDepartment = facultyForm.departments.some((department) => !department.name.trim());
+
+    useEffect(() => {
+        if (!selectedFaculty || selectedFaculty.departments.length === 0) {
+            setSelectedDepartmentKey('');
+            setDepartmentFormMode('create');
+            setDepartmentForm(createEmptyDepartmentConfig());
+            setGradeMappingDraft([]);
+            return;
+        }
+
+        const selectedExists = selectedFaculty.departments.some((department) => department.key === selectedDepartmentKey);
+        const nextDepartment = selectedExists
+            ? selectedFaculty.departments.find((department) => department.key === selectedDepartmentKey)
+            : selectedFaculty.departments[0];
+
+        if (nextDepartment && nextDepartment.key !== selectedDepartmentKey) {
+            setSelectedDepartmentKey(nextDepartment.key);
+        }
+    }, [selectedFaculty, selectedDepartmentKey]);
+
+    useEffect(() => {
+        if (!selectedDepartment) {
+            setDepartmentFormMode('create');
+            setDepartmentForm(createEmptyDepartmentConfig());
+            setGradeMappingDraft([]);
+            return;
+        }
+
+        setDepartmentFormMode('edit');
+        setDepartmentForm({
+            key: selectedDepartment.key,
+            name: selectedDepartment.name,
+            sortOrder: selectedDepartment.sortOrder ?? 0
+        });
+        setGradeMappingDraft(selectedDepartment.gradeKeys || []);
+    }, [selectedDepartment]);
+
+    const reloadManagementData = async ({ nextFacultyKey, nextDepartmentKey } = {}) => {
+        const [classResponse, facultyResponse] = await Promise.all([
+            classApi.listAdminClasses(),
+            academicFacultyApi.listFaculties()
+        ]);
+
+        setClasses(classResponse);
+        setFaculties(facultyResponse);
+
+        const resolvedFaculty = nextFacultyKey
+            ? facultyResponse.find((faculty) => faculty.key === nextFacultyKey)
+            : facultyResponse.find((faculty) => faculty.key === selectedFacultyKey) || facultyResponse[0] || null;
+
+        setSelectedFacultyKey(resolvedFaculty?.key || '');
+
+        const resolvedDepartment = nextDepartmentKey
+            ? resolvedFaculty?.departments.find((department) => department.key === nextDepartmentKey)
+            : resolvedFaculty?.departments.find((department) => department.key === selectedDepartmentKey) || resolvedFaculty?.departments[0] || null;
+
+        setSelectedDepartmentKey(resolvedDepartment?.key || '');
+        return { classResponse, facultyResponse };
     };
 
-    const hasPendingChanges = areDraftItemsChanged(
-        draftSchedules,
-        schedules,
-        (item) => item.id,
-        (item) => `${item.programName}|${item.academicYear}|${item.semester}`
-    ) || areDraftItemsChanged(
-        draftClasses,
-        classes,
-        (item) => item.key || item.id,
-        (item) => `${item.key || ''}|${item.name}|${item.sortOrder ?? ''}`
-    );
+    const handleGradeFormField = (field, value) => {
+        setGradeForm((prev) => ({ ...prev, [field]: value }));
+    };
 
-    const handleSaveChanges = async () => {
+    const handleCreateGrade = async (e) => {
+        e.preventDefault();
+
+        const gradeNumber = Number(gradeForm.gradeNumber);
+        if (!Number.isInteger(gradeNumber) || gradeNumber < 1 || gradeNumber > 6) {
+            setError('Grade yalnızca 1 ile 6 arasında bir sayı olabilir.');
+            return;
+        }
+
         try {
-            setSaving(true);
+            setSubmittingAction('create-grade');
             setError('');
             setNotice('');
-
-            const originalScheduleIds = new Set(schedules.map((item) => String(item.id)));
-            const draftScheduleIds = new Set(draftSchedules.filter((item) => !item.isNew).map((item) => String(item.id)));
-            const originalClassKeys = new Set(classes.map((item) => item.key));
-            const draftClassKeys = new Set(draftClasses.filter((item) => !item.isNew).map((item) => item.key));
-
-            const schedulesToCreate = draftSchedules.filter((item) => item.isNew);
-            const schedulesToDelete = schedules.filter((item) => originalScheduleIds.has(String(item.id)) && !draftScheduleIds.has(String(item.id)));
-            const classesToCreate = draftClasses.filter((item) => item.isNew);
-            const classesToDelete = classes.filter((item) => originalClassKeys.has(item.key) && !draftClassKeys.has(item.key));
-
-            for (const item of classesToCreate) {
-                await classApi.createClass({
-                    key: item.key || undefined,
-                    name: item.name,
-                    sortOrder: item.sortOrder === undefined ? undefined : Number(item.sortOrder)
-                });
-            }
-
-            for (const item of schedulesToCreate) {
-                await scheduleApi.createSchedule({
-                    programName: item.programName,
-                    academicYear: item.academicYear,
-                    semester: item.semester
-                });
-            }
-
-            for (const item of schedulesToDelete) {
-                await scheduleApi.deleteSchedule(item.id);
-            }
-
-            for (const item of classesToDelete) {
-                await classApi.deleteClass(item.key);
-            }
-
-            const [nextSchedules, nextClasses] = await Promise.all([
-                reloadSchedules(),
-                reloadClasses()
-            ]);
-            setSelectedScheduleId((current) => nextSchedules.some((item) => item.id === current) ? current : (nextSchedules[0]?.id || ''));
-            setDraftSchedules(nextSchedules.map((schedule) => ({
-                id: String(schedule.id),
-                programName: schedule.programName,
-                academicYear: schedule.academicYear,
-                semester: schedule.semester,
-                isNew: false
-            })));
-            setDraftClasses(nextClasses.map((item) => ({
-                id: String(item.id),
-                key: item.key,
-                name: item.name,
-                sortOrder: item.sortOrder ?? 0,
-                isNew: false
-            })));
-            setNotice('Sınıf ve program değişiklikleri kaydedildi.');
+            await classApi.createClass({
+                name: `${gradeNumber}. Sınıf`,
+                key: `grade${gradeNumber}`,
+                sortOrder: gradeNumber - 1
+            });
+            await reloadManagementData();
+            setGradeForm({
+                gradeNumber: ''
+            });
+            setNotice('Grade kaydı oluşturuldu.');
         } catch (err) {
-            setError(err.message || 'Değişiklikler kaydedilemedi.');
+            setError(err.message || 'Grade kaydı oluşturulamadı.');
         } finally {
-            setSaving(false);
+            setSubmittingAction('');
         }
     };
 
-    if (loading || classesLoading) {
+    const handleDeleteGrade = async (grade) => {
+        const confirmed = window.confirm('Bu grade silinirse öğrenci gradeKey alanı temizlenir ve ilgili manuel schedule blokları kaldırılır. Devam etmek istiyor musunuz?');
+        if (!confirmed) return;
+
+        try {
+            setSubmittingAction(`delete-grade-${grade.key}`);
+            setError('');
+            setNotice('');
+            await classApi.deleteClass(grade.key || grade.id);
+            await reloadManagementData();
+            setNotice('Grade kaydı silindi.');
+        } catch (err) {
+            setError(err.message || 'Grade kaydı silinemedi.');
+        } finally {
+            setSubmittingAction('');
+        }
+    };
+
+    const resetFacultyForm = () => {
+        setFacultyFormMode('create');
+        setFacultyForm(createEmptyFacultyFormState());
+    };
+
+    const handleFacultyFieldChange = (field, value) => {
+        setFacultyForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleFacultyDepartmentFieldChange = (localId, field, value) => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: prev.departments.map((department) => (
+                department.localId === localId ? { ...department, [field]: value } : department
+            ))
+        }));
+    };
+
+    const toggleFacultyDepartmentGrade = (localId, gradeKey) => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: prev.departments.map((department) => {
+                if (department.localId !== localId) return department;
+                const nextGradeKeys = department.gradeKeys.includes(gradeKey)
+                    ? department.gradeKeys.filter((item) => item !== gradeKey)
+                    : [...department.gradeKeys, gradeKey];
+                return { ...department, gradeKeys: nextGradeKeys };
+            })
+        }));
+    };
+
+    const addFacultyDepartmentRow = () => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: [...prev.departments, createFacultyDepartmentDraft()]
+        }));
+    };
+
+    const removeFacultyDepartmentRow = (localId) => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: prev.departments.filter((department) => department.localId !== localId)
+        }));
+    };
+
+    const openFacultyCreate = () => {
+        resetFacultyForm();
+        setSelectedStep('faculties');
+    };
+
+    const openFacultyEdit = (faculty) => {
+        setFacultyFormMode('edit');
+        setFacultyForm(createFacultyFormStateFromFaculty(faculty));
+        setSelectedFacultyKey(faculty.key);
+        setSelectedStep('faculties');
+    };
+
+    const handleSubmitFaculty = async (e) => {
+        e.preventDefault();
+
+        if (!facultyForm.name.trim()) {
+            setError('Fakülte adı zorunludur.');
+            return;
+        }
+
+        if (facultyFormHasInvalidDepartment) {
+            setError('Her departman satırında ad alanı zorunludur.');
+            return;
+        }
+
+        const payload = serializeFacultyPayload(facultyForm);
+        const nextFacultyKey = payload.key || facultyForm.originalKey;
+        const nextDepartmentKey = payload.departments[0]?.key || '';
+
+        try {
+            setSubmittingAction(facultyFormMode === 'edit' ? 'update-faculty' : 'create-faculty');
+            setError('');
+            setNotice('');
+            let response;
+
+            if (facultyFormMode === 'edit' && facultyForm.originalKey) {
+                response = await academicFacultyApi.updateFaculty(facultyForm.originalKey, payload);
+            } else {
+                response = await academicFacultyApi.createFaculty(payload);
+            }
+
+            await reloadManagementData({
+                nextFacultyKey: response?.key || nextFacultyKey,
+                nextDepartmentKey: response?.departments?.[0]?.key || nextDepartmentKey
+            });
+            setNotice(facultyFormMode === 'edit' ? 'Fakülte ağacı güncellendi.' : 'Fakülte oluşturuldu.');
+            resetFacultyForm();
+        } catch (err) {
+            setError(err.message || 'Fakülte kaydı kaydedilemedi.');
+        } finally {
+            setSubmittingAction('');
+        }
+    };
+
+    const handleDeleteFaculty = async (faculty) => {
+        const confirmed = window.confirm('Bu fakülte silinirse öğrenci facultyKey, departmentKey, department ve gradeKey alanları temizlenir. Devam etmek istiyor musunuz?');
+        if (!confirmed) return;
+
+        try {
+            setSubmittingAction(`delete-faculty-${faculty.key}`);
+            setError('');
+            setNotice('');
+            await academicFacultyApi.deleteFaculty(faculty.key || faculty.id);
+            await reloadManagementData();
+            setNotice('Fakülte silindi.');
+        } catch (err) {
+            setError(err.message || 'Fakülte silinemedi.');
+        } finally {
+            setSubmittingAction('');
+        }
+    };
+
+    const startDepartmentCreate = () => {
+        setDepartmentFormMode('create');
+        setDepartmentForm(createEmptyDepartmentConfig());
+        setSelectedStep('departments');
+    };
+
+    const handleDepartmentFieldChange = (field, value) => {
+        setDepartmentForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSaveDepartment = async (e) => {
+        e.preventDefault();
+
+        if (!selectedFaculty) {
+            setError('Önce bir fakülte seçin.');
+            return;
+        }
+
+        if (!departmentForm.name.trim()) {
+            setError('Departman adı zorunludur.');
+            return;
+        }
+
+        const nextDepartment = {
+            key: departmentForm.key.trim() || undefined,
+            name: departmentForm.name.trim(),
+            sortOrder: departmentForm.sortOrder === '' ? undefined : Number(departmentForm.sortOrder),
+            gradeKeys: gradeMappingDraft
+        };
+
+        const nextDepartments = departmentFormMode === 'edit'
+            ? selectedFaculty.departments.map((department) => (
+                department.key === selectedDepartment?.key
+                    ? { ...department, ...nextDepartment, key: nextDepartment.key || department.key }
+                    : department
+            ))
+            : [...selectedFaculty.departments, nextDepartment];
+
+        const payload = buildFacultyPayload(selectedFaculty, nextDepartments);
+        const nextDepartmentKey = nextDepartment.key || selectedDepartment?.key || '';
+
+        try {
+            setSubmittingAction(departmentFormMode === 'edit' ? 'update-department' : 'create-department');
+            setError('');
+            setNotice('');
+            const response = await academicFacultyApi.updateFaculty(selectedFaculty.key || selectedFaculty.id, payload);
+            await reloadManagementData({
+                nextFacultyKey: response?.key || payload.key,
+                nextDepartmentKey: response?.departments?.find((department) => department.key === nextDepartmentKey)?.key || nextDepartmentKey
+            });
+            setNotice(departmentFormMode === 'edit' ? 'Departman ayarları güncellendi.' : 'Departman eklendi.');
+        } catch (err) {
+            setError(err.message || 'Departman kaydı kaydedilemedi.');
+        } finally {
+            setSubmittingAction('');
+        }
+    };
+
+    const handleDeleteDepartment = async () => {
+        if (!selectedFaculty || !selectedDepartment) return;
+
+        const confirmed = window.confirm('Bu departman silinirse o departmana bağlı öğrencilerin departmentKey, department ve gradeKey alanları temizlenir. Devam etmek istiyor musunuz?');
+        if (!confirmed) return;
+
+        const nextDepartments = selectedFaculty.departments.filter((department) => department.key !== selectedDepartment.key);
+        const payload = buildFacultyPayload(selectedFaculty, nextDepartments);
+
+        try {
+            setSubmittingAction('delete-department');
+            setError('');
+            setNotice('');
+            const response = await academicFacultyApi.updateFaculty(selectedFaculty.key || selectedFaculty.id, payload);
+            await reloadManagementData({
+                nextFacultyKey: response?.key || payload.key,
+                nextDepartmentKey: response?.departments?.[0]?.key || nextDepartments[0]?.key || ''
+            });
+            setNotice('Departman kaldırıldı.');
+        } catch (err) {
+            setError(err.message || 'Departman silinemedi.');
+        } finally {
+            setSubmittingAction('');
+        }
+    };
+
+    const toggleSelectedDepartmentGrade = (gradeKey) => {
+        setGradeMappingDraft((prev) => (
+            prev.includes(gradeKey)
+                ? prev.filter((item) => item !== gradeKey)
+                : [...prev, gradeKey]
+        ));
+    };
+
+    if (loading) {
         return (
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
                 <div className="flex items-center gap-3 text-slate-400">
                     <Loader2 className="animate-spin text-cyan-400" />
-                    Program yükleniyor...
+                    Yönetim verileri yükleniyor...
                 </div>
             </div>
         );
     }
 
+    const stepItems = [
+        { id: 'faculties', number: '1', label: 'Faculty', enabled: true },
+        { id: 'departments', number: '2', label: 'Department', enabled: canOpenDepartmentStep },
+        { id: 'grades', number: '3', label: 'Grades', enabled: canOpenGradeStep }
+    ];
+
     return (
         <div className="space-y-6">
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Sınıf Yönetimi</p>
-                <h3 className="mt-3 text-3xl font-bold text-white">Sınıfları ekleyin veya kaldırın</h3>
+                <h3 className="mt-3 text-3xl font-bold text-white">Faculty, department ve grade akışını adım adım yönetin</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Bu sayfa yalnızca sınıf listesini yönetir. Program akışını düzenlemek için ayrı `Ders Programları` sayfasını kullanın.
+                    Önce fakülteyi seçin, sonra departmana inin. Grade seçimi departmanın içinde yapılır; ayrı bir mapping ekranı yoktur.
                 </p>
+
+                <div className="mt-6 grid gap-3 md:grid-cols-4">
+                    {stepItems.map((item) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            disabled={!item.enabled}
+                            onClick={() => setSelectedStep(item.id)}
+                            className={`rounded-2xl border px-4 py-4 text-left transition ${selectedStep === item.id
+                                ? 'border-cyan-400/35 bg-cyan-400/12'
+                                : 'border-white/8 bg-slate-950/30'
+                                } ${!item.enabled ? 'cursor-not-allowed opacity-40' : 'hover:border-cyan-300/20 hover:bg-cyan-400/8'}`}
+                        >
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Adım {item.number}</div>
+                            <div className="mt-2 text-sm font-bold text-white">{item.label}</div>
+                        </button>
+                    ))}
+                </div>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
+            {(error || notice) && (
+                <div className={`rounded-[2rem] border px-5 py-4 text-sm ${error
+                    ? 'border-red-400/20 bg-red-400/10 text-red-100'
+                    : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+                    }`}>
+                    {error || notice}
+                </div>
+            )}
+
+            <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="space-y-6">
-                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Yeni Program</p>
-                            <h4 className="text-xl font-bold text-white">Top-level ders programı oluştur</h4>
-                            <p className="text-sm leading-7 text-slate-400">
-                                Formu doldurup listeye ekleyin. API isteği yalnızca sayfadaki kaydet butonuna basınca gönderilir.
-                            </p>
-                        </div>
+                    {selectedStep === 'faculties' && (
+                        <div className="space-y-6">
+                            <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 1</p>
+                                        <h4 className="mt-2 text-xl font-bold text-white">Faculty Tree</h4>
+                                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                                            Önce binayı yani fakülteyi seçin. Her fakülte kendi departmanlarını taşır.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={openFacultyCreate}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+                                    >
+                                        <Plus size={18} />
+                                        Create Faculty
+                                    </button>
+                                </div>
 
-                        <form className="mt-6 grid gap-4" onSubmit={handleAddScheduleDraft}>
-                            <ScheduleField label="Program Adı">
-                                <input
-                                    type="text"
-                                    value={scheduleForm.programName}
-                                    onChange={(e) => updateScheduleFormField('programName', e.target.value)}
-                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                    placeholder="Bilgisayar Programcılığı"
-                                />
-                            </ScheduleField>
+                                <div className="mt-6 space-y-4">
+                                    {faculties.map((faculty) => (
+                                        <div
+                                            key={faculty.id}
+                                            className={`rounded-[1.75rem] border p-5 transition ${selectedFaculty?.key === faculty.key
+                                                ? 'border-cyan-400/25 bg-cyan-400/10'
+                                                : 'border-white/8 bg-slate-950/50'
+                                                }`}
+                                        >
+                                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedFacultyKey(faculty.key);
+                                                        setSelectedStep('departments');
+                                                    }}
+                                                    className="flex-1 text-left"
+                                                >
+                                                    <div className="text-lg font-bold text-white">{faculty.name}</div>
+                                                    <div className="mt-1 text-xs text-slate-500">{faculty.key} • sıra {faculty.sortOrder ?? 0}</div>
+                                                </button>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <ScheduleField label="Akademik Yıl">
-                                    <input
-                                        type="text"
-                                        value={scheduleForm.academicYear}
-                                        onChange={(e) => updateScheduleFormField('academicYear', e.target.value)}
-                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                    />
-                                </ScheduleField>
-                                <ScheduleField label="Dönem">
-                                    <input
-                                        type="text"
-                                        value={scheduleForm.semester}
-                                        onChange={(e) => updateScheduleFormField('semester', e.target.value)}
-                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                    />
-                                </ScheduleField>
+                                                <div className="flex flex-wrap gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openFacultyEdit(faculty)}
+                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                                                    >
+                                                        <Pencil size={16} />
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={submittingAction === `delete-faculty-${faculty.key}`}
+                                                        onClick={() => handleDeleteFaculty(faculty)}
+                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    >
+                                                        {submittingAction === `delete-faculty-${faculty.key}` ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                                                        Sil
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 space-y-3">
+                                                {faculty.departments.map((department) => (
+                                                    <button
+                                                        key={department.key}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedFacultyKey(faculty.key);
+                                                            setSelectedDepartmentKey(department.key);
+                                                            setSelectedStep('departments');
+                                                        }}
+                                                        className="flex w-full flex-col gap-2 rounded-2xl border border-white/8 bg-slate-900/60 px-4 py-4 text-left transition hover:border-cyan-300/20 hover:bg-cyan-400/6"
+                                                    >
+                                                        <div className="text-sm font-semibold text-white">{department.name}</div>
+                                                        <div className="text-xs text-slate-500">{department.key} • sıra {department.sortOrder ?? 0}</div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(department.gradeKeys || []).map((gradeKey) => (
+                                                                <span key={gradeKey} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                                                                    {gradeKey}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                                {faculty.departments.length === 0 && (
+                                                    <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-6 text-sm text-slate-500">
+                                                        Bu fakülte altında henüz departman yok.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                Listeye Ekle
-                            </button>
-                        </form>
-                    </div>
-
-                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Programlar</p>
-                            <h4 className="text-xl font-bold text-white">Mevcut program kayıtları</h4>
-                        </div>
-
-                        <div className="mt-6 space-y-3">
-                            {draftSchedules.map((schedule) => (
-                                <div
-                                    key={schedule.id}
-                                    className={`flex flex-col gap-4 rounded-2xl border px-4 py-4 md:flex-row md:items-center md:justify-between ${selectedScheduleId === schedule.id
-                                        ? 'border-cyan-400/25 bg-cyan-400/10'
-                                        : 'border-white/8 bg-slate-950/50'
-                                        }`}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedScheduleId(schedule.id)}
-                                        className="flex-1 text-left"
-                                    >
-                                        <div className="text-sm font-semibold text-white">{schedule.programName}</div>
-                                        <div className="mt-1 text-xs text-slate-500">{schedule.academicYear} • {schedule.semester}</div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        disabled={saving}
-                                        onClick={() => handleRemoveScheduleDraft(schedule.id)}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
-                                    >
-                                        <Trash2 size={16} />
-                                        {schedule.isNew ? 'Taslaktan Çıkar' : 'Silmek İçin İşaretle'}
-                                    </button>
+                            <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{facultyFormMode === 'edit' ? 'Edit Faculty' : 'Create Faculty'}</p>
+                                    <h4 className="text-xl font-bold text-white">{facultyFormMode === 'edit' ? 'Fakülte ağacını güncelle' : 'Yeni fakülte oluştur'}</h4>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Mevcut Sınıflar</p>
-                            <h4 className="text-xl font-bold text-white">Kayıtlı sınıf listesi</h4>
-                            <p className="text-sm leading-7 text-slate-400">
-                                Bu kayıtlar tüm schedule yanıtlarında kullanılan resmi sınıf anahtarlarıdır.
-                            </p>
-                        </div>
+                                <form className="mt-6 grid gap-4" onSubmit={handleSubmitFaculty}>
+                                    <ScheduleField label="Faculty Name">
+                                        <input
+                                            type="text"
+                                            value={facultyForm.name}
+                                            onChange={(e) => handleFacultyFieldChange('name', e.target.value)}
+                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                            placeholder="Engineering Faculty"
+                                        />
+                                    </ScheduleField>
 
-                        <div className="mt-6 space-y-3">
-                            {draftClasses.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 md:flex-row md:items-center md:justify-between"
-                                >
-                                    <div className="flex-1 text-left">
-                                        <div className="text-sm font-semibold text-white">{item.name}</div>
-                                        <div className="mt-1 text-xs text-slate-500">{item.key} • sıra {item.sortOrder ?? 0}</div>
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <ScheduleField label="Opsiyonel Faculty Key">
+                                            <input
+                                                type="text"
+                                                value={facultyForm.key}
+                                                onChange={(e) => handleFacultyFieldChange('key', e.target.value)}
+                                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                placeholder="engineering"
+                                            />
+                                        </ScheduleField>
+                                        <ScheduleField label="Opsiyonel Faculty Sort Order">
+                                            <input
+                                                type="number"
+                                                value={facultyForm.sortOrder}
+                                                onChange={(e) => handleFacultyFieldChange('sortOrder', e.target.value)}
+                                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                placeholder="0"
+                                            />
+                                        </ScheduleField>
                                     </div>
 
+                                    <div className="space-y-4 rounded-[1.75rem] border border-white/8 bg-slate-950/40 p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-sm font-semibold text-white">Departments</div>
+                                            <button
+                                                type="button"
+                                                onClick={addFacultyDepartmentRow}
+                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/15"
+                                            >
+                                                <Plus size={16} />
+                                                Departman Satırı Ekle
+                                            </button>
+                                        </div>
+
+                                        {facultyForm.departments.map((department) => (
+                                            <div key={department.localId} className="rounded-[1.5rem] border border-white/8 bg-slate-900/60 p-4">
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <ScheduleField label="Departman Adı">
+                                                        <input
+                                                            type="text"
+                                                            value={department.name}
+                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'name', e.target.value)}
+                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                            placeholder="Computer Programming"
+                                                        />
+                                                    </ScheduleField>
+                                                    <ScheduleField label="Opsiyonel Key">
+                                                        <input
+                                                            type="text"
+                                                            value={department.key}
+                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'key', e.target.value)}
+                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                            placeholder="computer-programming"
+                                                        />
+                                                    </ScheduleField>
+                                                </div>
+
+                                                <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,180px)_1fr]">
+                                                    <ScheduleField label="Sort Order">
+                                                        <input
+                                                            type="number"
+                                                            value={department.sortOrder}
+                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'sortOrder', e.target.value)}
+                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                            placeholder="0"
+                                                        />
+                                                    </ScheduleField>
+                                                    <ScheduleField label="Grade Keys">
+                                                        <div className="grid gap-3 sm:grid-cols-2">
+                                                            {classes.map((item) => (
+                                                                <label key={item.key} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-3 text-sm text-slate-200">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={department.gradeKeys.includes(item.key)}
+                                                                        onChange={() => toggleFacultyDepartmentGrade(department.localId, item.key)}
+                                                                        className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-cyan-400"
+                                                                    />
+                                                                    <span>
+                                                                        <span className="block font-semibold text-white">{item.name}</span>
+                                                                        <span className="mt-1 block text-xs text-slate-500">{item.key}</span>
+                                                                    </span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </ScheduleField>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFacultyDepartmentRow(department.localId)}
+                                                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15"
+                                                >
+                                                    <Trash2 size={16} />
+                                                    Satırı Kaldır
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 sm:flex-row">
+                                        <button
+                                            type="submit"
+                                            disabled={facultyFormHasInvalidDepartment || submittingAction === 'create-faculty' || submittingAction === 'update-faculty'}
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {(submittingAction === 'create-faculty' || submittingAction === 'update-faculty') ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                            {facultyFormMode === 'edit' ? 'Faculty Tree Kaydet' : 'Faculty Oluştur'}
+                                        </button>
+                                        {facultyFormMode === 'edit' && (
+                                            <button
+                                                type="button"
+                                                onClick={resetFacultyForm}
+                                                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                                            >
+                                                Formu Sıfırla
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedStep === 'departments' && (
+                        <div className="space-y-6">
+                            <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 2</p>
+                                        <h4 className="mt-2 text-xl font-bold text-white">Department Selection</h4>
+                                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                                            Seçili fakültenin departmanlarını yönetin. Departman içinde izin verilen grade kayıtları da burada belirlenir.
+                                        </p>
+                                    </div>
                                     <button
                                         type="button"
-                                        disabled={saving}
-                                        onClick={() => handleRemoveClassDraft(item.key || item.id)}
-                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                        onClick={startDepartmentCreate}
+                                        disabled={!selectedFaculty}
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <Trash2 size={16} />
-                                        {item.isNew ? 'Taslaktan Çıkar' : 'Silmek İçin İşaretle'}
+                                        <Plus size={18} />
+                                        Yeni Departman
                                     </button>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {(loadError || error || notice) && (
-                        <div className={`rounded-[2rem] border px-5 py-4 text-sm ${(loadError || error)
-                            ? 'border-red-400/20 bg-red-400/10 text-red-100'
-                            : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
-                            }`}>
-                            {loadError || error || notice}
+                                {!selectedFaculty ? (
+                                    <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-8 text-center text-sm text-slate-500">
+                                        Önce Adım 2'den bir fakülte seçin.
+                                    </div>
+                                ) : (
+                                    <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+                                        <div className="space-y-3">
+                                            {selectedFaculty.departments.map((department) => (
+                                                <button
+                                                    key={department.key}
+                                                    type="button"
+                                                    onClick={() => setSelectedDepartmentKey(department.key)}
+                                                    className={`flex w-full flex-col gap-2 rounded-2xl border px-4 py-4 text-left transition ${selectedDepartment?.key === department.key
+                                                        ? 'border-cyan-400/25 bg-cyan-400/10'
+                                                        : 'border-white/8 bg-slate-950/50 hover:border-cyan-300/20 hover:bg-cyan-400/6'
+                                                        }`}
+                                                >
+                                                    <span className="text-sm font-semibold text-white">{department.name}</span>
+                                                    <span className="text-xs text-slate-500">{department.key} • sıra {department.sortOrder ?? 0}</span>
+                                                </button>
+                                            ))}
+                                            {selectedFaculty.departments.length === 0 && (
+                                                <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-6 text-sm text-slate-500">
+                                                    Bu fakülte altında henüz departman yok.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <form className="grid gap-4 rounded-[1.75rem] border border-white/8 bg-slate-950/40 p-5" onSubmit={handleSaveDepartment}>
+                                            <ScheduleField label="Departman Adı">
+                                                <input
+                                                    type="text"
+                                                    value={departmentForm.name}
+                                                    onChange={(e) => handleDepartmentFieldChange('name', e.target.value)}
+                                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                    placeholder="Computer Programming"
+                                                />
+                                            </ScheduleField>
+
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <ScheduleField label="Opsiyonel Key">
+                                                    <input
+                                                        type="text"
+                                                        value={departmentForm.key}
+                                                        onChange={(e) => handleDepartmentFieldChange('key', e.target.value)}
+                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                        placeholder="computer-programming"
+                                                    />
+                                                </ScheduleField>
+                                                <ScheduleField label="Opsiyonel Sort Order">
+                                                    <input
+                                                        type="number"
+                                                        value={departmentForm.sortOrder}
+                                                        onChange={(e) => handleDepartmentFieldChange('sortOrder', e.target.value)}
+                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                        placeholder="0"
+                                                    />
+                                                </ScheduleField>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-7 text-amber-100">
+                                                Departman key değişirse aynı key'e bağlı öğrenci kayıtları korunmaz. Mümkünse mevcut key'i koruyun.
+                                            </div>
+
+                                            <ScheduleField label="İzin Verilen Grade'ler">
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    {classes.map((item) => (
+                                                        <label key={item.key} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-200">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={gradeMappingDraft.includes(item.key)}
+                                                                onChange={() => toggleSelectedDepartmentGrade(item.key)}
+                                                                className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-cyan-400"
+                                                            />
+                                                            <span>
+                                                                <span className="block font-semibold text-white">{item.name}</span>
+                                                                <span className="mt-1 block text-xs text-slate-500">{item.key}</span>
+                                                            </span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </ScheduleField>
+
+                                            <div className="flex flex-col gap-3 sm:flex-row">
+                                                <button
+                                                    type="submit"
+                                                    disabled={!selectedFaculty || submittingAction === 'create-department' || submittingAction === 'update-department'}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {(submittingAction === 'create-department' || submittingAction === 'update-department') ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                                    {departmentFormMode === 'edit' ? 'Departmanı Kaydet' : 'Departman Oluştur'}
+                                                </button>
+                                                {departmentFormMode === 'edit' && selectedDepartment && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={submittingAction === 'delete-department'}
+                                                        onClick={handleDeleteDepartment}
+                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    >
+                                                        {submittingAction === 'delete-department' ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                                                        Departmanı Sil
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedStep === 'grades' && (
+                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 3</p>
+                                <h4 className="text-xl font-bold text-white">Grades</h4>
+                                <p className="text-sm leading-7 text-slate-400">
+                                    Grade kayıtları yalnızca `1` ile `6` arasında sayısal olabilir. Not veya açıklama değil, sadece sayı kullanın.
+                                </p>
+                            </div>
+
+                            <form className="mt-6 grid gap-4" onSubmit={handleCreateGrade}>
+                                <ScheduleField label="Grade Numarası">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="6"
+                                        value={gradeForm.gradeNumber}
+                                        onChange={(e) => handleGradeFormField('gradeNumber', e.target.value)}
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                        placeholder="1"
+                                    />
+                                </ScheduleField>
+
+                                <button
+                                    type="submit"
+                                    disabled={submittingAction === 'create-grade'}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {submittingAction === 'create-grade' ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                    Grade Oluştur
+                                </button>
+                            </form>
+
+                            <div className="mt-8 space-y-3">
+                                {classes.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                                    >
+                                        <div className="flex-1">
+                                            <div className="text-sm font-semibold text-white">{item.name}</div>
+                                            <div className="mt-1 text-xs text-slate-500">{item.key} • sıra {item.sortOrder ?? 0}</div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            disabled={submittingAction === `delete-grade-${item.key}`}
+                                            onClick={() => handleDeleteGrade(item)}
+                                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                            {submittingAction === `delete-grade-${item.key}` ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                                            Sil
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
 
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Kaydet</p>
-                        <h4 className="mt-2 text-xl font-bold text-white">Taslak değişiklikleri backend'e gönder</h4>
-                        <p className="mt-2 text-sm leading-7 text-slate-400">
-                            Bu sayfadaki ekleme ve silmeler siz kaydetmeden API'ye gönderilmez.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={handleSaveChanges}
-                            disabled={saving || !hasPendingChanges}
-                            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {saving ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                            Değişiklikleri Kaydet
-                        </button>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Seçim Özeti</p>
+                        <div className="mt-4 space-y-4 text-sm">
+                            <div>
+                                <div className="text-slate-500">Faculty</div>
+                                <div className="mt-1 font-semibold text-white">{selectedFaculty?.name || 'Seçilmedi'}</div>
+                                <div className="mt-1 text-xs text-slate-500">{selectedFaculty?.key || 'Anahtar yok'}</div>
+                            </div>
+                            <div>
+                                <div className="text-slate-500">Department</div>
+                                <div className="mt-1 font-semibold text-white">{selectedDepartment?.name || 'Seçilmedi'}</div>
+                                <div className="mt-1 text-xs text-slate-500">{selectedDepartment?.key || 'Anahtar yok'}</div>
+                            </div>
+                            <div>
+                                <div className="text-slate-500">Assigned Grades</div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {selectedDepartmentGrades.length === 0 ? (
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">Grade yok</span>
+                                    ) : (
+                                        selectedDepartmentGrades.map((item) => (
+                                            <span key={item.key} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                                                {item.name}
+                                            </span>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Silme Uyarıları</p>
+                        <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
+                            <p>Grade silmek öğrenci `gradeKey` alanını temizler ve ilgili manuel schedule bloklarını kaldırır.</p>
+                            <p>Faculty silmek öğrenci `facultyKey`, `departmentKey`, `department` ve `gradeKey` alanlarını temizler.</p>
+                            <p>PATCH fakülte ağacını bütünüyle değiştirir; request içinde yer almayan departmanlar ve grade eşleşmeleri kaldırılır.</p>
+                        </div>
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Hızlı Geçiş</p>
                         <h4 className="mt-2 text-xl font-bold text-white">Program düzenleyicisini aç</h4>
                         <p className="mt-2 text-sm leading-7 text-slate-400">
-                            Seçiminiz kaydedildi. Program tablosunu düzenlemek için ayrı sayfaya geçebilirsiniz.
+                            Grade kayıtları tamamlandığında ders programı tarafına geçip ilgili grade anahtarının akışını düzenleyin.
                         </p>
                         <a
                             href={ADMIN_TAB_ROUTES.schedule}
@@ -1227,6 +1764,7 @@ const ScheduleManager = () => {
     const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
     const selectedClassState = buildEditorClassState(editorPayload, selectedClassKey);
     const scheduleBoard = buildScheduleBoard(selectedClassState);
+    const isEditorRefreshing = Boolean(selectedSchedule && editorLoading && !editorPayload);
     const selectedCell = editorState
         ? scheduleBoard.cellMap[makeScheduleCellKey(editorState.dayKey, editorState.time)] || createEmptyScheduleCell(editorState.dayKey, editorState.time)
         : null;
@@ -1522,7 +2060,7 @@ const ScheduleManager = () => {
         }
     };
 
-    if (loading || editorLoading) {
+    if (loading) {
         return (
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 flex items-center justify-center min-h-[320px]">
                 <div className="flex items-center gap-3 text-slate-400">
@@ -1558,7 +2096,7 @@ const ScheduleManager = () => {
                 <button
                     type="button"
                     onClick={handleSaveSchedule}
-                    disabled={saving || !hasUnsavedChanges}
+                    disabled={saving || isEditorRefreshing || !hasUnsavedChanges}
                     className="mt-5 ml-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {saving ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
@@ -1575,7 +2113,7 @@ const ScheduleManager = () => {
                 </div>
             )}
 
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
+            <section className="grid gap-6">
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <div className="space-y-2">
@@ -1586,21 +2124,23 @@ const ScheduleManager = () => {
                             schedules={schedules}
                             selectedScheduleId={selectedScheduleId}
                             onSelect={setSelectedScheduleId}
+                            disabled={editorLoading}
                         />
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Anahtarı</p>
                         <div className="mt-4 flex flex-wrap gap-3">
-                            {(editorPayload?.availableClassKeys || []).map((classKey) => (
+                            {(selectedSchedule?.availableClassKeys || []).map((classKey) => (
                                 <button
                                     key={classKey}
                                     type="button"
                                     onClick={() => setSelectedClassKey(classKey)}
+                                    disabled={editorLoading}
                                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedClassKey === classKey
                                         ? 'bg-cyan-500 text-slate-950'
                                         : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white'
-                                        }`}
+                                        } ${editorLoading ? 'cursor-not-allowed opacity-50' : ''}`}
                                 >
                                     {formatClassKeyLabel(classKey)}
                                 </button>
@@ -1609,24 +2149,24 @@ const ScheduleManager = () => {
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <SchedulePreviewCard
-                        title="Seçili Sınıf Düzeyi Akışı"
-                        description="Sağdaki liste, seçili sınıf düzeyi için son görünecek akışı gösterir."
-                        lessonMap={selectedClassState.effectiveLessons}
-                        emptyText="Bu seçim için gösterilecek ders yok."
-                    />
-                </div>
-
-                <div className="xl:col-span-2">
-                    <ScheduleBoardCard
-                        board={scheduleBoard}
-                        onCellClick={openEditor}
-                        onAddTimeSlot={openNewTimeSlotEditor}
-                        onQuickAdd={openQuickAddEditor}
-                        onTimeSlotClick={openTimeSlotEditor}
-                        saving={saving}
-                    />
+                <div>
+                    {isEditorRefreshing ? (
+                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-10 backdrop-blur-xl">
+                            <div className="flex min-h-[320px] items-center justify-center gap-3 text-slate-400">
+                                <Loader2 className="animate-spin text-cyan-400" />
+                                Program bileşenleri güncelleniyor...
+                            </div>
+                        </div>
+                    ) : (
+                        <ScheduleBoardCard
+                            board={scheduleBoard}
+                            onCellClick={openEditor}
+                            onAddTimeSlot={openNewTimeSlotEditor}
+                            onQuickAdd={openQuickAddEditor}
+                            onTimeSlotClick={openTimeSlotEditor}
+                            saving={saving}
+                        />
+                    )}
                 </div>
             </section>
 
@@ -2436,7 +2976,7 @@ const ScheduleField = ({ label, children }) => (
     </label>
 );
 
-const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
+const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect, disabled = false }) => {
     const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
 
     return (
@@ -2444,8 +2984,9 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect }) => {
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Programlar</div>
             <select
                 value={selectedScheduleId}
+                disabled={disabled}
                 onChange={(e) => onSelect(e.target.value)}
-                className="mt-3 block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40"
+                className="mt-3 block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {schedules.map((schedule) => (
                     <option key={schedule.id} value={schedule.id}>
@@ -2920,56 +3461,6 @@ const ScheduleQuickAddModal = ({
     );
 };
 
-const SchedulePreviewCard = ({ title, description, lessonMap, emptyText }) => {
-    const entries = getOrderedLessonEntries(lessonMap);
-
-    return (
-        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-            <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Akış</p>
-                <h4 className="mt-2 text-xl font-bold text-white">{title}</h4>
-                <p className="mt-2 text-sm leading-7 text-slate-400">{description}</p>
-            </div>
-
-            {entries.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/50 px-4 py-8 text-center text-sm text-slate-500">
-                    {emptyText}
-                </div>
-            ) : (
-                <div className="space-y-5">
-                    {entries.map(([dayKey, lessons]) => (
-                        <div key={dayKey}>
-                            <div className="mb-3 flex items-center justify-between">
-                                <h5 className="text-sm font-bold uppercase tracking-[0.24em] text-slate-400">{getDayLabel(dayKey)}</h5>
-                                <span className="text-xs text-slate-500">{lessons.length} ders</span>
-                            </div>
-
-                            <div className="space-y-3">
-                                {lessons.map((lesson) => (
-                                    <div
-                                        key={lesson.id}
-                                        className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4"
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className="min-w-[72px] rounded-2xl bg-white/5 px-3 py-2 text-center text-sm font-bold text-slate-200">
-                                                {lesson.time}
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-semibold text-white">{lesson.courseName}</div>
-                                                <div className="mt-1 text-sm text-slate-400">{formatLessonMeta(lesson)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
 const createEmptyWeekSchedule = () => Object.fromEntries(
     SCHEDULE_DAYS.map((day) => [day.key, []])
 );
@@ -2998,14 +3489,17 @@ const apiFetch = async (path, { method = 'GET', body, authRequired = false } = {
         body: body === undefined ? undefined : JSON.stringify(body)
     });
 
+    const rawText = response.status === 204 ? '' : await response.text();
+
     if (!response.ok) {
         let message = 'İstek başarısız oldu.';
-        try {
-            const payload = await response.json();
-            message = payload.error || payload.message || message;
-        } catch {
-            const text = await response.text();
-            if (text) message = text;
+        if (rawText) {
+            try {
+                const payload = JSON.parse(rawText);
+                message = payload.error || payload.message || rawText || message;
+            } catch {
+                message = rawText;
+            }
         }
         throw new Error(message);
     }
@@ -3014,12 +3508,11 @@ const apiFetch = async (path, { method = 'GET', body, authRequired = false } = {
         return null;
     }
 
-    const text = await response.text();
-    if (!text) {
+    if (!rawText) {
         return null;
     }
 
-    return JSON.parse(text);
+    return JSON.parse(rawText);
 };
 
 const communityApi = {
@@ -3028,10 +3521,26 @@ const communityApi = {
     },
 
     async deletePost(postId) {
-        return apiFetch(`/community/posts/${encodeURIComponent(postId)}`, {
-            method: 'DELETE',
-            authRequired: true
-        });
+        const encodedId = encodeURIComponent(postId);
+
+        try {
+            return await apiFetch(`/community/posts/${encodedId}`, {
+                method: 'DELETE',
+                authRequired: true
+            });
+        } catch (error) {
+            const message = error?.message || '';
+
+            if (!/404|405|Cannot DELETE/i.test(message)) {
+                throw error;
+            }
+
+            // Some admin actions in this API use explicit action endpoints instead of DELETE.
+            return apiFetch(`/community/posts/${encodedId}/delete`, {
+                method: 'POST',
+                authRequired: true
+            });
+        }
     }
 };
 
@@ -3106,15 +3615,19 @@ const scheduleApi = {
 
 const classApi = {
     async listAdminClasses() {
-        return apiFetch('/admin/classes', { authRequired: true });
+        const data = await apiFetch('/admin/classes', { authRequired: true });
+        return data
+            .map(normalizeAdminClass)
+            .sort((left, right) => (left.sortOrder - right.sortOrder) || left.name.localeCompare(right.name, 'tr'));
     },
 
     async createClass(payload) {
-        return apiFetch('/admin/classes', {
+        const data = await apiFetch('/admin/classes', {
             method: 'POST',
             body: payload,
             authRequired: true
         });
+        return normalizeAdminClass(data);
     },
 
     async deleteClass(idOrKey) {
@@ -3124,6 +3637,130 @@ const classApi = {
         });
     }
 };
+
+const academicFacultyApi = {
+    async listFaculties() {
+        const data = await apiFetch('/academic-faculties', { authRequired: true });
+        return data
+            .map(normalizeAcademicFaculty)
+            .sort((left, right) => (left.sortOrder - right.sortOrder) || left.name.localeCompare(right.name, 'tr'));
+    },
+
+    async createFaculty(payload) {
+        const data = await apiFetch('/academic-faculties', {
+            method: 'POST',
+            body: payload,
+            authRequired: true
+        });
+        return normalizeAcademicFaculty(data);
+    },
+
+    async updateFaculty(idOrKey, payload) {
+        const data = await apiFetch(`/academic-faculties/${encodeURIComponent(idOrKey)}`, {
+            method: 'PATCH',
+            body: payload,
+            authRequired: true
+        });
+        return normalizeAcademicFaculty(data);
+    },
+
+    async deleteFaculty(idOrKey) {
+        return apiFetch(`/academic-faculties/${encodeURIComponent(idOrKey)}`, {
+            method: 'DELETE',
+            authRequired: true
+        });
+    }
+};
+
+const createFacultyDepartmentDraft = (department = {}) => ({
+    localId: department.localId || `department-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    key: department.key || '',
+    name: department.name || '',
+    sortOrder: department.sortOrder ?? '',
+    gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+});
+
+const createEmptyFacultyFormState = () => ({
+    originalKey: '',
+    key: '',
+    name: '',
+    sortOrder: '',
+    departments: []
+});
+
+const createFacultyFormStateFromFaculty = (faculty) => ({
+    originalKey: faculty.key || '',
+    key: faculty.key || '',
+    name: faculty.name || '',
+    sortOrder: faculty.sortOrder ?? '',
+    departments: (faculty.departments || []).map((department) => createFacultyDepartmentDraft(department))
+});
+
+const createEmptyDepartmentConfig = () => ({
+    key: '',
+    name: '',
+    sortOrder: ''
+});
+
+const serializeFacultyPayload = (facultyForm) => ({
+    key: facultyForm.key.trim() || undefined,
+    name: facultyForm.name.trim(),
+    sortOrder: facultyForm.sortOrder === '' ? undefined : Number(facultyForm.sortOrder),
+    departments: facultyForm.departments.map((department) => ({
+        key: department.key.trim() || undefined,
+        name: department.name.trim(),
+        sortOrder: department.sortOrder === '' ? undefined : Number(department.sortOrder),
+        gradeKeys: department.gradeKeys
+    }))
+});
+
+const buildFacultyPayload = (faculty, departments) => ({
+    key: faculty.key || undefined,
+    name: faculty.name,
+    sortOrder: faculty.sortOrder ?? undefined,
+    departments: departments.map((department) => ({
+        key: department.key || undefined,
+        name: department.name,
+        sortOrder: department.sortOrder ?? undefined,
+        gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+    }))
+});
+
+const flattenDepartmentOptions = (faculties = []) => faculties.flatMap((faculty) => (
+    (faculty.departments || []).map((department) => ({
+        facultyKey: faculty.key,
+        facultyName: faculty.name,
+        departmentKey: department.key,
+        departmentName: department.name
+    }))
+));
+
+const normalizeAdminClass = (item = {}) => ({
+    ...item,
+    id: String(item.id ?? item.key ?? ''),
+    key: String(item.key || item.id || ''),
+    name: item.name || item.key || 'İsimsiz grade',
+    sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : 0,
+    departmentKeys: Array.isArray(item.departmentKeys) ? item.departmentKeys.map(String) : []
+});
+
+const normalizeAcademicFaculty = (faculty = {}) => ({
+    ...faculty,
+    id: String(faculty.id ?? faculty.key ?? ''),
+    key: String(faculty.key || faculty.id || ''),
+    name: faculty.name || faculty.key || 'İsimsiz fakülte',
+    sortOrder: Number.isFinite(Number(faculty.sortOrder)) ? Number(faculty.sortOrder) : 0,
+    departments: (Array.isArray(faculty.departments) ? faculty.departments : [])
+        .map((department) => ({
+            ...department,
+            id: String(department.id ?? department.key ?? ''),
+            key: String(department.key || department.id || ''),
+            name: department.name || department.key || 'İsimsiz departman',
+            sortOrder: Number.isFinite(Number(department.sortOrder)) ? Number(department.sortOrder) : 0,
+            gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+        }))
+        .sort((left, right) => (left.sortOrder - right.sortOrder) || left.name.localeCompare(right.name, 'tr'))
+});
 
 const normalizeLessonMap = (lessonMap = {}) => {
     const result = {};
@@ -3343,28 +3980,6 @@ const buildScheduleBoard = (classState) => {
     };
 };
 
-const getOrderedLessonEntries = (lessonMap = {}) => {
-    const usedKeys = new Set();
-    const ordered = [];
-
-    SCHEDULE_DAYS.forEach((day) => {
-        const lessons = (lessonMap[day.key] || []).filter((lesson) => !lesson.isEmpty);
-        if (lessons && lessons.length > 0) {
-            ordered.push([day.key, lessons]);
-            usedKeys.add(day.key);
-        }
-    });
-
-    Object.entries(lessonMap).forEach(([dayKey, lessons]) => {
-        const visibleLessons = lessons.filter((lesson) => !lesson.isEmpty);
-        if (!usedKeys.has(dayKey) && visibleLessons.length > 0) {
-            ordered.push([dayKey, visibleLessons]);
-        }
-    });
-
-    return ordered;
-};
-
 const normalizeClassSchedule = (schedule = {}) => normalizeLessonMap(schedule);
 
 const normalizeScheduleSummary = (schedule) => ({
@@ -3389,18 +4004,6 @@ const normalizeScheduleEditor = (schedule) => ({
         Object.entries((schedule.effectiveSchedule || schedule.schedule || {})).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
     )
 });
-
-const areDraftItemsChanged = (draftItems, originalItems, getId, getValue) => {
-    if (draftItems.length !== originalItems.length) return true;
-
-    const originalMap = new Map(originalItems.map((item) => [String(getId(item)), getValue(item)]));
-
-    return draftItems.some((item) => {
-        const id = String(getId(item));
-        if (!originalMap.has(id)) return true;
-        return originalMap.get(id) !== getValue(item);
-    });
-};
 
 const mergeClassSchedules = (autoSchedule, manualSchedule, overrideEnabled) => {
     const normalizedAuto = normalizeClassSchedule(autoSchedule || createEmptyWeekSchedule());
