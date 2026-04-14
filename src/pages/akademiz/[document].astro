@@ -1,0 +1,161 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+
+export const prerender = true;
+
+const documents = {
+    privacy: {
+        file: 'privacy_tr.md',
+        navLabel: 'Gizlilik Politikası',
+        title: 'AkademiZ Gizlilik Politikası'
+    },
+    terms: {
+        file: 'terms_tr.md',
+        navLabel: 'Kullanım Şartları',
+        title: 'AkademiZ Kullanım Şartları'
+    },
+    consent: {
+        file: 'consent_tr.md',
+        navLabel: 'Açık Rıza Metni',
+        title: 'AkademiZ Açık Rıza Metni'
+    }
+};
+
+export function getStaticPaths() {
+    return ['privacy', 'terms', 'consent'].map((slug) => ({
+        params: { document: slug }
+    }));
+}
+
+const { document: documentSlug } = Astro.params;
+const doc = documents[documentSlug];
+
+if (!doc) {
+    return Astro.redirect('/akademiz');
+}
+
+const legalDir = join(process.cwd(), 'public', 'akademiz', 'legal');
+const markdown = readFileSync(join(legalDir, doc.file), 'utf8');
+
+const escapeHtml = (value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const renderInlineMarkdown = (value) => {
+    let html = escapeHtml(value);
+
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+|mailto:[^)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    return html;
+};
+
+const renderMarkdown = (source) => {
+    const lines = source.replace(/\r\n/g, '\n').split('\n');
+    const blocks = [];
+    let paragraph = [];
+    let list = [];
+
+    const flushParagraph = () => {
+        if (paragraph.length === 0) return;
+        blocks.push(`<p>${paragraph.map((line) => renderInlineMarkdown(line.replace(/\s{2}$/, ''))).join('<br />')}</p>`);
+        paragraph = [];
+    };
+
+    const flushList = () => {
+        if (list.length === 0) return;
+        blocks.push(`<ul>${list.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`);
+        list = [];
+    };
+
+    for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+
+        if (!line.trim()) {
+            flushParagraph();
+            flushList();
+            continue;
+        }
+
+        const heading = line.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+            flushParagraph();
+            flushList();
+            const level = heading[1].length;
+            blocks.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+            continue;
+        }
+
+        const listItem = line.match(/^-\s+(.+)$/);
+        if (listItem) {
+            flushParagraph();
+            list.push(listItem[1]);
+            continue;
+        }
+
+        flushList();
+        paragraph.push(line);
+    }
+
+    flushParagraph();
+    flushList();
+
+    return blocks.join('\n');
+};
+
+const contentHtml = renderMarkdown(markdown);
+const activePath = `/akademiz/${documentSlug}`;
+---
+
+<Layout title={`${doc.title} | NortixLabs`} description={`${doc.title} - NortixLabs`} lang="tr">
+    <Navbar client:load lang="tr" />
+
+    <main class="relative min-h-screen pt-28 pb-20">
+        <div class="container mx-auto px-6 max-w-6xl">
+            <div class="mb-10">
+                <a href="/akademiz" class="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-white transition-colors">
+                    <span aria-hidden="true">&larr;</span>
+                    AkademiZ
+                </a>
+                <p class="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">AkademiZ Legal</p>
+                <h1 class="mt-3 text-3xl md:text-5xl font-bold font-display text-white">{doc.title}</h1>
+            </div>
+
+            <div class="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+                <aside class="lg:sticky lg:top-28 lg:self-start">
+                    <nav class="rounded-lg border border-white/10 bg-slate-900/70 p-4 backdrop-blur" aria-label="AkademiZ legal documents">
+                        {Object.entries(documents).map(([slug, item]) => (
+                            <a
+                                href={`/akademiz/${slug}`}
+                                class={`block rounded-lg px-4 py-3 text-sm font-semibold transition-colors ${
+                                    activePath === `/akademiz/${slug}`
+                                        ? 'bg-cyan-400/10 text-cyan-200 border border-cyan-400/20'
+                                        : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
+                                }`}
+                            >
+                                {item.navLabel}
+                            </a>
+                        ))}
+                    </nav>
+                </aside>
+
+                <article class="rounded-lg border border-white/10 bg-slate-900/70 p-6 md:p-10 backdrop-blur">
+                    <div
+                        class="prose prose-invert prose-lg max-w-none prose-headings:font-display prose-headings:text-white prose-a:text-cyan-300 prose-strong:text-white prose-li:marker:text-cyan-300 text-slate-300"
+                        set:html={contentHtml}
+                    />
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <Footer client:visible lang="tr" />
+</Layout>
