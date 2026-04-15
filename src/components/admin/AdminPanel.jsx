@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.PUBLIC_AKADEMIZ_API_URL || 'https://akademiz-api.nortixlabs.com';
-const DEFAULT_CLASS_KEY = 'grade1';
 const ADMIN_TAB_ROUTES = {
     dashboard: '/akademiz/admin',
     schedule: '/akademiz/admin/ders-programlari',
@@ -23,11 +22,6 @@ const NAV_ITEMS = [
     { id: 'events', label: 'Etkinlikler', icon: Calendar },
     { id: 'community', label: 'Topluluk', icon: Users },
     { id: 'news', label: 'Haberler', icon: MessageSquare }
-];
-
-const GRADE_OPTIONS = [
-    { key: 'grade1', label: '1. Sınıf' },
-    { key: 'grade2', label: '2. Sınıf' }
 ];
 
 const SCHEDULE_DAYS = [
@@ -749,15 +743,20 @@ const useScheduleWorkspace = () => {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [selectedScheduleId, setSelectedScheduleId] = useState('');
-    const [selectedClassKey, setSelectedClassKey] = useState(DEFAULT_CLASS_KEY);
+    const [selectedClassKey, setSelectedClassKey] = useState('');
+    const [classes, setClasses] = useState([]);
 
     const loadSchedules = async () => {
         try {
             setLoading(true);
             setLoadError('');
-            const response = await scheduleApi.listSchedules();
-            setSchedules(response);
-            return response;
+            const [scheduleResponse, classResponse] = await Promise.all([
+                scheduleApi.listSchedules(),
+                classApi.listAdminClasses()
+            ]);
+            setSchedules(scheduleResponse);
+            setClasses(classResponse);
+            return scheduleResponse;
         } catch (err) {
             setLoadError(err.message || 'Ders programı yönetim verisi yüklenemedi.');
             return [];
@@ -798,6 +797,7 @@ const useScheduleWorkspace = () => {
         setSelectedClassKey,
         selectedSchedule,
         availableClassKeys,
+        classes,
         reloadSchedules: loadSchedules
     };
 };
@@ -816,7 +816,6 @@ const ClassManagementManager = () => {
     const [facultyFormMode, setFacultyFormMode] = useState('create');
     const [departmentForm, setDepartmentForm] = useState(createEmptyDepartmentConfig());
     const [departmentFormMode, setDepartmentFormMode] = useState('edit');
-    const [gradeMappingDraft, setGradeMappingDraft] = useState([]);
     const [submittingAction, setSubmittingAction] = useState('');
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
@@ -868,17 +867,21 @@ const ClassManagementManager = () => {
 
     const selectedFaculty = faculties.find((faculty) => faculty.key === selectedFacultyKey) || null;
     const selectedDepartment = selectedFaculty?.departments.find((department) => department.key === selectedDepartmentKey) || null;
-    const selectedDepartmentGrades = classes.filter((item) => (selectedDepartment?.gradeKeys || []).includes(item.key));
+    const selectedDepartmentGrades = selectedDepartment?.grades || [];
     const canOpenDepartmentStep = Boolean(selectedFaculty);
     const canOpenGradeStep = Boolean(selectedFaculty && selectedDepartment);
     const facultyFormHasInvalidDepartment = facultyForm.departments.some((department) => !department.name.trim());
+    const facultyFormHasInvalidGrade = facultyForm.departments.some((department) => {
+        const levels = department.grades.map((grade) => Number(grade.level));
+        const hasInvalidLevel = levels.some((level) => !Number.isInteger(level) || level < 1 || level > 6);
+        return hasInvalidLevel || new Set(levels).size !== levels.length;
+    });
 
     useEffect(() => {
         if (!selectedFaculty || selectedFaculty.departments.length === 0) {
             setSelectedDepartmentKey('');
             setDepartmentFormMode('create');
             setDepartmentForm(createEmptyDepartmentConfig());
-            setGradeMappingDraft([]);
             return;
         }
 
@@ -896,7 +899,6 @@ const ClassManagementManager = () => {
         if (!selectedDepartment) {
             setDepartmentFormMode('create');
             setDepartmentForm(createEmptyDepartmentConfig());
-            setGradeMappingDraft([]);
             return;
         }
 
@@ -906,7 +908,6 @@ const ClassManagementManager = () => {
             name: selectedDepartment.name,
             sortOrder: selectedDepartment.sortOrder ?? 0
         });
-        setGradeMappingDraft(selectedDepartment.gradeKeys || []);
     }, [selectedDepartment]);
 
     const reloadManagementData = async ({ nextFacultyKey, nextDepartmentKey } = {}) => {
@@ -940,6 +941,11 @@ const ClassManagementManager = () => {
         e.preventDefault();
 
         const gradeNumber = Number(gradeForm.gradeNumber);
+        if (!selectedDepartment) {
+            setError('Önce bir departman seçin.');
+            return;
+        }
+
         if (!Number.isInteger(gradeNumber) || gradeNumber < 1 || gradeNumber > 6) {
             setError('Grade yalnızca 1 ile 6 arasında bir sayı olabilir.');
             return;
@@ -950,15 +956,20 @@ const ClassManagementManager = () => {
             setError('');
             setNotice('');
             await classApi.createClass({
-                name: `${gradeNumber}. Sınıf`,
+                departmentKey: selectedDepartment.key,
+                level: gradeNumber,
+                name: `${gradeNumber}. Grade`,
                 key: `grade${gradeNumber}`,
                 sortOrder: gradeNumber - 1
             });
-            await reloadManagementData();
+            await reloadManagementData({
+                nextFacultyKey: selectedFaculty?.key,
+                nextDepartmentKey: selectedDepartment.key
+            });
             setGradeForm({
                 gradeNumber: ''
             });
-            setNotice('Grade kaydı oluşturuldu.');
+            setNotice('Grade departman altında oluşturuldu.');
         } catch (err) {
             setError(err.message || 'Grade kaydı oluşturulamadı.');
         } finally {
@@ -975,7 +986,10 @@ const ClassManagementManager = () => {
             setError('');
             setNotice('');
             await classApi.deleteClass(grade.key || grade.id);
-            await reloadManagementData();
+            await reloadManagementData({
+                nextFacultyKey: selectedFaculty?.key,
+                nextDepartmentKey: selectedDepartment?.key
+            });
             setNotice('Grade kaydı silindi.');
         } catch (err) {
             setError(err.message || 'Grade kaydı silinemedi.');
@@ -1002,16 +1016,40 @@ const ClassManagementManager = () => {
         }));
     };
 
-    const toggleFacultyDepartmentGrade = (localId, gradeKey) => {
+    const handleFacultyDepartmentGradeFieldChange = (departmentLocalId, gradeLocalId, field, value) => {
         setFacultyForm((prev) => ({
             ...prev,
             departments: prev.departments.map((department) => {
-                if (department.localId !== localId) return department;
-                const nextGradeKeys = department.gradeKeys.includes(gradeKey)
-                    ? department.gradeKeys.filter((item) => item !== gradeKey)
-                    : [...department.gradeKeys, gradeKey];
-                return { ...department, gradeKeys: nextGradeKeys };
+                if (department.localId !== departmentLocalId) return department;
+                return {
+                    ...department,
+                    grades: department.grades.map((grade) => (
+                        grade.localId === gradeLocalId ? { ...grade, [field]: value } : grade
+                    ))
+                };
             })
+        }));
+    };
+
+    const addFacultyDepartmentGradeRow = (departmentLocalId) => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: prev.departments.map((department) => (
+                department.localId === departmentLocalId
+                    ? { ...department, grades: [...department.grades, createFacultyGradeDraft()] }
+                    : department
+            ))
+        }));
+    };
+
+    const removeFacultyDepartmentGradeRow = (departmentLocalId, gradeLocalId) => {
+        setFacultyForm((prev) => ({
+            ...prev,
+            departments: prev.departments.map((department) => (
+                department.localId === departmentLocalId
+                    ? { ...department, grades: department.grades.filter((grade) => grade.localId !== gradeLocalId) }
+                    : department
+            ))
         }));
     };
 
@@ -1128,7 +1166,7 @@ const ClassManagementManager = () => {
             key: departmentForm.key.trim() || undefined,
             name: departmentForm.name.trim(),
             sortOrder: departmentForm.sortOrder === '' ? undefined : Number(departmentForm.sortOrder),
-            gradeKeys: gradeMappingDraft
+            grades: departmentFormMode === 'edit' ? (selectedDepartment?.grades || []) : []
         };
 
         const nextDepartments = departmentFormMode === 'edit'
@@ -1183,14 +1221,6 @@ const ClassManagementManager = () => {
         } finally {
             setSubmittingAction('');
         }
-    };
-
-    const toggleSelectedDepartmentGrade = (gradeKey) => {
-        setGradeMappingDraft((prev) => (
-            prev.includes(gradeKey)
-                ? prev.filter((item) => item !== gradeKey)
-                : [...prev, gradeKey]
-        ));
     };
 
     if (loading) {
@@ -1328,9 +1358,9 @@ const ClassManagementManager = () => {
                                                         <div className="text-sm font-semibold text-white">{department.name}</div>
                                                         <div className="text-xs text-slate-500">{department.key} • sıra {department.sortOrder ?? 0}</div>
                                                         <div className="flex flex-wrap gap-2">
-                                                            {(department.gradeKeys || []).map((gradeKey) => (
-                                                                <span key={gradeKey} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-                                                                    {gradeKey}
+                                                            {(department.grades || []).map((grade) => (
+                                                                <span key={grade.key} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                                                                    {formatGradeLabel(grade)}
                                                                 </span>
                                                             ))}
                                                         </div>
@@ -1431,22 +1461,51 @@ const ClassManagementManager = () => {
                                                             placeholder="0"
                                                         />
                                                     </ScheduleField>
-                                                    <ScheduleField label="Grade Keys">
-                                                        <div className="grid gap-3 sm:grid-cols-2">
-                                                            {classes.map((item) => (
-                                                                <label key={item.key} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-3 text-sm text-slate-200">
+                                                    <ScheduleField label="Grade Kayıtları">
+                                                        <div className="space-y-3">
+                                                            {department.grades.map((grade) => (
+                                                                <div key={grade.localId} className="grid gap-3 rounded-2xl border border-white/8 bg-slate-950/50 p-4 sm:grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)_auto]">
                                                                     <input
-                                                                        type="checkbox"
-                                                                        checked={department.gradeKeys.includes(item.key)}
-                                                                        onChange={() => toggleFacultyDepartmentGrade(department.localId, item.key)}
-                                                                        className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-cyan-400"
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max="6"
+                                                                        value={grade.level}
+                                                                        onChange={(e) => handleFacultyDepartmentGradeFieldChange(department.localId, grade.localId, 'level', e.target.value)}
+                                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                                        placeholder="1"
                                                                     />
-                                                                    <span>
-                                                                        <span className="block font-semibold text-white">{item.name}</span>
-                                                                        <span className="mt-1 block text-xs text-slate-500">{item.key}</span>
-                                                                    </span>
-                                                                </label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={grade.name}
+                                                                        onChange={(e) => handleFacultyDepartmentGradeFieldChange(department.localId, grade.localId, 'name', e.target.value)}
+                                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                                        placeholder="1. Grade"
+                                                                    />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={grade.key}
+                                                                        onChange={(e) => handleFacultyDepartmentGradeFieldChange(department.localId, grade.localId, 'key', e.target.value)}
+                                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                                        placeholder="grade1"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeFacultyDepartmentGradeRow(department.localId, grade.localId)}
+                                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-400/15"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                        Sil
+                                                                    </button>
+                                                                </div>
                                                             ))}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addFacultyDepartmentGradeRow(department.localId)}
+                                                                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/15"
+                                                            >
+                                                                <Plus size={16} />
+                                                                Grade Satırı Ekle
+                                                            </button>
                                                         </div>
                                                     </ScheduleField>
                                                 </div>
@@ -1466,7 +1525,7 @@ const ClassManagementManager = () => {
                                     <div className="flex flex-col gap-3 sm:flex-row">
                                         <button
                                             type="submit"
-                                            disabled={facultyFormHasInvalidDepartment || submittingAction === 'create-faculty' || submittingAction === 'update-faculty'}
+                                            disabled={facultyFormHasInvalidDepartment || facultyFormHasInvalidGrade || submittingAction === 'create-faculty' || submittingAction === 'update-faculty'}
                                             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {(submittingAction === 'create-faculty' || submittingAction === 'update-faculty') ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
@@ -1495,7 +1554,7 @@ const ClassManagementManager = () => {
                                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 2</p>
                                         <h4 className="mt-2 text-xl font-bold text-white">Department Selection</h4>
                                         <p className="mt-2 text-sm leading-7 text-slate-400">
-                                            Seçili fakültenin departmanlarını yönetin. Departman içinde izin verilen grade kayıtları da burada belirlenir.
+                                            Seçili fakültenin departman metadata'sını yönetin. Grade kayıtları bir sonraki adımda departmanın altında oluşturulur.
                                         </p>
                                     </div>
                                     <button
@@ -1573,24 +1632,9 @@ const ClassManagementManager = () => {
                                                 Departman key değişirse aynı key'e bağlı öğrenci kayıtları korunmaz. Mümkünse mevcut key'i koruyun.
                                             </div>
 
-                                            <ScheduleField label="İzin Verilen Grade'ler">
-                                                <div className="grid gap-3 sm:grid-cols-2">
-                                                    {classes.map((item) => (
-                                                        <label key={item.key} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-200">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={gradeMappingDraft.includes(item.key)}
-                                                                onChange={() => toggleSelectedDepartmentGrade(item.key)}
-                                                                className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950 text-cyan-400"
-                                                            />
-                                                            <span>
-                                                                <span className="block font-semibold text-white">{item.name}</span>
-                                                                <span className="mt-1 block text-xs text-slate-500">{item.key}</span>
-                                                            </span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </ScheduleField>
+                                            <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/10 px-4 py-4 text-sm leading-7 text-cyan-100">
+                                                Bu adım sadece departman kaydını günceller. Grade ekleme ve silme işlemleri Adım 3'te seçili departman altında yapılır.
+                                            </div>
 
                                             <div className="flex flex-col gap-3 sm:flex-row">
                                                 <button
@@ -1626,11 +1670,15 @@ const ClassManagementManager = () => {
                                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 3</p>
                                 <h4 className="text-xl font-bold text-white">Grades</h4>
                                 <p className="text-sm leading-7 text-slate-400">
-                                    Grade kayıtları yalnızca `1` ile `6` arasında sayısal olabilir. Not veya açıklama değil, sadece sayı kullanın.
+                                    Grade kayıtları departmana bağlıdır. Anahtar backend tarafından `{departmentKey}-{gradeKey}` formatına genişletilir ve aynı departman içinde level tekrar edemez.
                                 </p>
                             </div>
 
                             <form className="mt-6 grid gap-4" onSubmit={handleCreateGrade}>
+                                <div className="rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-300">
+                                    Hedef departman: <span className="font-semibold text-white">{selectedDepartment?.name || 'Seçilmedi'}</span>
+                                    <span className="ml-2 text-xs text-slate-500">{selectedDepartment?.key || ''}</span>
+                                </div>
                                 <ScheduleField label="Grade Numarası">
                                     <input
                                         type="number"
@@ -1645,7 +1693,7 @@ const ClassManagementManager = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={submittingAction === 'create-grade'}
+                                    disabled={!selectedDepartment || submittingAction === 'create-grade'}
                                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {submittingAction === 'create-grade' ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
@@ -1654,14 +1702,14 @@ const ClassManagementManager = () => {
                             </form>
 
                             <div className="mt-8 space-y-3">
-                                {classes.map((item) => (
+                                {selectedDepartmentGrades.map((item) => (
                                     <div
-                                        key={item.id}
+                                        key={item.id || item.key}
                                         className="flex flex-col gap-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 md:flex-row md:items-center md:justify-between"
                                     >
                                         <div className="flex-1">
-                                            <div className="text-sm font-semibold text-white">{item.name}</div>
-                                            <div className="mt-1 text-xs text-slate-500">{item.key} • sıra {item.sortOrder ?? 0}</div>
+                                            <div className="text-sm font-semibold text-white">{formatGradeLabel(item)}</div>
+                                            <div className="mt-1 text-xs text-slate-500">{item.key} • level {item.level ?? '-'}</div>
                                         </div>
 
                                         <button
@@ -1675,6 +1723,11 @@ const ClassManagementManager = () => {
                                         </button>
                                     </div>
                                 ))}
+                                {selectedDepartmentGrades.length === 0 && (
+                                    <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-6 text-sm text-slate-500">
+                                        Seçili departman altında henüz grade yok.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1695,14 +1748,14 @@ const ClassManagementManager = () => {
                                 <div className="mt-1 text-xs text-slate-500">{selectedDepartment?.key || 'Anahtar yok'}</div>
                             </div>
                             <div>
-                                <div className="text-slate-500">Assigned Grades</div>
+                                <div className="text-slate-500">Department Grades</div>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {selectedDepartmentGrades.length === 0 ? (
                                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">Grade yok</span>
                                     ) : (
                                         selectedDepartmentGrades.map((item) => (
                                             <span key={item.key} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-                                                {item.name}
+                                                {formatGradeLabel(item)}
                                             </span>
                                         ))
                                     )}
@@ -1716,7 +1769,7 @@ const ClassManagementManager = () => {
                         <div className="mt-4 space-y-3 text-sm leading-7 text-slate-300">
                             <p>Grade silmek öğrenci `gradeKey` alanını temizler ve ilgili manuel schedule bloklarını kaldırır.</p>
                             <p>Faculty silmek öğrenci `facultyKey`, `departmentKey`, `department` ve `gradeKey` alanlarını temizler.</p>
-                            <p>PATCH fakülte ağacını bütünüyle değiştirir; request içinde yer almayan departmanlar ve grade eşleşmeleri kaldırılır.</p>
+                            <p>PATCH fakülte ağacını bütünüyle değiştirir; request içinde yer almayan departmanlar ve departman içi grade kayıtları kaldırılır.</p>
                         </div>
                     </div>
 
@@ -1724,7 +1777,7 @@ const ClassManagementManager = () => {
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Hızlı Geçiş</p>
                         <h4 className="mt-2 text-xl font-bold text-white">Program düzenleyicisini aç</h4>
                         <p className="mt-2 text-sm leading-7 text-slate-400">
-                            Grade kayıtları tamamlandığında ders programı tarafına geçip ilgili grade anahtarının akışını düzenleyin.
+                            Grade kayıtları tamamlandığında ders programı tarafına geçip departmana ait scoped grade anahtarının akışını düzenleyin.
                         </p>
                         <a
                             href={ADMIN_TAB_ROUTES.schedule}
@@ -1749,6 +1802,7 @@ const ScheduleManager = () => {
         setSelectedScheduleId,
         selectedClassKey,
         setSelectedClassKey,
+        classes,
         reloadSchedules
     } = useScheduleWorkspace();
     const [editorDrafts, setEditorDrafts] = useState({});
@@ -1762,6 +1816,7 @@ const ScheduleManager = () => {
     const [timeSlotState, setTimeSlotState] = useState(null);
     const [quickAddState, setQuickAddState] = useState(null);
     const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
+    const selectedClassInfo = classes.find((item) => item.key === selectedClassKey) || null;
     const selectedClassState = buildEditorClassState(editorPayload, selectedClassKey);
     const scheduleBoard = buildScheduleBoard(selectedClassState);
     const isEditorRefreshing = Boolean(selectedSchedule && editorLoading && !editorPayload);
@@ -2085,7 +2140,7 @@ const ScheduleManager = () => {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Programı Düzenleyici</p>
                 <h3 className="mt-3 text-3xl font-bold text-white">{selectedSchedule.programName}</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Aktif sınıf anahtarı {formatClassKeyLabel(selectedClassKey)} olarak seçildi. Hücre düzenlemeleri önce taslakta tutulur, ardından tek kaydet işlemiyle backend'e gönderilir.
+                    Aktif grade anahtarı {formatClassKeyLabel(selectedClassKey, selectedClassInfo)} olarak seçildi. Hücre düzenlemeleri önce taslakta tutulur, ardından tek kaydet işlemiyle backend'e gönderilir.
                 </p>
                 <a
                     href={ADMIN_TAB_ROUTES['class-management']}
@@ -2129,7 +2184,7 @@ const ScheduleManager = () => {
                     </div>
 
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sınıf Anahtarı</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Grade Anahtarı</p>
                         <div className="mt-4 flex flex-wrap gap-3">
                             {(selectedSchedule?.availableClassKeys || []).map((classKey) => (
                                 <button
@@ -2142,10 +2197,18 @@ const ScheduleManager = () => {
                                         : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white'
                                         } ${editorLoading ? 'cursor-not-allowed opacity-50' : ''}`}
                                 >
-                                    {formatClassKeyLabel(classKey)}
+                                    {formatClassKeyLabel(classKey, classes.find((item) => item.key === classKey))}
                                 </button>
                             ))}
                         </div>
+                        {selectedClassInfo && (
+                            <div className="mt-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-300">
+                                <div className="font-semibold text-white">{selectedClassInfo.departmentName || selectedClassInfo.departmentKey}</div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                    {selectedClassInfo.facultyName || selectedClassInfo.facultyKey} • level {selectedClassInfo.level ?? '-'}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -3001,7 +3064,7 @@ const ScheduleClassPicker = ({ schedules, selectedScheduleId, onSelect, disabled
                         {selectedSchedule.academicYear} • {selectedSchedule.semester}
                     </div>
                     <div className="mt-1 text-sm text-slate-300">
-                        {(selectedSchedule.availableClassKeys || []).length} sınıf anahtarı
+                        {(selectedSchedule.availableClassKeys || []).length} grade anahtarı
                     </div>
                 </>
             )}
@@ -3672,12 +3735,19 @@ const academicFacultyApi = {
     }
 };
 
+const createFacultyGradeDraft = (grade = {}) => ({
+    localId: grade.localId || `grade-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    key: grade.key || '',
+    level: grade.level ?? '',
+    name: grade.name || ''
+});
+
 const createFacultyDepartmentDraft = (department = {}) => ({
     localId: department.localId || `department-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     key: department.key || '',
     name: department.name || '',
     sortOrder: department.sortOrder ?? '',
-    gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+    grades: (Array.isArray(department.grades) ? department.grades : []).map((grade) => createFacultyGradeDraft(grade))
 });
 
 const createEmptyFacultyFormState = () => ({
@@ -3710,7 +3780,14 @@ const serializeFacultyPayload = (facultyForm) => ({
         key: department.key.trim() || undefined,
         name: department.name.trim(),
         sortOrder: department.sortOrder === '' ? undefined : Number(department.sortOrder),
-        gradeKeys: department.gradeKeys
+        grades: department.grades.map((grade) => {
+            const level = Number(grade.level);
+            return {
+                level,
+                name: grade.name.trim() || `${level}. Grade`,
+                key: grade.key.trim() || `grade${level}`
+            };
+        })
     }))
 });
 
@@ -3722,7 +3799,11 @@ const buildFacultyPayload = (faculty, departments) => ({
         key: department.key || undefined,
         name: department.name,
         sortOrder: department.sortOrder ?? undefined,
-        gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+        grades: (Array.isArray(department.grades) ? department.grades : []).map((grade) => ({
+            level: Number(grade.level),
+            name: grade.name,
+            key: grade.key
+        }))
     }))
 });
 
@@ -3741,6 +3822,11 @@ const normalizeAdminClass = (item = {}) => ({
     key: String(item.key || item.id || ''),
     name: item.name || item.key || 'İsimsiz grade',
     sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : 0,
+    level: Number.isFinite(Number(item.level)) ? Number(item.level) : null,
+    facultyKey: item.facultyKey ? String(item.facultyKey) : '',
+    facultyName: item.facultyName || '',
+    departmentKey: item.departmentKey ? String(item.departmentKey) : '',
+    departmentName: item.departmentName || '',
     departmentKeys: Array.isArray(item.departmentKeys) ? item.departmentKeys.map(String) : []
 });
 
@@ -3757,7 +3843,19 @@ const normalizeAcademicFaculty = (faculty = {}) => ({
             key: String(department.key || department.id || ''),
             name: department.name || department.key || 'İsimsiz departman',
             sortOrder: Number.isFinite(Number(department.sortOrder)) ? Number(department.sortOrder) : 0,
-            gradeKeys: Array.isArray(department.gradeKeys) ? department.gradeKeys.map(String) : []
+            grades: (Array.isArray(department.grades) ? department.grades : [])
+                .map((grade) => ({
+                    ...grade,
+                    id: String(grade.id ?? grade.key ?? `${department.key}-${grade.level ?? ''}`),
+                    key: String(grade.key || grade.id || ''),
+                    level: Number.isFinite(Number(grade.level)) ? Number(grade.level) : null,
+                    name: grade.name || (Number.isFinite(Number(grade.level)) ? `${grade.level}. Grade` : grade.key || 'İsimsiz grade'),
+                    facultyKey: String(faculty.key || faculty.id || ''),
+                    facultyName: faculty.name || faculty.key || '',
+                    departmentKey: String(department.key || department.id || ''),
+                    departmentName: department.name || department.key || ''
+                }))
+                .sort((left, right) => (Number(left.level ?? 99) - Number(right.level ?? 99)) || left.name.localeCompare(right.name, 'tr'))
         }))
         .sort((left, right) => (left.sortOrder - right.sortOrder) || left.name.localeCompare(right.name, 'tr'))
 });
@@ -3820,8 +3918,21 @@ const formatLessonMeta = (lesson) => {
 };
 
 const getDayLabel = (dayKey) => SCHEDULE_DAYS.find((day) => day.key === dayKey)?.label || dayKey;
-const formatClassKeyLabel = (classKey = '') => {
-    const gradeMatch = /^grade(\d+)$/i.exec(classKey);
+const formatGradeLabel = (grade = {}) => {
+    if (Number.isFinite(Number(grade.level))) {
+        return `${grade.level}. Sınıf`;
+    }
+
+    return grade.name || grade.key || 'İsimsiz grade';
+};
+
+const formatClassKeyLabel = (classKey = '', classInfo = null) => {
+    if (classInfo) {
+        const gradeLabel = formatGradeLabel(classInfo);
+        return classInfo.departmentName ? `${gradeLabel} • ${classInfo.departmentName}` : gradeLabel;
+    }
+
+    const gradeMatch = /(?:^|-)grade(\d+)$/i.exec(classKey);
     if (gradeMatch) {
         return `${gradeMatch[1]}. Sınıf`;
     }
