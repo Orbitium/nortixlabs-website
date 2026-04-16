@@ -1,0 +1,16 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminPanel from '../../../components/admin/AdminPanel.jsx';
+
+export const prerender = false;
+---
+
+<Layout title="Notifications | AkademiZ Admin | NortixLabs">
+    <AdminPanel client:only="react" initialTab="notifications" />
+</Layout>
+
+<style is:global>
+    body {
+        background-color: #020617;
+    }
+</style>

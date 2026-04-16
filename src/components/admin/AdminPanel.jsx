@@ -3,7 +3,7 @@ import { auth, googleProvider } from '../../lib/firebase';
 import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
     LogOut, ShieldAlert, GraduationCap, LayoutDashboard,
-    Settings, Users, MessageSquare, Calendar, Plus,
+    Settings, Users, MessageSquare, Calendar, Plus, Bell,
     X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2,
     ChevronDown, RefreshCw
 } from 'lucide-react';
@@ -12,7 +12,8 @@ const API_BASE_URL = import.meta.env.PUBLIC_AKADEMIZ_API_URL || 'https://akademi
 const ADMIN_TAB_ROUTES = {
     dashboard: '/akademiz/admin',
     schedule: '/akademiz/admin/ders-programlari',
-    'class-management': '/akademiz/admin/sinif-yonetimi'
+    'class-management': '/akademiz/admin/sinif-yonetimi',
+    notifications: '/akademiz/admin/notifications'
 };
 
 const NAV_ITEMS = [
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
     { id: 'class-management', label: 'Sınıf Yönetimi', icon: Users },
     { id: 'schedule', label: 'Ders Programları', icon: Settings },
     { id: 'events', label: 'Etkinlikler', icon: Calendar },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'community', label: 'Topluluk', icon: Users },
     { id: 'news', label: 'Haberler', icon: MessageSquare }
 ];
@@ -48,6 +50,7 @@ const DEFAULT_LESSON_DURATION_MINUTES = 45;
 const ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY = 'akademiz-admin-schedule-workspace-v1';
 const ADMIN_SCHEDULE_EDITOR_CACHE_KEY = 'akademiz-admin-schedule-editor-v1';
 const ADMIN_SCHEDULE_SELECTION_CACHE_KEY = 'akademiz-admin-schedule-selection-v1';
+const ADMIN_DEPARTMENT_YEAR_SELECTION_KEY = 'akademiz-admin-department-years-v1';
 const ADMIN_LOCAL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const AdminPanel = ({ initialTab = 'dashboard' }) => {
@@ -519,6 +522,8 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
                         </div>
                     )}
 
+                    {activeTab === 'notifications' && <NotificationsTester />}
+
                     {activeTab === 'community' && (
                         <div className="space-y-6">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -799,13 +804,14 @@ const useScheduleWorkspace = () => {
 
     const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
     const availableClassKeys = selectedSchedule?.availableClassKeys || [];
+    const availableClassKeySignature = availableClassKeys.join('|');
 
     useEffect(() => {
-        if (availableClassKeys.length === 0) return;
+        if (!selectedClassKey || availableClassKeys.length === 0) return;
         if (!availableClassKeys.includes(selectedClassKey)) {
-            setSelectedClassKey(availableClassKeys[0]);
+            setSelectedClassKey('');
         }
-    }, [availableClassKeys, selectedClassKey]);
+    }, [availableClassKeySignature, selectedSchedule?.id, selectedClassKey, setSelectedClassKey]);
 
     return {
         schedules,
@@ -831,12 +837,16 @@ const ClassManagementManager = () => {
     const [selectedFacultyKey, setSelectedFacultyKey] = useState('');
     const [selectedDepartmentKey, setSelectedDepartmentKey] = useState('');
     const [gradeForm, setGradeForm] = useState({
-        gradeNumber: ''
+        minLevel: '',
+        maxLevel: ''
     });
     const [facultyForm, setFacultyForm] = useState(createEmptyFacultyFormState());
     const [facultyFormMode, setFacultyFormMode] = useState('create');
+    const [isFacultyCreateModalOpen, setIsFacultyCreateModalOpen] = useState(false);
     const [departmentForm, setDepartmentForm] = useState(createEmptyDepartmentConfig());
     const [departmentFormMode, setDepartmentFormMode] = useState('edit');
+    const [isDepartmentCreateModalOpen, setIsDepartmentCreateModalOpen] = useState(false);
+    const [departmentYearCount, setDepartmentYearCount] = useState(readDepartmentYearPreference);
     const [submittingAction, setSubmittingAction] = useState('');
     const [notice, setNotice] = useState('');
     const [error, setError] = useState('');
@@ -873,6 +883,10 @@ const ClassManagementManager = () => {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        writeDepartmentYearPreference(departmentYearCount);
+    }, [departmentYearCount]);
 
     useEffect(() => {
         if (faculties.length === 0) {
@@ -961,19 +975,32 @@ const ClassManagementManager = () => {
     const handleCreateGrade = async (e) => {
         e.preventDefault();
 
-        const gradeNumber = Number(gradeForm.gradeNumber);
+        const minLevel = Number(gradeForm.minLevel);
+        const maxLevel = Number(gradeForm.maxLevel);
         if (!selectedDepartment) {
             setError('Önce bir departman seçin.');
             return;
         }
 
-        if (!Number.isInteger(gradeNumber) || gradeNumber < 1 || gradeNumber > 6) {
-            setError('Grade yalnızca 1 ile 6 arasında bir sayı olabilir.');
+        if (!Number.isInteger(minLevel) || !Number.isInteger(maxLevel) || minLevel < 1 || maxLevel > 6) {
+            setError('Grade aralığı 1 ile 6 arasında tam sayılarla belirtilmelidir.');
             return;
         }
 
-        if (selectedDepartmentGrades.some((grade) => Number(grade.level) === gradeNumber)) {
-            setError('Bu departman altında bu sınıf seviyesi zaten var.');
+        if (minLevel > maxLevel) {
+            setError('Minimum grade seviyesi maksimum seviyeden büyük olamaz.');
+            return;
+        }
+
+        const requestedLevels = Array.from(
+            { length: maxLevel - minLevel + 1 },
+            (_, index) => minLevel + index
+        );
+        const existingLevelSet = new Set(selectedDepartmentGrades.map((grade) => Number(grade.level)));
+        const duplicateLevels = requestedLevels.filter((level) => existingLevelSet.has(level));
+
+        if (duplicateLevels.length > 0) {
+            setError(`Bu departman altında şu grade seviyeleri zaten var: ${duplicateLevels.join(', ')}.`);
             return;
         }
 
@@ -983,18 +1010,20 @@ const ClassManagementManager = () => {
             setNotice('');
             await classApi.createClass({
                 departmentKey: selectedDepartment.key,
-                level: gradeNumber
+                minLevel,
+                maxLevel
             });
             await reloadManagementData({
                 nextFacultyKey: selectedFaculty?.key,
                 nextDepartmentKey: selectedDepartment.key
             });
             setGradeForm({
-                gradeNumber: ''
+                minLevel: '',
+                maxLevel: ''
             });
-            setNotice('Grade departman altında oluşturuldu.');
+            setNotice(`${minLevel}-${maxLevel} grade aralığı departman altında oluşturuldu.`);
         } catch (err) {
-            setError(err.message || 'Grade kaydı oluşturulamadı.');
+            setError(err.message || 'Grade aralığı oluşturulamadı.');
         } finally {
             setSubmittingAction('');
         }
@@ -1092,7 +1121,13 @@ const ClassManagementManager = () => {
 
     const openFacultyCreate = () => {
         resetFacultyForm();
+        setIsFacultyCreateModalOpen(true);
         setSelectedStep('faculties');
+    };
+
+    const closeFacultyCreate = () => {
+        setIsFacultyCreateModalOpen(false);
+        resetFacultyForm();
     };
 
     const openFacultyEdit = (faculty) => {
@@ -1104,6 +1139,7 @@ const ClassManagementManager = () => {
 
     const handleSubmitFaculty = async (e) => {
         e.preventDefault();
+        const isEditingFaculty = facultyFormMode === 'edit';
 
         if (!facultyForm.name.trim()) {
             setError('Fakülte adı zorunludur.');
@@ -1120,12 +1156,12 @@ const ClassManagementManager = () => {
         const nextDepartmentKey = payload.departments[0]?.key || '';
 
         try {
-            setSubmittingAction(facultyFormMode === 'edit' ? 'update-faculty' : 'create-faculty');
+            setSubmittingAction(isEditingFaculty ? 'update-faculty' : 'create-faculty');
             setError('');
             setNotice('');
             let response;
 
-            if (facultyFormMode === 'edit' && facultyForm.originalKey) {
+            if (isEditingFaculty && facultyForm.originalKey) {
                 response = await academicFacultyApi.updateFaculty(facultyForm.originalKey, payload);
             } else {
                 response = await academicFacultyApi.createFaculty(payload);
@@ -1135,7 +1171,10 @@ const ClassManagementManager = () => {
                 nextFacultyKey: response?.key || nextFacultyKey,
                 nextDepartmentKey: response?.departments?.[0]?.key || nextDepartmentKey
             });
-            setNotice(facultyFormMode === 'edit' ? 'Fakülte ağacı güncellendi.' : 'Fakülte oluşturuldu.');
+            setNotice(isEditingFaculty ? 'Fakülte ağacı güncellendi.' : 'Fakülte oluşturuldu.');
+            if (!isEditingFaculty) {
+                setIsFacultyCreateModalOpen(false);
+            }
             resetFacultyForm();
         } catch (err) {
             setError(err.message || 'Fakülte kaydı kaydedilemedi.');
@@ -1165,7 +1204,21 @@ const ClassManagementManager = () => {
     const startDepartmentCreate = () => {
         setDepartmentFormMode('create');
         setDepartmentForm(createEmptyDepartmentConfig());
+        setIsDepartmentCreateModalOpen(true);
         setSelectedStep('departments');
+    };
+
+    const closeDepartmentCreate = () => {
+        setIsDepartmentCreateModalOpen(false);
+        setDepartmentFormMode(selectedDepartment ? 'edit' : 'create');
+        setDepartmentForm(selectedDepartment
+            ? {
+                key: selectedDepartment.key,
+                name: selectedDepartment.name,
+                sortOrder: selectedDepartment.sortOrder ?? 0
+            }
+            : createEmptyDepartmentConfig()
+        );
     };
 
     const handleDepartmentFieldChange = (field, value) => {
@@ -1174,6 +1227,7 @@ const ClassManagementManager = () => {
 
     const handleSaveDepartment = async (e) => {
         e.preventDefault();
+        const isEditingDepartment = departmentFormMode === 'edit';
 
         if (!selectedFaculty) {
             setError('Önce bir fakülte seçin.');
@@ -1185,14 +1239,21 @@ const ClassManagementManager = () => {
             return;
         }
 
+        const existingSimpleDepartmentKeys = selectedFaculty.departments
+            .filter((department) => !isEditingDepartment || department.key !== selectedDepartment?.key)
+            .map((department) => getSimpleDepartmentKey(department, selectedFaculty.key));
+        const nextDepartmentKey = isEditingDepartment
+            ? getSimpleDepartmentKey({ ...selectedDepartment, ...departmentForm }, selectedFaculty.key)
+            : createUniqueSimpleKey(departmentForm.name, existingSimpleDepartmentKeys);
+
         const nextDepartment = {
-            key: departmentForm.key.trim() || undefined,
+            key: nextDepartmentKey,
             name: departmentForm.name.trim(),
             sortOrder: departmentForm.sortOrder === '' ? undefined : Number(departmentForm.sortOrder),
-            grades: departmentFormMode === 'edit' ? (selectedDepartment?.grades || []) : []
+            grades: isEditingDepartment ? (selectedDepartment?.grades || []) : []
         };
 
-        const nextDepartments = departmentFormMode === 'edit'
+        const nextDepartments = isEditingDepartment
             ? selectedFaculty.departments.map((department) => (
                 department.key === selectedDepartment?.key
                     ? { ...department, ...nextDepartment, key: nextDepartment.key || department.key }
@@ -1201,18 +1262,30 @@ const ClassManagementManager = () => {
             : [...selectedFaculty.departments, nextDepartment];
 
         const payload = buildFacultyPayload(selectedFaculty, nextDepartments);
-        const nextDepartmentKey = nextDepartment.key || selectedDepartment?.key || '';
 
         try {
-            setSubmittingAction(departmentFormMode === 'edit' ? 'update-department' : 'create-department');
+            setSubmittingAction(isEditingDepartment ? 'update-department' : 'create-department');
             setError('');
             setNotice('');
             const response = await academicFacultyApi.updateFaculty(selectedFaculty.key || selectedFaculty.id, payload);
+            const resolvedDepartmentKey = findDepartmentBySimpleKey(response?.departments, nextDepartmentKey, response?.key || payload.key)?.key || response?.departments?.at(-1)?.key || nextDepartmentKey;
+
+            if (!isEditingDepartment && resolvedDepartmentKey) {
+                await classApi.createClass({
+                    departmentKey: resolvedDepartmentKey,
+                    minLevel: 1,
+                    maxLevel: departmentYearCount
+                });
+            }
+
             await reloadManagementData({
                 nextFacultyKey: response?.key || payload.key,
-                nextDepartmentKey: response?.departments?.find((department) => department.key === nextDepartmentKey)?.key || nextDepartmentKey
+                nextDepartmentKey: resolvedDepartmentKey
             });
-            setNotice(departmentFormMode === 'edit' ? 'Departman ayarları güncellendi.' : 'Departman eklendi.');
+            setNotice(isEditingDepartment ? 'Departman ayarları güncellendi.' : `Departman eklendi ve ${departmentYearCount} yıllık level oluşturuldu.`);
+            if (!isEditingDepartment) {
+                setIsDepartmentCreateModalOpen(false);
+            }
         } catch (err) {
             setError(err.message || 'Departman kaydı kaydedilemedi.');
         } finally {
@@ -1312,6 +1385,22 @@ const ClassManagementManager = () => {
                                         <p className="mt-2 text-sm leading-7 text-slate-400">
                                             Önce binayı yani fakülteyi seçin. Her fakülte kendi departmanlarını taşır.
                                         </p>
+                                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                                            <span className="text-sm font-semibold text-slate-300">Bölüm Yılları:</span>
+                                            {[2, 4].map((yearCount) => (
+                                                <button
+                                                    key={yearCount}
+                                                    type="button"
+                                                    onClick={() => setDepartmentYearCount(yearCount)}
+                                                    className={`inline-flex min-w-12 items-center justify-center rounded-2xl border px-4 py-2 text-sm font-bold transition ${departmentYearCount === yearCount
+                                                        ? 'border-cyan-400/40 bg-cyan-400 text-slate-950'
+                                                        : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+                                                        }`}
+                                                >
+                                                    {yearCount}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <button
                                         type="button"
@@ -1400,11 +1489,12 @@ const ClassManagementManager = () => {
                                 </div>
                             </div>
 
-                            <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                                <div className="space-y-2">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{facultyFormMode === 'edit' ? 'Edit Faculty' : 'Create Faculty'}</p>
-                                    <h4 className="text-xl font-bold text-white">{facultyFormMode === 'edit' ? 'Fakülte ağacını güncelle' : 'Yeni fakülte oluştur'}</h4>
-                                </div>
+                            {facultyFormMode === 'edit' && (
+                                <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Edit Faculty</p>
+                                        <h4 className="text-xl font-bold text-white">Fakülte ağacını güncelle</h4>
+                                    </div>
 
                                 <form className="mt-6 grid gap-4" onSubmit={handleSubmitFaculty}>
                                     <ScheduleField label="Faculty Name">
@@ -1416,27 +1506,6 @@ const ClassManagementManager = () => {
                                             placeholder="Engineering Faculty"
                                         />
                                     </ScheduleField>
-
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <ScheduleField label="Opsiyonel Faculty Key">
-                                            <input
-                                                type="text"
-                                                value={facultyForm.key}
-                                                onChange={(e) => handleFacultyFieldChange('key', e.target.value)}
-                                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                placeholder="engineering"
-                                            />
-                                        </ScheduleField>
-                                        <ScheduleField label="Opsiyonel Faculty Sort Order">
-                                            <input
-                                                type="number"
-                                                value={facultyForm.sortOrder}
-                                                onChange={(e) => handleFacultyFieldChange('sortOrder', e.target.value)}
-                                                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                placeholder="0"
-                                            />
-                                        </ScheduleField>
-                                    </div>
 
                                     <div className="space-y-4 rounded-[1.75rem] border border-white/8 bg-slate-950/40 p-4">
                                         <div className="flex items-center justify-between">
@@ -1453,37 +1522,17 @@ const ClassManagementManager = () => {
 
                                         {facultyForm.departments.map((department) => (
                                             <div key={department.localId} className="rounded-[1.5rem] border border-white/8 bg-slate-900/60 p-4">
-                                                <div className="grid gap-4 sm:grid-cols-2">
-                                                    <ScheduleField label="Departman Adı">
-                                                        <input
-                                                            type="text"
-                                                            value={department.name}
-                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'name', e.target.value)}
-                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                            placeholder="Computer Programming"
-                                                        />
-                                                    </ScheduleField>
-                                                    <ScheduleField label="Opsiyonel Key">
-                                                        <input
-                                                            type="text"
-                                                            value={department.key}
-                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'key', e.target.value)}
-                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                            placeholder="computer-programming"
-                                                        />
-                                                    </ScheduleField>
-                                                </div>
+                                                <ScheduleField label="Departman Adı">
+                                                    <input
+                                                        type="text"
+                                                        value={department.name}
+                                                        onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'name', e.target.value)}
+                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                                        placeholder="Computer Programming"
+                                                    />
+                                                </ScheduleField>
 
-                                                <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,180px)_1fr]">
-                                                    <ScheduleField label="Sort Order">
-                                                        <input
-                                                            type="number"
-                                                            value={department.sortOrder}
-                                                            onChange={(e) => handleFacultyDepartmentFieldChange(department.localId, 'sortOrder', e.target.value)}
-                                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                            placeholder="0"
-                                                        />
-                                                    </ScheduleField>
+                                                <div className="mt-4 grid gap-4">
                                                     <ScheduleField label="Grade Kayıtları">
                                                         <div className="space-y-3">
                                                             {department.grades.map((grade) => (
@@ -1545,20 +1594,19 @@ const ClassManagementManager = () => {
                                             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {(submittingAction === 'create-faculty' || submittingAction === 'update-faculty') ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                                            {facultyFormMode === 'edit' ? 'Faculty Tree Kaydet' : 'Faculty Oluştur'}
+                                            Faculty Tree Kaydet
                                         </button>
-                                        {facultyFormMode === 'edit' && (
-                                            <button
-                                                type="button"
-                                                onClick={resetFacultyForm}
-                                                className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
-                                            >
-                                                Formu Sıfırla
-                                            </button>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={resetFacultyForm}
+                                            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                                        >
+                                            Formu Sıfırla
+                                        </button>
                                     </div>
                                 </form>
-                            </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1612,56 +1660,27 @@ const ClassManagementManager = () => {
                                             )}
                                         </div>
 
-                                        <form className="grid gap-4 rounded-[1.75rem] border border-white/8 bg-slate-950/40 p-5" onSubmit={handleSaveDepartment}>
-                                            <ScheduleField label="Departman Adı">
-                                                <input
-                                                    type="text"
-                                                    value={departmentForm.name}
-                                                    onChange={(e) => handleDepartmentFieldChange('name', e.target.value)}
-                                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                    placeholder="Computer Programming"
-                                                />
-                                            </ScheduleField>
-
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <ScheduleField label="Opsiyonel Key">
+                                        {departmentFormMode === 'edit' && selectedDepartment ? (
+                                            <form className="grid gap-4 rounded-[1.75rem] border border-white/8 bg-slate-950/40 p-5" onSubmit={handleSaveDepartment}>
+                                                <ScheduleField label="Departman Adı">
                                                     <input
                                                         type="text"
-                                                        value={departmentForm.key}
-                                                        onChange={(e) => handleDepartmentFieldChange('key', e.target.value)}
+                                                        value={departmentForm.name}
+                                                        onChange={(e) => handleDepartmentFieldChange('name', e.target.value)}
                                                         className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                        placeholder="computer-programming"
+                                                        placeholder="Computer Programming"
                                                     />
                                                 </ScheduleField>
-                                                <ScheduleField label="Opsiyonel Sort Order">
-                                                    <input
-                                                        type="number"
-                                                        value={departmentForm.sortOrder}
-                                                        onChange={(e) => handleDepartmentFieldChange('sortOrder', e.target.value)}
-                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                        placeholder="0"
-                                                    />
-                                                </ScheduleField>
-                                            </div>
 
-                                            <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-4 text-sm leading-7 text-amber-100">
-                                                Departman key değişirse aynı key'e bağlı öğrenci kayıtları korunmaz. Mümkünse mevcut key'i koruyun.
-                                            </div>
-
-                                            <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/10 px-4 py-4 text-sm leading-7 text-cyan-100">
-                                                Bu adım sadece departman kaydını günceller. Grade ekleme ve silme işlemleri Adım 3'te seçili departman altında yapılır.
-                                            </div>
-
-                                            <div className="flex flex-col gap-3 sm:flex-row">
-                                                <button
-                                                    type="submit"
-                                                    disabled={!selectedFaculty || submittingAction === 'create-department' || submittingAction === 'update-department'}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
-                                                >
-                                                    {(submittingAction === 'create-department' || submittingAction === 'update-department') ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                                                    {departmentFormMode === 'edit' ? 'Departmanı Kaydet' : 'Departman Oluştur'}
-                                                </button>
-                                                {departmentFormMode === 'edit' && selectedDepartment && (
+                                                <div className="flex flex-col gap-3 sm:flex-row">
+                                                    <button
+                                                        type="submit"
+                                                        disabled={!selectedFaculty || submittingAction === 'update-department'}
+                                                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        {submittingAction === 'update-department' ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                                        Departmanı Kaydet
+                                                    </button>
                                                     <button
                                                         type="button"
                                                         disabled={submittingAction === 'delete-department'}
@@ -1671,9 +1690,13 @@ const ClassManagementManager = () => {
                                                         {submittingAction === 'delete-department' ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
                                                         Departmanı Sil
                                                     </button>
-                                                )}
+                                                </div>
+                                            </form>
+                                        ) : (
+                                            <div className="rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/40 px-4 py-8 text-center text-sm text-slate-500">
+                                                Düzenlemek için bir departman seçin.
                                             </div>
-                                        </form>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -1686,7 +1709,7 @@ const ClassManagementManager = () => {
                                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 3</p>
                                 <h4 className="text-xl font-bold text-white">Grades</h4>
                                 <p className="text-sm leading-7 text-slate-400">
-                                    Grade kayıtları departmana bağlıdır. Anahtar backend tarafından otomatik üretilir ve aynı departman içinde level tekrar edemez.
+                                    Grade kayıtları departmana bağlıdır. Min-max aralığı girildiğinde backend her level için scoped grade anahtarını otomatik üretir.
                                 </p>
                             </div>
 
@@ -1695,17 +1718,30 @@ const ClassManagementManager = () => {
                                     Hedef departman: <span className="font-semibold text-white">{selectedDepartment?.name || 'Seçilmedi'}</span>
                                     <span className="ml-2 text-xs text-slate-500">{selectedDepartment?.key || ''}</span>
                                 </div>
-                                <ScheduleField label="Grade Numarası">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="6"
-                                        value={gradeForm.gradeNumber}
-                                        onChange={(e) => handleGradeFormField('gradeNumber', e.target.value)}
-                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                        placeholder="1"
-                                    />
-                                </ScheduleField>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <ScheduleField label="Minimum Grade">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="6"
+                                            value={gradeForm.minLevel}
+                                            onChange={(e) => handleGradeFormField('minLevel', e.target.value)}
+                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                            placeholder="1"
+                                        />
+                                    </ScheduleField>
+                                    <ScheduleField label="Maximum Grade">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="6"
+                                            value={gradeForm.maxLevel}
+                                            onChange={(e) => handleGradeFormField('maxLevel', e.target.value)}
+                                            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                            placeholder="4"
+                                        />
+                                    </ScheduleField>
+                                </div>
 
                                 <button
                                     type="submit"
@@ -1713,7 +1749,7 @@ const ClassManagementManager = () => {
                                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {submittingAction === 'create-grade' ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                    Grade Oluştur
+                                    Grade Aralığı Oluştur
                                 </button>
                             </form>
 
@@ -1804,6 +1840,116 @@ const ClassManagementManager = () => {
                     </div>
                 </div>
             </section>
+
+            {isFacultyCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" onClick={closeFacultyCreate}></div>
+                    <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl">
+                        <div className="border-b border-white/5 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.12),_rgba(15,23,42,0.92)_60%)] px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Create Faculty</div>
+                                    <h4 className="mt-2 text-2xl font-bold text-white">Yeni fakülte oluştur</h4>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeFacultyCreate}
+                                    className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-400 transition hover:text-white"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <form className="grid gap-5 px-6 py-6" onSubmit={handleSubmitFaculty}>
+                            <ScheduleField label="Faculty Name">
+                                <input
+                                    type="text"
+                                    value={facultyForm.name}
+                                    onChange={(e) => handleFacultyFieldChange('name', e.target.value)}
+                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    placeholder="Engineering Faculty"
+                                    autoFocus
+                                />
+                            </ScheduleField>
+
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="submit"
+                                    disabled={submittingAction === 'create-faculty'}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {submittingAction === 'create-faculty' ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                    Faculty Oluştur
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeFacultyCreate}
+                                    className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                                >
+                                    Vazgeç
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {isDepartmentCreateModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" onClick={closeDepartmentCreate}></div>
+                    <div className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-2xl">
+                        <div className="border-b border-white/5 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.12),_rgba(15,23,42,0.92)_60%)] px-6 py-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <div className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Yeni Departman</div>
+                                    <h4 className="mt-2 text-2xl font-bold text-white">Departman oluştur</h4>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeDepartmentCreate}
+                                    className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-400 transition hover:text-white"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <form className="grid gap-5 px-6 py-6" onSubmit={handleSaveDepartment}>
+                            <ScheduleField label="Departman Adı">
+                                <input
+                                    type="text"
+                                    value={departmentForm.name}
+                                    onChange={(e) => handleDepartmentFieldChange('name', e.target.value)}
+                                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
+                                    placeholder="Computer Programming"
+                                    autoFocus
+                                />
+                            </ScheduleField>
+
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="submit"
+                                    disabled={!selectedFaculty || submittingAction === 'create-department'}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {submittingAction === 'create-department' ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                    Departman Oluştur
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeDepartmentCreate}
+                                    className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+                                >
+                                    Vazgeç
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1836,7 +1982,10 @@ const ScheduleManager = () => {
     const [quickAddState, setQuickAddState] = useState(null);
     const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
     const selectedClassInfo = classes.find((item) => item.key === selectedClassKey) || null;
-    const availableScheduleFaculties = faculties;
+    const availableScheduleFaculties = React.useMemo(
+        () => mergeFacultyGradesFromClasses(faculties, classes),
+        [faculties, classes]
+    );
     const selectedScheduleFaculty = availableScheduleFaculties.find((faculty) => faculty.key === selectedFacultyKey) || null;
     const selectableDepartments = selectedScheduleFaculty?.departments || [];
     const selectedScheduleDepartment = selectableDepartments.find((department) => department.key === selectedDepartmentKey) || null;
@@ -2175,17 +2324,25 @@ const ScheduleManager = () => {
         e.preventDefault();
         if (!selectedSchedule || !quickAddState) return;
 
-        const parsedLessons = parseQuickAddScheduleText(quickAddState.rawText);
-        if (parsedLessons.length === 0) {
+        const quickAddResult = parseQuickAddScheduleText(quickAddState.rawText);
+        const dayEntries = Object.entries(quickAddResult.lessonsByDay);
+        const parsedLessons = quickAddResult.lessons;
+
+        if (parsedLessons.length === 0 && dayEntries.length === 0) {
             setError('Yapıştırılan metinden ders satırı çözülemedi.');
             return;
         }
 
-        const nextClassSchedule = replaceDayInSchedule(
-            selectedClassState.manualSchedule,
-            quickAddState.dayKey,
-            parsedLessons
-        );
+        const nextClassSchedule = dayEntries.length > 0
+            ? dayEntries.reduce(
+                (schedule, [dayKey, dayLessons]) => replaceDayInSchedule(schedule, dayKey, dayLessons),
+                selectedClassState.manualSchedule
+            )
+            : replaceDayInSchedule(
+                selectedClassState.manualSchedule,
+                quickAddState.dayKey,
+                parsedLessons
+            );
 
         setEditorDrafts((prev) => ({
             ...prev,
@@ -2193,7 +2350,10 @@ const ScheduleManager = () => {
         }));
         setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
         setError('');
-        setNotice(`${getDayLabel(quickAddState.dayKey)} günü için hızlı ekleme taslağa uygulandı. API isteği için sayfadaki kaydet butonunu kullanın.`);
+        const appliedDayLabel = dayEntries.length > 0
+            ? dayEntries.map(([dayKey]) => getDayLabel(dayKey)).join(', ')
+            : getDayLabel(quickAddState.dayKey);
+        setNotice(`${appliedDayLabel} için hızlı ekleme taslağa uygulandı. API isteği için sayfadaki kaydet butonunu kullanın.`);
         setQuickAddState(null);
     };
 
@@ -2407,6 +2567,99 @@ const ScheduleManager = () => {
                     onSubmit={handleApplyQuickAdd}
                 />
             )}
+        </div>
+    );
+};
+
+const NotificationsTester = () => {
+    const [title, setTitle] = useState('Test notification');
+    const [body, setBody] = useState('This should arrive without an event row');
+    const [isSending, setIsSending] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setStatusMessage('');
+        setErrorMessage('');
+
+        try {
+            setIsSending(true);
+            await eventApi.sendTestNotification({
+                skipEventLookup: true,
+                title: title.trim() || 'Test notification',
+                body: body.trim() || 'This should arrive without an event row'
+            });
+            setStatusMessage('Test notification request sent.');
+        } catch (error) {
+            setErrorMessage(error.message || 'Notification could not be sent.');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    return (
+        <div className="mx-auto max-w-3xl space-y-6">
+            <section className="rounded-[2rem] border border-cyan-500/15 bg-slate-900/50 p-6 md:p-8 backdrop-blur-xl">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Notifications</p>
+                        <h3 className="mt-3 text-3xl font-bold text-white">Test Flutter Push</h3>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                            Send a test event notification without requiring an event row.
+                        </p>
+                    </div>
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-200">
+                        <Bell size={22} />
+                    </div>
+                </div>
+            </section>
+
+            {(statusMessage || errorMessage) && (
+                <div className={`rounded-2xl border px-5 py-4 text-sm ${errorMessage
+                    ? 'border-red-400/20 bg-red-400/10 text-red-100'
+                    : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+                    }`}>
+                    {errorMessage || statusMessage}
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/5 bg-slate-900/45 p-6 md:p-8 backdrop-blur-xl">
+                <div className="space-y-5">
+                    <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-300">Title</label>
+                        <input
+                            value={title}
+                            onChange={(event) => setTitle(event.target.value)}
+                            className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                            placeholder="Test notification"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-300">Body</label>
+                        <textarea
+                            value={body}
+                            onChange={(event) => setBody(event.target.value)}
+                            rows={4}
+                            className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white outline-none transition focus:border-cyan-400"
+                            placeholder="This should arrive without an event row"
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-slate-500">POST /admin/events/notify</p>
+                    <button
+                        type="submit"
+                        disabled={isSending}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSending ? <Loader2 className="animate-spin" size={18} /> : <Bell size={18} />}
+                        Test notification
+                    </button>
+                </div>
+            </form>
         </div>
     );
 };
@@ -3594,7 +3847,7 @@ const ScheduleQuickAddModal = ({
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Quick Add</p>
                         <h4 className="mt-2 text-2xl font-bold text-white">Metinden günü hızlıca doldur</h4>
                         <p className="mt-2 text-sm leading-7 text-slate-400">
-                            Bir gün seçin ve tabloyu yapıştırın. Saat ilk sütundan, derslik son 4 karakterden alınır; kalan metin ders kodu, ders adı ve öğretim görevlisi olarak çözümlenir.
+                            Bir gün seçin veya gün sütunu olan tüm haftalık tabloyu yapıştırın. Gün adı bulunan satırlardan sonraki boş gün hücreleri aynı güne eklenir.
                         </p>
                     </div>
 
@@ -3633,7 +3886,7 @@ const ScheduleQuickAddModal = ({
                     </ScheduleField>
 
                     <div className="rounded-2xl border border-white/8 bg-slate-950/60 px-4 py-4 text-sm leading-7 text-slate-400">
-                        Başlık satırı otomatik atlanır. Boş satırlar yok sayılır. Yalnızca saat olan satırlar boş ders satırı olarak eklenir.
+                        Başlık satırı otomatik atlanır. Pazartesi, Salı gibi gün adları algılanır. Gün sütunu yoksa seçili gün doldurulur.
                     </div>
 
                     <div className="min-h-6 text-sm">
@@ -3714,7 +3967,11 @@ const apiFetch = async (path, { method = 'GET', body, authRequired = false } = {
         return null;
     }
 
-    return JSON.parse(rawText);
+    try {
+        return JSON.parse(rawText);
+    } catch {
+        return rawText;
+    }
 };
 
 const communityApi = {
@@ -3749,6 +4006,16 @@ const communityApi = {
 const newsApi = {
     async listItems() {
         return apiFetch('/news');
+    }
+};
+
+const eventApi = {
+    async sendTestNotification(payload) {
+        return apiFetch('/admin/events/notify', {
+            method: 'POST',
+            body: payload,
+            authRequired: true
+        });
     }
 };
 
@@ -3829,7 +4096,7 @@ const classApi = {
             body: payload,
             authRequired: true
         });
-        return normalizeAdminClass(data);
+        return Array.isArray(data) ? data.map(normalizeAdminClass) : normalizeAdminClass(data);
     },
 
     async deleteClass(idOrKey) {
@@ -3910,37 +4177,107 @@ const createEmptyDepartmentConfig = () => ({
     sortOrder: ''
 });
 
+const createSimpleKey = (value = '') => {
+    const normalized = String(value)
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-');
+
+    return normalized || 'department';
+};
+
+const stripFacultyPrefix = (key = '', facultyKey = '') => {
+    let result = createSimpleKey(key);
+    const prefix = createSimpleKey(facultyKey);
+    if (!prefix) return result;
+
+    while (result.startsWith(`${prefix}-`)) {
+        result = result.slice(prefix.length + 1);
+    }
+
+    return result || prefix;
+};
+
+const getSimpleDepartmentKey = (department = {}, facultyKey = '') => (
+    stripFacultyPrefix(department.key || department.id || department.name, facultyKey)
+);
+
+const createUniqueSimpleKey = (value, existingKeys = []) => {
+    const baseKey = createSimpleKey(value);
+    const existingKeySet = new Set(existingKeys.map((key) => createSimpleKey(key)));
+    if (!existingKeySet.has(baseKey)) return baseKey;
+
+    let suffix = 2;
+    let candidate = `${baseKey}-${suffix}`;
+    while (existingKeySet.has(candidate)) {
+        suffix += 1;
+        candidate = `${baseKey}-${suffix}`;
+    }
+    return candidate;
+};
+
+const findDepartmentBySimpleKey = (departments = [], simpleKey = '', facultyKey = '') => {
+    const expectedKey = createSimpleKey(simpleKey);
+    return (departments || []).find((department) => (
+        getSimpleDepartmentKey(department, facultyKey) === expectedKey
+    )) || null;
+};
+
+const createDepartmentPayloads = (departments = [], facultyKey = '') => {
+    const usedKeys = [];
+
+    return departments.map((department) => {
+        const key = createUniqueSimpleKey(getSimpleDepartmentKey(department, facultyKey), usedKeys);
+        usedKeys.push(key);
+
+        return {
+            key,
+            name: department.name,
+            sortOrder: department.sortOrder ?? undefined,
+            grades: (Array.isArray(department.grades) ? department.grades : []).map((grade) => ({
+                level: Number(grade.level),
+                name: grade.name
+            }))
+        };
+    });
+};
+
 const serializeFacultyPayload = (facultyForm) => ({
     key: facultyForm.key.trim() || undefined,
     name: facultyForm.name.trim(),
     sortOrder: facultyForm.sortOrder === '' ? undefined : Number(facultyForm.sortOrder),
-    departments: facultyForm.departments.map((department) => ({
-        key: department.key.trim() || undefined,
-        name: department.name.trim(),
-        sortOrder: department.sortOrder === '' ? undefined : Number(department.sortOrder),
-        grades: department.grades.map((grade) => {
-            const level = Number(grade.level);
-            return {
-                level,
-                name: grade.name.trim() || `${level}. Grade`
-            };
-        })
-    }))
+    departments: createDepartmentPayloads(
+        facultyForm.departments.map((department) => ({
+            ...department,
+            name: department.name.trim(),
+            sortOrder: department.sortOrder === '' ? undefined : Number(department.sortOrder),
+            grades: department.grades.map((grade) => {
+                const level = Number(grade.level);
+                return {
+                    level,
+                    name: grade.name.trim() || `${level}. Grade`
+                };
+            })
+        })),
+        facultyForm.key || facultyForm.originalKey
+    )
 });
 
 const buildFacultyPayload = (faculty, departments) => ({
     key: faculty.key || undefined,
     name: faculty.name,
     sortOrder: faculty.sortOrder ?? undefined,
-    departments: departments.map((department) => ({
-        key: department.key || undefined,
-        name: department.name,
-        sortOrder: department.sortOrder ?? undefined,
-        grades: (Array.isArray(department.grades) ? department.grades : []).map((grade) => ({
-            level: Number(grade.level),
-            name: grade.name
-        }))
-    }))
+    departments: createDepartmentPayloads(departments, faculty.key)
 });
 
 const flattenDepartmentOptions = (faculties = []) => faculties.flatMap((faculty) => (
@@ -3951,6 +4288,55 @@ const flattenDepartmentOptions = (faculties = []) => faculties.flatMap((faculty)
         departmentName: department.name
     }))
 ));
+
+const doDepartmentKeysMatch = (department = {}, facultyKey = '', classInfo = {}) => {
+    const departmentKeys = [
+        classInfo.departmentKey,
+        ...(Array.isArray(classInfo.departmentKeys) ? classInfo.departmentKeys : [])
+    ].filter(Boolean).map(String);
+
+    if (departmentKeys.includes(department.key)) return true;
+
+    const simpleDepartmentKey = getSimpleDepartmentKey(department, facultyKey);
+    return departmentKeys.some((key) => (
+        key === simpleDepartmentKey || getSimpleDepartmentKey({ key }, facultyKey) === simpleDepartmentKey
+    ));
+};
+
+const mergeFacultyGradesFromClasses = (faculties = [], classes = []) => (
+    faculties.map((faculty) => ({
+        ...faculty,
+        departments: (faculty.departments || []).map((department) => {
+            const existingGradeMap = new Map(
+                (department.grades || []).map((grade) => [grade.key, grade])
+            );
+
+            classes
+                .filter((classInfo) => (
+                    (!classInfo.facultyKey || classInfo.facultyKey === faculty.key)
+                    && doDepartmentKeysMatch(department, faculty.key, classInfo)
+                    && classInfo.key
+                ))
+                .forEach((classInfo) => {
+                    if (!existingGradeMap.has(classInfo.key)) {
+                        existingGradeMap.set(classInfo.key, {
+                            ...classInfo,
+                            facultyKey: faculty.key,
+                            facultyName: faculty.name,
+                            departmentKey: department.key,
+                            departmentName: department.name
+                        });
+                    }
+                });
+
+            return {
+                ...department,
+                grades: Array.from(existingGradeMap.values())
+                    .sort((left, right) => (Number(left.level ?? 99) - Number(right.level ?? 99)) || left.name.localeCompare(right.name, 'tr'))
+            };
+        })
+    }))
+);
 
 const normalizeAdminClass = (item = {}) => ({
     ...item,
@@ -4098,6 +4484,27 @@ const parseJsonArray = (value) => {
         return Array.isArray(parsed) ? parsed : [];
     } catch {
         return [];
+    }
+};
+
+const readDepartmentYearPreference = () => {
+    if (typeof window === 'undefined') return 2;
+
+    try {
+        const value = Number(window.localStorage.getItem(ADMIN_DEPARTMENT_YEAR_SELECTION_KEY));
+        return value === 4 ? 4 : 2;
+    } catch {
+        return 2;
+    }
+};
+
+const writeDepartmentYearPreference = (value) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.setItem(ADMIN_DEPARTMENT_YEAR_SELECTION_KEY, String(value === 4 ? 4 : 2));
+    } catch {
+        // Ignore local preference write failures.
     }
 };
 
@@ -4482,15 +4889,72 @@ const INSTRUCTOR_MARKERS = [
     'Öğr. Üyesi'
 ];
 
+const SCHEDULE_DAY_KEY_BY_NORMALIZED_VALUE = SCHEDULE_DAYS.reduce((dayMap, day) => {
+    dayMap[normalizeScheduleDayToken(day.key)] = day.key;
+    dayMap[normalizeScheduleDayToken(day.label)] = day.key;
+    return dayMap;
+}, {});
+
 const parseQuickAddScheduleText = (rawText) => {
-    return rawText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .filter((line) => !/^saat\b/i.test(line))
-        .map(parseQuickAddLine)
-        .filter(Boolean)
-        .sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time));
+    const result = {
+        lessons: [],
+        lessonsByDay: {}
+    };
+    let currentDayKey = '';
+
+    rawText.split(/\r?\n/).forEach((line) => {
+        if (!line.trim() || isQuickAddHeaderLine(line)) return;
+
+        const parsedLine = parseQuickAddLineWithDay(line, currentDayKey);
+        if (!parsedLine) return;
+
+        if (parsedLine.dayKey) {
+            currentDayKey = parsedLine.dayKey;
+            result.lessonsByDay[parsedLine.dayKey] = result.lessonsByDay[parsedLine.dayKey] || [];
+            result.lessonsByDay[parsedLine.dayKey].push(parsedLine.lesson);
+            return;
+        }
+
+        result.lessons.push(parsedLine.lesson);
+    });
+
+    result.lessons = sortLessonsByTime(result.lessons);
+    result.lessonsByDay = Object.fromEntries(
+        Object.entries(result.lessonsByDay).map(([dayKey, lessons]) => [dayKey, sortLessonsByTime(lessons)])
+    );
+
+    return result;
+};
+
+const parseQuickAddLineWithDay = (line, currentDayKey = '') => {
+    const tabParts = line.split('\t').map((part) => part.trim());
+    const firstValueIndex = tabParts.findIndex(Boolean);
+    if (firstValueIndex === -1) return null;
+
+    const firstDayKey = getScheduleDayKeyFromText(tabParts[firstValueIndex]);
+    if (firstDayKey) {
+        const lesson = parseQuickAddLine(tabParts.slice(firstValueIndex + 1).join('\t'));
+        return lesson ? { dayKey: firstDayKey, lesson } : null;
+    }
+
+    if (currentDayKey && firstValueIndex > 0) {
+        const lesson = parseQuickAddLine(tabParts.slice(firstValueIndex).join('\t'));
+        return lesson ? { dayKey: currentDayKey, lesson } : null;
+    }
+
+    const dayPrefix = getScheduleDayPrefix(line);
+    if (dayPrefix) {
+        const lesson = parseQuickAddLine(line.trimStart().slice(dayPrefix.length).trim());
+        return lesson ? { dayKey: dayPrefix.dayKey, lesson } : null;
+    }
+
+    const lesson = parseQuickAddLine(line.trim());
+    if (!lesson) return null;
+
+    return {
+        dayKey: currentDayKey || '',
+        lesson
+    };
 };
 
 const parseQuickAddLine = (line) => {
@@ -4569,6 +5033,49 @@ const createEmptyParsedLesson = (time) => ({
     classroom: '',
     isEmpty: true
 });
+
+const sortLessonsByTime = (lessons) => (
+    [...lessons].sort((left, right) => timeToMinutes(left.time) - timeToMinutes(right.time))
+);
+
+const isQuickAddHeaderLine = (line) => {
+    const columns = line
+        .split('\t')
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part) => part.toLocaleLowerCase('tr-TR'));
+
+    if (columns.length === 0) return false;
+    return columns[0] === 'saat' || (columns.includes('saat') && columns.includes('ders kodu'));
+};
+
+const getScheduleDayKeyFromText = (value) => (
+    SCHEDULE_DAY_KEY_BY_NORMALIZED_VALUE[normalizeScheduleDayToken(value)] || ''
+);
+
+const getScheduleDayPrefix = (line) => {
+    const trimmed = line.trimStart();
+    const match = trimmed.match(/^([^\s\t]+)/);
+    if (!match) return null;
+
+    const dayKey = getScheduleDayKeyFromText(match[1]);
+    return dayKey ? { dayKey, length: match[0].length } : null;
+};
+
+function normalizeScheduleDayToken(value = '') {
+    return String(value)
+        .trim()
+        .toLocaleUpperCase('tr-TR')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/Ğ/g, 'G')
+        .replace(/Ü/g, 'U')
+        .replace(/Ş/g, 'S')
+        .replace(/İ/g, 'I')
+        .replace(/Ö/g, 'O')
+        .replace(/Ç/g, 'C')
+        .replace(/[^A-Z0-9]/g, '')
+}
 
 const findInstructorStartIndex = (value) => {
     const indexes = INSTRUCTOR_MARKERS
