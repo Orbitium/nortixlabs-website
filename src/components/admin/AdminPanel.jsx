@@ -45,6 +45,10 @@ const DEFAULT_SCHEDULE_TIMES = [
     '16:30'
 ];
 const DEFAULT_LESSON_DURATION_MINUTES = 45;
+const ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY = 'akademiz-admin-schedule-workspace-v1';
+const ADMIN_SCHEDULE_EDITOR_CACHE_KEY = 'akademiz-admin-schedule-editor-v1';
+const ADMIN_SCHEDULE_SELECTION_CACHE_KEY = 'akademiz-admin-schedule-selection-v1';
+const ADMIN_LOCAL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const [user, setUser] = useState(null);
@@ -740,6 +744,7 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
 
 const useScheduleWorkspace = () => {
     const [schedules, setSchedules] = useState([]);
+    const [faculties, setFaculties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
     const [selectedScheduleId, setSelectedScheduleId] = useState('');
@@ -750,12 +755,19 @@ const useScheduleWorkspace = () => {
         try {
             setLoading(true);
             setLoadError('');
-            const [scheduleResponse, classResponse] = await Promise.all([
+            const [scheduleResponse, classResponse, facultyResponse] = await Promise.all([
                 scheduleApi.listSchedules(),
-                classApi.listAdminClasses()
+                classApi.listAdminClasses(),
+                academicFacultyApi.listFaculties()
             ]);
             setSchedules(scheduleResponse);
             setClasses(classResponse);
+            setFaculties(facultyResponse);
+            writeLocalCache(ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY, {
+                schedules: scheduleResponse,
+                classes: classResponse,
+                faculties: facultyResponse
+            });
             return scheduleResponse;
         } catch (err) {
             setLoadError(err.message || 'Ders programı yönetim verisi yüklenemedi.');
@@ -766,6 +778,14 @@ const useScheduleWorkspace = () => {
     };
 
     useEffect(() => {
+        const cachedWorkspace = readLocalCache(ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY);
+        if (cachedWorkspace) {
+            setSchedules(Array.isArray(cachedWorkspace.schedules) ? cachedWorkspace.schedules : []);
+            setClasses(Array.isArray(cachedWorkspace.classes) ? cachedWorkspace.classes : []);
+            setFaculties(Array.isArray(cachedWorkspace.faculties) ? cachedWorkspace.faculties : []);
+            setLoading(false);
+        }
+
         loadSchedules();
     }, []);
 
@@ -798,6 +818,7 @@ const useScheduleWorkspace = () => {
         selectedSchedule,
         availableClassKeys,
         classes,
+        faculties,
         reloadSchedules: loadSchedules
     };
 };
@@ -951,16 +972,18 @@ const ClassManagementManager = () => {
             return;
         }
 
+        if (selectedDepartmentGrades.some((grade) => Number(grade.level) === gradeNumber)) {
+            setError('Bu departman altında bu sınıf seviyesi zaten var.');
+            return;
+        }
+
         try {
             setSubmittingAction('create-grade');
             setError('');
             setNotice('');
             await classApi.createClass({
                 departmentKey: selectedDepartment.key,
-                level: gradeNumber,
-                name: `${gradeNumber}. Grade`,
-                key: `grade${gradeNumber}`,
-                sortOrder: gradeNumber - 1
+                level: gradeNumber
             });
             await reloadManagementData({
                 nextFacultyKey: selectedFaculty?.key,
@@ -1464,7 +1487,7 @@ const ClassManagementManager = () => {
                                                     <ScheduleField label="Grade Kayıtları">
                                                         <div className="space-y-3">
                                                             {department.grades.map((grade) => (
-                                                                <div key={grade.localId} className="grid gap-3 rounded-2xl border border-white/8 bg-slate-950/50 p-4 sm:grid-cols-[110px_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                                                                <div key={grade.localId} className="grid gap-3 rounded-2xl border border-white/8 bg-slate-950/50 p-4 sm:grid-cols-[110px_minmax(0,1fr)_auto]">
                                                                     <input
                                                                         type="number"
                                                                         min="1"
@@ -1480,13 +1503,6 @@ const ClassManagementManager = () => {
                                                                         onChange={(e) => handleFacultyDepartmentGradeFieldChange(department.localId, grade.localId, 'name', e.target.value)}
                                                                         className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
                                                                         placeholder="1. Grade"
-                                                                    />
-                                                                    <input
-                                                                        type="text"
-                                                                        value={grade.key}
-                                                                        onChange={(e) => handleFacultyDepartmentGradeFieldChange(department.localId, grade.localId, 'key', e.target.value)}
-                                                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/40"
-                                                                        placeholder="grade1"
                                                                     />
                                                                     <button
                                                                         type="button"
@@ -1670,7 +1686,7 @@ const ClassManagementManager = () => {
                                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Adım 3</p>
                                 <h4 className="text-xl font-bold text-white">Grades</h4>
                                 <p className="text-sm leading-7 text-slate-400">
-                                    Grade kayıtları departmana bağlıdır. Anahtar backend tarafından `{departmentKey}-{gradeKey}` formatına genişletilir ve aynı departman içinde level tekrar edemez.
+                                    Grade kayıtları departmana bağlıdır. Anahtar backend tarafından otomatik üretilir ve aynı departman içinde level tekrar edemez.
                                 </p>
                             </div>
 
@@ -1803,6 +1819,7 @@ const ScheduleManager = () => {
         selectedClassKey,
         setSelectedClassKey,
         classes,
+        faculties,
         reloadSchedules
     } = useScheduleWorkspace();
     const [editorDrafts, setEditorDrafts] = useState({});
@@ -1812,11 +1829,18 @@ const ScheduleManager = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
+    const [selectedFacultyKey, setSelectedFacultyKey] = useState('');
+    const [selectedDepartmentKey, setSelectedDepartmentKey] = useState('');
     const [editorState, setEditorState] = useState(null);
     const [timeSlotState, setTimeSlotState] = useState(null);
     const [quickAddState, setQuickAddState] = useState(null);
     const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
     const selectedClassInfo = classes.find((item) => item.key === selectedClassKey) || null;
+    const availableScheduleFaculties = faculties;
+    const selectedScheduleFaculty = availableScheduleFaculties.find((faculty) => faculty.key === selectedFacultyKey) || null;
+    const selectableDepartments = selectedScheduleFaculty?.departments || [];
+    const selectedScheduleDepartment = selectableDepartments.find((department) => department.key === selectedDepartmentKey) || null;
+    const selectableGrades = selectedScheduleDepartment?.grades || [];
     const selectedClassState = buildEditorClassState(editorPayload, selectedClassKey);
     const scheduleBoard = buildScheduleBoard(selectedClassState);
     const isEditorRefreshing = Boolean(selectedSchedule && editorLoading && !editorPayload);
@@ -1839,10 +1863,17 @@ const ScheduleManager = () => {
             }
             try {
                 setEditorLoading(true);
+                const cachedEditorPayload = readScheduleEditorCache(selectedSchedule.id);
+                if (cachedEditorPayload && !cancelled) {
+                    setEditorDrafts((prev) => ({ ...prev, [selectedSchedule.id]: cachedEditorPayload }));
+                    setLoadedScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+                    setEditorLoading(false);
+                }
                 const response = await scheduleApi.getScheduleEditor(selectedSchedule.id);
                 if (!cancelled) {
                     setEditorDrafts((prev) => ({ ...prev, [selectedSchedule.id]: response }));
                     setLoadedScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+                    writeScheduleEditorCache(selectedSchedule.id, response);
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -1866,6 +1897,81 @@ const ScheduleManager = () => {
             cancelled = true;
         };
     }, [selectedSchedule?.id, loadedScheduleIds]);
+
+    useEffect(() => {
+        if (!selectedSchedule) {
+            setSelectedFacultyKey('');
+            setSelectedDepartmentKey('');
+            setSelectedClassKey('');
+            return;
+        }
+
+        const cachedSelection = readLocalCache(ADMIN_SCHEDULE_SELECTION_CACHE_KEY) || {};
+        const selectionForSchedule = cachedSelection[selectedSchedule.id] || null;
+        const availableFacultyKeySet = new Set(availableScheduleFaculties.map((faculty) => faculty.key));
+        const initialFacultyKey = availableFacultyKeySet.has(selectionForSchedule?.facultyKey) ? selectionForSchedule.facultyKey : '';
+        const initialFaculty = availableScheduleFaculties.find((faculty) => faculty.key === initialFacultyKey) || null;
+        const initialDepartments = initialFaculty?.departments || [];
+        const availableDepartmentKeySet = new Set(initialDepartments.map((department) => department.key));
+        const initialDepartmentKey = availableDepartmentKeySet.has(selectionForSchedule?.departmentKey) ? selectionForSchedule.departmentKey : '';
+        const initialDepartment = initialDepartments.find((department) => department.key === initialDepartmentKey) || null;
+        const availableGradeKeySet = new Set((initialDepartment?.grades || []).map((grade) => grade.key));
+        const initialGradeKey = availableGradeKeySet.has(selectionForSchedule?.gradeKey) ? selectionForSchedule.gradeKey : '';
+
+        setSelectedFacultyKey(initialFacultyKey);
+        setSelectedDepartmentKey(initialDepartmentKey);
+        setSelectedClassKey(initialGradeKey);
+    }, [selectedSchedule?.id, availableScheduleFaculties, setSelectedClassKey]);
+
+    useEffect(() => {
+        if (selectedFacultyKey && !availableScheduleFaculties.some((faculty) => faculty.key === selectedFacultyKey)) {
+            setSelectedFacultyKey('');
+            setSelectedDepartmentKey('');
+            setSelectedClassKey('');
+        }
+    }, [availableScheduleFaculties, selectedFacultyKey, setSelectedClassKey]);
+
+    useEffect(() => {
+        if (selectedDepartmentKey && !selectableDepartments.some((department) => department.key === selectedDepartmentKey)) {
+            setSelectedDepartmentKey('');
+            setSelectedClassKey('');
+        }
+    }, [selectableDepartments, selectedDepartmentKey, setSelectedClassKey]);
+
+    useEffect(() => {
+        if (selectedClassKey && !selectableGrades.some((grade) => grade.key === selectedClassKey)) {
+            setSelectedClassKey('');
+        }
+    }, [selectableGrades, selectedClassKey, setSelectedClassKey]);
+
+    useEffect(() => {
+        if (!selectedSchedule) return;
+
+        writeLocalCache(ADMIN_SCHEDULE_SELECTION_CACHE_KEY, {
+            ...(readLocalCache(ADMIN_SCHEDULE_SELECTION_CACHE_KEY) || {}),
+            [selectedSchedule.id]: {
+                facultyKey: selectedFacultyKey,
+                departmentKey: selectedDepartmentKey,
+                gradeKey: selectedClassKey
+            }
+        });
+    }, [selectedSchedule?.id, selectedFacultyKey, selectedDepartmentKey, selectedClassKey]);
+
+    const handleFacultySelect = (facultyKey) => {
+        setSelectedFacultyKey(facultyKey);
+        setSelectedDepartmentKey('');
+        setSelectedClassKey('');
+    };
+
+    const handleDepartmentSelect = (nextDepartmentKey) => {
+        setSelectedDepartmentKey(nextDepartmentKey);
+        setSelectedClassKey('');
+    };
+
+    useEffect(() => {
+        if (!selectedSchedule || !editorPayload) return;
+        writeScheduleEditorCache(selectedSchedule.id, editorPayload);
+    }, [selectedSchedule?.id, editorPayload]);
 
     const openEditor = (cell) => {
         const existingLesson = cell.manualLessons[0] || cell.effectiveLessons[0] || null;
@@ -2106,6 +2212,7 @@ const ScheduleManager = () => {
 
             setEditorDrafts((prev) => ({ ...prev, [selectedSchedule.id]: response }));
             setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: false }));
+            writeScheduleEditorCache(selectedSchedule.id, response);
             await reloadSchedules();
             setNotice('Ders programı değişiklikleri kaydedildi.');
         } catch (err) {
@@ -2126,7 +2233,7 @@ const ScheduleManager = () => {
         );
     }
 
-    if (!selectedSchedule || !selectedClassState) {
+    if (!selectedSchedule) {
         return (
             <div className="bg-slate-900/40 border border-white/5 rounded-[2rem] p-10 text-center text-slate-400">
                 Düzenlenebilir ders programı bulunamadı.
@@ -2138,9 +2245,9 @@ const ScheduleManager = () => {
         <div className="space-y-6">
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.18),_rgba(15,23,42,0.92)_55%)] p-6 md:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Ders Programı Düzenleyici</p>
-                <h3 className="mt-3 text-3xl font-bold text-white">{selectedSchedule.programName}</h3>
+                <h3 className="mt-3 text-3xl font-bold text-white">Academic Schedule Mapping</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                    Aktif grade anahtarı {formatClassKeyLabel(selectedClassKey, selectedClassInfo)} olarak seçildi. Hücre düzenlemeleri önce taslakta tutulur, ardından tek kaydet işlemiyle backend'e gönderilir.
+                    Backend strict academic mapping bekliyor. Önce faculty, sonra department, ardından grade seçin; haftalık tablo yalnızca bu tam eşleşme kurulduğunda açılır.
                 </p>
                 <a
                     href={ADMIN_TAB_ROUTES['class-management']}
@@ -2151,7 +2258,7 @@ const ScheduleManager = () => {
                 <button
                     type="button"
                     onClick={handleSaveSchedule}
-                    disabled={saving || isEditorRefreshing || !hasUnsavedChanges}
+                    disabled={saving || isEditorRefreshing || !hasUnsavedChanges || !selectedClassKey}
                     className="mt-5 ml-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {saving ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
@@ -2171,49 +2278,81 @@ const ScheduleManager = () => {
             <section className="grid gap-6">
                 <div className="space-y-6">
                     <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Program Seçimi</p>
-                            <h4 className="text-xl font-bold text-white">Düzenlenecek ders programı</h4>
-                        </div>
-                        <ScheduleClassPicker
-                            schedules={schedules}
-                            selectedScheduleId={selectedScheduleId}
-                            onSelect={setSelectedScheduleId}
-                            disabled={editorLoading}
-                        />
-                    </div>
-
-                    <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-6 backdrop-blur-xl">
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Grade Anahtarı</p>
-                        <div className="mt-4 flex flex-wrap gap-3">
-                            {(selectedSchedule?.availableClassKeys || []).map((classKey) => (
-                                <button
-                                    key={classKey}
-                                    type="button"
-                                    onClick={() => setSelectedClassKey(classKey)}
-                                    disabled={editorLoading}
-                                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${selectedClassKey === classKey
-                                        ? 'bg-cyan-500 text-slate-950'
-                                        : 'border border-white/10 bg-white/5 text-slate-300 hover:text-white'
-                                        } ${editorLoading ? 'cursor-not-allowed opacity-50' : ''}`}
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Akademik Seçim</p>
+                        <div className="mt-4 grid gap-4">
+                            <ScheduleField label="Faculty">
+                                <select
+                                    value={selectedFacultyKey}
+                                    onChange={(e) => handleFacultySelect(e.target.value)}
+                                    disabled={availableScheduleFaculties.length === 0}
+                                    className="block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {formatClassKeyLabel(classKey, classes.find((item) => item.key === classKey))}
-                                </button>
-                            ))}
+                                    <option value="">Faculty seçin</option>
+                                    {availableScheduleFaculties.map((faculty) => (
+                                        <option key={faculty.key} value={faculty.key}>{faculty.name}</option>
+                                    ))}
+                                </select>
+                            </ScheduleField>
+
+                            <ScheduleField label="Department">
+                                <select
+                                    value={selectedDepartmentKey}
+                                    onChange={(e) => handleDepartmentSelect(e.target.value)}
+                                    disabled={!selectedFacultyKey || selectableDepartments.length === 0}
+                                    className="block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <option value="">{selectedFacultyKey ? 'Department seçin' : 'Önce faculty seçin'}</option>
+                                    {selectableDepartments.map((department) => (
+                                        <option key={department.key} value={department.key}>{department.name}</option>
+                                    ))}
+                                </select>
+                            </ScheduleField>
+
+                            <ScheduleField label="Grade">
+                                <select
+                                    value={selectedClassKey}
+                                    onChange={(e) => setSelectedClassKey(e.target.value)}
+                                    disabled={!selectedDepartmentKey || selectableGrades.length === 0}
+                                    className="block w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm font-semibold text-white outline-none transition focus:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <option value="">{selectedDepartmentKey ? 'Grade seçin' : 'Önce department seçin'}</option>
+                                    {selectableGrades.map((grade) => (
+                                        <option key={grade.key} value={grade.key}>{formatGradeLabel(grade)}</option>
+                                    ))}
+                                </select>
+                            </ScheduleField>
                         </div>
                         {selectedClassInfo && (
                             <div className="mt-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-300">
-                                <div className="font-semibold text-white">{selectedClassInfo.departmentName || selectedClassInfo.departmentKey}</div>
+                                <div className="font-semibold text-white">{formatGradeLabel(selectedClassInfo)}</div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                    {selectedClassInfo.facultyName || selectedClassInfo.facultyKey} • level {selectedClassInfo.level ?? '-'}
+                                    {selectedClassInfo.facultyName || selectedClassInfo.facultyKey} • {selectedClassInfo.departmentName || selectedClassInfo.departmentKey}
                                 </div>
+                                <div className="mt-1 text-xs text-slate-500">{selectedClassInfo.key}</div>
+                            </div>
+                        )}
+                        {!selectedClassInfo && (
+                            <div className="mt-4 rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-sm text-slate-400">
+                                Seçim tamamlandığında backend bu akademik eşleşmeye göre haftalık programı döndürür.
                             </div>
                         )}
                     </div>
                 </div>
 
                 <div>
-                    {isEditorRefreshing ? (
+                    {!selectedClassKey ? (
+                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-10 backdrop-blur-xl">
+                            <div className="flex min-h-[320px] items-center justify-center text-center text-slate-400">
+                                Faculty, department ve grade seçildikten sonra haftalık tablo burada açılır.
+                            </div>
+                        </div>
+                    ) : !selectedClassState ? (
+                        <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-10 backdrop-blur-xl">
+                            <div className="flex min-h-[320px] items-center justify-center text-center text-slate-400">
+                                Seçili grade için haftalık tablo hazırlanıyor.
+                            </div>
+                        </div>
+                    ) : isEditorRefreshing ? (
                         <div className="rounded-[2rem] border border-white/5 bg-slate-900/50 p-10 backdrop-blur-xl">
                             <div className="flex min-h-[320px] items-center justify-center gap-3 text-slate-400">
                                 <Loader2 className="animate-spin text-cyan-400" />
@@ -3737,7 +3876,6 @@ const academicFacultyApi = {
 
 const createFacultyGradeDraft = (grade = {}) => ({
     localId: grade.localId || `grade-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    key: grade.key || '',
     level: grade.level ?? '',
     name: grade.name || ''
 });
@@ -3784,8 +3922,7 @@ const serializeFacultyPayload = (facultyForm) => ({
             const level = Number(grade.level);
             return {
                 level,
-                name: grade.name.trim() || `${level}. Grade`,
-                key: grade.key.trim() || `grade${level}`
+                name: grade.name.trim() || `${level}. Grade`
             };
         })
     }))
@@ -3801,8 +3938,7 @@ const buildFacultyPayload = (faculty, departments) => ({
         sortOrder: department.sortOrder ?? undefined,
         grades: (Array.isArray(department.grades) ? department.grades : []).map((grade) => ({
             level: Number(grade.level),
-            name: grade.name,
-            key: grade.key
+            name: grade.name
         }))
     }))
 });
@@ -3963,6 +4099,50 @@ const parseJsonArray = (value) => {
     } catch {
         return [];
     }
+};
+
+const readLocalCache = (key) => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const rawValue = window.localStorage.getItem(key);
+        if (!rawValue) return null;
+        const parsed = JSON.parse(rawValue);
+        if (!parsed?.timestamp || (Date.now() - parsed.timestamp) > ADMIN_LOCAL_CACHE_TTL_MS) {
+            window.localStorage.removeItem(key);
+            return null;
+        }
+        return parsed.value ?? null;
+    } catch {
+        return null;
+    }
+};
+
+const writeLocalCache = (key, value) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.setItem(key, JSON.stringify({
+            timestamp: Date.now(),
+            value
+        }));
+    } catch {
+        // Ignore local cache write failures.
+    }
+};
+
+const readScheduleEditorCache = (scheduleId) => {
+    const cache = readLocalCache(ADMIN_SCHEDULE_EDITOR_CACHE_KEY) || {};
+    return scheduleId ? cache[scheduleId] || null : null;
+};
+
+const writeScheduleEditorCache = (scheduleId, payload) => {
+    if (!scheduleId || !payload) return;
+
+    writeLocalCache(ADMIN_SCHEDULE_EDITOR_CACHE_KEY, {
+        ...(readLocalCache(ADMIN_SCHEDULE_EDITOR_CACHE_KEY) || {}),
+        [scheduleId]: payload
+    });
 };
 
 const normalizeTimeValue = (value = '') => {
