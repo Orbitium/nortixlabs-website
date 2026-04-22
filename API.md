@@ -67,12 +67,22 @@ Accept: application/json
   "sections": [
     {
       "id": "today",
-      "title": "Bugun",
+      "title": "Bugün",
       "cards": [
+        {
+          "id": "today-classes",
+          "kind": "lesson",
+          "subtitle": "Bugünkü dersler",
+          "value": "3 ders var",
+          "trailingText": "İlk 08:30",
+          "action": {
+            "type": "openSchedule"
+          }
+        },
         {
           "id": "today-event",
           "kind": "event",
-          "subtitle": "En yakin etkinlik",
+          "subtitle": "En yakın etkinlik",
           "value": "Yapay Zeka Atolyesi",
           "trailingText": "17:30",
           "action": {
@@ -83,7 +93,7 @@ Accept: application/json
         {
           "id": "today-news",
           "kind": "news",
-          "subtitle": "Bugun yayimlanan haber",
+          "subtitle": "Bugün yayımlanan haber",
           "value": "4 haber",
           "action": {
             "type": "scroll_news_list"
@@ -92,8 +102,8 @@ Accept: application/json
         {
           "id": "today-community",
           "kind": "community",
-          "subtitle": "Bugun topluluk gonderileri",
-          "value": "2 gonderi",
+          "subtitle": "Bugün topluluk gönderileri",
+          "value": "2 gönderi",
           "action": {
             "type": "open_tab",
             "targetTabIndex": 2
@@ -108,8 +118,8 @@ Accept: application/json
         {
           "id": "week-event",
           "kind": "event",
-          "subtitle": "Bu hafta one cikan etkinlik",
-          "value": "Kariyer Gunleri",
+          "subtitle": "Bu hafta öne çıkan etkinlik",
+          "value": "Kariyer Günleri",
           "trailingText": "Per",
           "action": {
             "type": "open_tab",
@@ -119,7 +129,7 @@ Accept: application/json
         {
           "id": "week-news",
           "kind": "news",
-          "subtitle": "Bu hafta yayimlanan haber",
+          "subtitle": "Bu hafta yayımlanan haber",
           "value": "9 haber",
           "action": {
             "type": "scroll_news_list"
@@ -128,8 +138,8 @@ Accept: application/json
         {
           "id": "week-community",
           "kind": "community",
-          "subtitle": "Bu hafta topluluk gonderileri",
-          "value": "6 gonderi",
+          "subtitle": "Bu hafta topluluk gönderileri",
+          "value": "6 gönderi",
           "action": {
             "type": "open_tab",
             "targetTabIndex": 2
@@ -137,14 +147,45 @@ Accept: application/json
         }
       ]
     }
-  ]
+  ],
+  "academicContext": {
+    "seed": 183741092,
+    "scheduleId": 12,
+    "programName": "Bilisim Guvenligi Teknolojisi",
+    "classKey": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+    "selectedClassIndex": 0,
+    "availableClassKeys": [
+      "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+      "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade2"
+    ],
+    "inferredGrade": 1,
+    "matchedBy": "seeded",
+    "faculty": {
+      "key": "carsamba-ticaret-borsasi-myo",
+      "name": "Carsamba Ticaret Borsasi MYO"
+    },
+    "department": {
+      "key": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn",
+      "name": "Bilisim Guvenligi Teknolojisi"
+    },
+    "grade": {
+      "key": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+      "name": "1. Grade",
+      "level": 1
+    },
+    "isSeededFallback": true
+  }
 }
 ```
 
 **Notes:**
 - The backend owns section order, card order, labels, counts, featured event selection, and action payloads.
 - Empty states are still returned as cards when possible, for example `0 haber`, `0 gonderi`, or `Etkinlik yok`.
+- The `today` section now also includes a compact `lesson` card for today's classes, using the resolved student schedule and selected faculty/department/grade context.
 - The backend now filters today/week content against the resolved user context using current time, matched schedule/program, and selected class lessons.
+- `academicContext` describes the schedule/class selection used for lesson cards and content filtering, including the resolved faculty, department, and grade when available.
+- When the authenticated user's `facultyKey`, `departmentKey`, and `gradeKey` are all empty and no schedule/class/program query hints are sent, the backend picks a deterministic seeded faculty/department/grade fallback from the registered academic tree and returns it with `matchedBy: "seeded"` and `isSeededFallback: true`.
+- The seeded fallback is derived from the Firebase `uid`, so the same user receives the same fallback academic context across requests while different users are spread across the available grades.
 - If the client does not send a selected class and multiple class keys exist, the backend assumes class index `0`.
 - If profile data is not enough to identify the correct schedule, the optional query hints above can make the response deterministic without changing the response shape.
 
@@ -384,6 +425,7 @@ Create a new event.
   "title": "University Festival",
   "date": "2026-03-15T14:00:00.000Z",
   "description": "Annual spring festival",
+  "publisher": "Akademiz",
   "eventLength": 3.5,
   "location": "Main Campus",
   "thumbnailUrl": "/uploads/events/event-1234567890.webp",
@@ -398,8 +440,13 @@ Create a new event.
 - `title` (string)
 - `date` (ISO 8601 datetime string)
 - `description` (string)
+- `publisher` or `creatorName` (string)
+
+No fields are required when creating a draft/inactive event with `isActive: false`, `status: "draft"`, `status: "inactive"`, or `saveAsDraft: true`.
 
 **Optional Fields:**
+- `publisher` (string) - Event publisher/creator name
+- `creatorName` (string) - Alias for `publisher`
 - `eventLength` (number) - Duration in hours
 - `location` (string)
 - `thumbnailUrl` (string)
@@ -437,6 +484,7 @@ Create a new event.
 **Draft behavior:**
 - Omit all status fields, or send `isActive: true` / `status: "active"`, to publish the event immediately.
 - Send `isActive: false`, `status: "draft"`, `status: "inactive"`, or `saveAsDraft: true` to save without showing it to users.
+- Draft/inactive creation requires no event content fields. Missing `title` and `description` are saved as empty strings, missing `publisher`/`creatorName` is saved as `"Akademiz"`, and missing `date` is saved as the current server time.
 - New event notifications are only sent for active events.
 
 **Error Responses:**
@@ -736,11 +784,12 @@ Returns paginated community posts (newest first).
 #### `POST /community/posts`
 Create a community post.
 
-**Authentication:** Required (Admin)
+**Authentication:** Required (`Bearer <Firebase ID token>`)
 
 **Request Body:**
 ```json
 {
+  "authorName": "Samet Demiral",
   "content": "Post text",
   "imageUrl": "/uploads/community/community-123.webp",
   "poll": {
@@ -755,10 +804,43 @@ Create a community post.
 - `content` (string)
 
 **Optional Fields:**
-- `imageUrl` (string)
-- `poll.question` (string)
-- `poll.options` (array of strings, minimum 2)
+- `authorName` (string) - if omitted or blank, falls back to authenticated user name
+- `imageUrl` (string or `null`)
+- `poll` (object or `null`)
+- `poll.question` (string, required when `poll` is provided)
+- `poll.options` (array of strings, minimum 2, required when `poll` is provided)
 - `poll.closesAt` (ISO 8601 datetime string or `null`) - poll vote deadline
+
+Accepted examples:
+
+```json
+{
+  "authorName": "Samet Demiral",
+  "content": "Test"
+}
+```
+
+```json
+{
+  "authorName": "Samet Demiral",
+  "content": "Test",
+  "imageUrl": null,
+  "poll": null
+}
+```
+
+```json
+{
+  "authorName": "Samet Demiral",
+  "content": "Test",
+  "imageUrl": "/uploads/community/community-123.webp",
+  "poll": {
+    "question": "Which topic first?",
+    "options": ["AI", "Cybersecurity"],
+    "closesAt": null
+  }
+}
+```
 
 **Response:** Created post object (same shape as `GET /community/posts` item).
 
@@ -1006,6 +1088,9 @@ Returns the profile of the current authenticated user (including guests).
   "name": "John Doe",
   "age": 21,
   "department": "Computer Programming",
+  "facultyKey": "engineering",
+  "departmentKey": "computer-programming",
+  "gradeKey": "grade1",
   "gender": "Male",
   "campus": "Çarşamba",
   "isPrivate": false,
@@ -1040,6 +1125,9 @@ Returns a specific user's public profile.
   "badges": ["EARLY_TESTER"],
   "isPrivate": false,
   "department": "Computer Programming",
+  "facultyKey": "engineering",
+  "departmentKey": "computer-programming",
+  "gradeKey": "grade1",
   "campus": "Çarşamba"
 }
 ```
@@ -1058,7 +1146,9 @@ Updates the current user's profile fields.
 {
   "name": "Jane Doe",
   "age": 20,
-  "department": "Law",
+  "facultyKey": "law",
+  "departmentKey": "law",
+  "gradeKey": "grade2",
   "gender": "Female",
   "campus": "Çarşamba",
   "isPrivate": true,
@@ -1069,7 +1159,10 @@ Updates the current user's profile fields.
 **Constraints:**
 - `name`: max 32 characters
 - `age`: integer between 14 and 69
-- `department`: max 32 characters
+- `facultyKey`: optional registered faculty key
+- `departmentKey`: optional registered department key, but only valid when mapped to the selected faculty
+- `gradeKey`: optional registered grade key, but only valid when mapped to the selected department
+- `department` in the response is the selected department name
 - `isPrivate`: boolean (defaults to `false`)
 - `studentId`: unique string
 
@@ -1211,13 +1304,20 @@ Retrieve the registered class list used by the schedule viewer and editor.
 
 **Authentication:** Not required
 
+**Query Parameters:**
+- `facultyKey` (string, optional) - When provided, only returns the grades mapped to that academic faculty.
+- `departmentKey` (string, optional) - When provided, only returns the grades mapped to that department.
+
 **Response:**
 ```json
 [
   {
     "id": 1,
-    "key": "grade1",
-    "name": "1. Sinif",
+    "key": "engineering-computer-science-grade1",
+    "name": "1. Grade",
+    "level": 1,
+    "departmentKey": "engineering-computer-science",
+    "facultyKey": "engineering",
     "sortOrder": 0,
     "createdAt": "2026-04-11T09:00:00.000Z",
     "updatedAt": "2026-04-11T09:00:00.000Z"
@@ -1226,7 +1326,9 @@ Retrieve the registered class list used by the schedule viewer and editor.
 ```
 
 **Notes:**
-- `key` must match the class key used inside schedule JSON, for example `grade1`.
+- `key` must match the class key used inside schedule JSON, for example `engineering-computer-science-grade1`.
+- When `departmentKey` is provided, the response is limited to that department's mapped grades.
+- When only `facultyKey` is provided, the response is the union of grades mapped across that faculty's departments.
 - When at least one class is registered, schedule responses use this list for `availableClassKeys` and only expose those class keys in `schedule`.
 - When no classes are registered yet, schedules fall back to the auto/manual class keys already stored in schedule data.
 
@@ -1251,21 +1353,28 @@ Register a class for schedule filtering and lesson schedule management.
 **Request Body:**
 ```json
 {
-  "key": "grade1",
-  "name": "1. Sinif",
+  "departmentKey": "engineering-computer-science",
+  "minLevel": 1,
+  "maxLevel": 4,
   "sortOrder": 0
 }
 ```
 
 **Notes:**
-- `name` is required.
-- `key` is optional; when omitted, it is generated from `name`.
-- `key` must be unique and cannot contain slashes or control characters.
-- `sortOrder` is optional and defaults to the next list position.
+- `departmentKey` is required.
+- `minLevel` and `maxLevel` are required and must each be between `1` and `6`.
+- The backend creates every level in the inclusive range from `minLevel` to `maxLevel`.
+- `minLevel` must be less than or equal to `maxLevel`.
+- The backend fully manages each grade `key` and `name`.
+- Generated values use this pattern:
+  - `key`: `<departmentKey>-grade<level>`
+  - `name`: `<level>. Grade`
+- `sortOrder` is optional and defaults to `level - 1` for each generated class.
+- The response returns the created classes as an array.
 
 **Error Responses:**
 - `400 Bad Request` - Invalid class payload
-- `409 Conflict` - Class key already exists
+- `409 Conflict` - One or more grade levels already exist for that department
 
 ---
 
@@ -1282,22 +1391,167 @@ Delete a registered class by numeric ID or class key.
   "success": true,
   "class": {
     "id": 1,
-    "key": "grade1",
-    "name": "1. Sinif",
+    "key": "engineering-computer-science-grade1",
+    "name": "1. Grade",
+    "level": 1,
+    "departmentKey": "engineering-computer-science",
+    "facultyKey": "engineering",
     "sortOrder": 0,
     "createdAt": "2026-04-11T09:00:00.000Z",
     "updatedAt": "2026-04-11T09:00:00.000Z"
   },
-  "removedManualScheduleCount": 2
+  "removedManualScheduleCount": 2,
+  "clearedProfileCount": 3
 }
 ```
 
 **Notes:**
 - Deleting a class removes its manual schedule block from all schedules.
+- Deleting a class also clears `gradeKey` from student profiles that were using it.
 - Auto-parsed schedule data is left untouched, but hidden from schedule responses while a registered class list exists.
 
 **Error Responses:**
 - `404 Not Found` - Class not found
+
+---
+
+## Academic Faculty Endpoints
+
+### List Academic Faculties
+
+#### `GET /academic-faculties`
+Returns the registered academic faculties with their departments and each department's mapped grades.
+
+**Authentication:** Not required
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "key": "engineering",
+    "name": "Engineering Faculty",
+    "sortOrder": 0,
+    "departments": [
+      {
+        "id": 10,
+        "key": "computer-programming",
+        "name": "Computer Programming",
+        "sortOrder": 0,
+        "grades": [
+          {
+            "id": 1,
+            "key": "grade1",
+            "name": "1. Sinif",
+            "sortOrder": 0,
+            "createdAt": "2026-04-14T09:00:00.000Z",
+            "updatedAt": "2026-04-14T09:00:00.000Z"
+          }
+        ],
+        "createdAt": "2026-04-14T09:00:00.000Z",
+        "updatedAt": "2026-04-14T09:00:00.000Z"
+      }
+    ],
+    "createdAt": "2026-04-14T09:00:00.000Z",
+    "updatedAt": "2026-04-14T09:00:00.000Z"
+  }
+]
+```
+
+### Create Academic Faculty
+
+#### `POST /academic-faculties`
+Registers a faculty and optionally creates departments with mapped grades under it.
+
+**Authentication:** Required (Firebase auth)
+
+**Request Body:**
+```json
+{
+  "key": "engineering",
+  "name": "Engineering Faculty",
+  "sortOrder": 0,
+  "departments": [
+    {
+      "key": "computer-programming",
+      "name": "Computer Programming",
+      "sortOrder": 0,
+      "gradeKeys": ["grade1", "grade2"]
+    }
+  ]
+}
+```
+
+**Notes:**
+- `name` is required.
+- `key` is optional; when omitted, it is generated from `name`.
+- `departments` is optional.
+- Every provided department key must be unique.
+- Every provided grade key must already exist in the class registry.
+
+### Update Academic Faculty
+
+#### `PATCH /academic-faculties/:idOrKey`
+Replaces an existing faculty tree, including its metadata, departments, and each department's grade mappings.
+
+**Authentication:** Required (Firebase auth)
+
+**Request Body:**
+```json
+{
+  "key": "engineering",
+  "name": "Engineering Faculty",
+  "sortOrder": 0,
+  "departments": [
+    {
+      "key": "computer-programming",
+      "name": "Computer Programming",
+      "sortOrder": 0,
+      "gradeKeys": ["grade1", "grade2"]
+    },
+    {
+      "key": "software-engineering",
+      "name": "Software Engineering",
+      "sortOrder": 1,
+      "gradeKeys": ["grade1", "grade2", "grade3", "grade4"]
+    }
+  ]
+}
+```
+
+**Notes:**
+- This endpoint replaces the full department tree for that faculty.
+- Departments omitted from the request are removed.
+- If a department remains with the same key, student profiles using it are preserved.
+- If a department is removed or a grade is no longer mapped to it, affected student profiles are cleared accordingly.
+- If the faculty key changes, affected student profiles are moved to the new `facultyKey`.
+
+### Delete Academic Faculty
+
+#### `DELETE /academic-faculties/:idOrKey`
+Deletes a faculty by numeric ID or faculty key.
+
+**Authentication:** Required (Firebase auth)
+
+**Response:**
+```json
+{
+  "success": true,
+  "faculty": {
+    "id": 1,
+    "key": "engineering",
+    "name": "Engineering Faculty",
+    "sortOrder": 0,
+    "departments": [],
+    "createdAt": "2026-04-14T09:00:00.000Z",
+    "updatedAt": "2026-04-14T09:00:00.000Z"
+  },
+  "clearedProfileCount": 5
+}
+```
+
+**Notes:**
+- Deleting a faculty clears `facultyKey`, `departmentKey`, `gradeKey`, and the cached `department` name from student profiles that were using it.
 
 ---
 
@@ -1310,6 +1564,7 @@ Retrieve all course schedules (Ders Programları).
 
 **Authentication:** Not required  
 If you send an **admin Firebase token**, the response also includes editor fields such as `autoSchedule`, `manualSchedule`, `effectiveSchedule`, and `autoScheduleRaw`.
+If you send any valid Firebase token, the response includes `academicContext` on each schedule item. When the authenticated user has no selected `facultyKey`, `departmentKey`, or `gradeKey`, the backend uses the same deterministic seeded fallback as `GET /master/news-widgets` and places the matched schedule first when one is found.
 
 **Response:**
 ```json
@@ -1353,7 +1608,34 @@ If you send an **admin Firebase token**, the response also includes editor field
     "availableClassKeys": ["grade1", "grade2"],
     "registeredClassKeys": ["grade1", "grade2"],
     "effectiveSource": "auto",
-    "updatedAt": "2026-02-05T11:08:47.000Z"
+    "updatedAt": "2026-02-05T11:08:47.000Z",
+    "academicContext": {
+      "seed": 183741092,
+      "scheduleId": 1,
+      "programName": "BÄ°LÄ°ÅÄ°M GÃœVENLÄ°ÄÄ° PROGRAMI",
+      "classKey": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+      "selectedClassIndex": 0,
+      "availableClassKeys": [
+        "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+        "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade2"
+      ],
+      "inferredGrade": 1,
+      "matchedBy": "seeded",
+      "faculty": {
+        "key": "carsamba-ticaret-borsasi-myo",
+        "name": "Carsamba Ticaret Borsasi MYO"
+      },
+      "department": {
+        "key": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn",
+        "name": "Bilisim Guvenligi Teknolojisi"
+      },
+      "grade": {
+        "key": "carsamba-ticaret-borsasi-myo-bilisim-guvenligi-tekn-grade1",
+        "name": "1. Grade",
+        "level": 1
+      },
+      "isSeededFallback": true
+    }
   }
 ]
 ```
@@ -1365,6 +1647,8 @@ If you send an **admin Firebase token**, the response also includes editor field
 - Known Turkish weekday keys are normalized to uppercase ASCII names (`PAZARTESI`, `CARSAMBA`, etc.); custom day labels are preserved.
 - `availableClassKeys` follows the registered class list when classes exist; otherwise it is the union of detected auto classes and manually entered classes.
 - `registeredClassKeys` is the class registry used for filtering. It is an empty array until classes are created with `POST /admin/classes`.
+- `academicContext` is only included when a valid Firebase token is provided. It describes the user-specific faculty/department/grade/class selection for the schedule item.
+- If `academicContext.scheduleId` is non-null, that schedule item is the user-matched schedule. Other schedule items can still include the user's faculty/department/grade context, but their `scheduleId`, `programName`, and `classKey` are null.
 - Non-admin clients do not receive `autoSchedule`, `manualSchedule`, `effectiveSchedule`, or `autoScheduleRaw`.
 
 **Schedule Structure:**

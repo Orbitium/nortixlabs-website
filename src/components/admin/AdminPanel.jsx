@@ -51,17 +51,56 @@ const ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY = 'akademiz-admin-schedule-workspace-v1
 const ADMIN_SCHEDULE_EDITOR_CACHE_KEY = 'akademiz-admin-schedule-editor-v1';
 const ADMIN_SCHEDULE_SELECTION_CACHE_KEY = 'akademiz-admin-schedule-selection-v1';
 const ADMIN_DEPARTMENT_YEAR_SELECTION_KEY = 'akademiz-admin-department-years-v1';
+const ADMIN_ACTIVE_TAB_STORAGE_KEY = 'akademiz-admin-active-tab-v1';
 const ADMIN_LOCAL_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const isValidAdminTab = (tabId) => NAV_ITEMS.some((item) => item.id === tabId);
+
+const readStoredAdminTab = () => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const storedTab = window.localStorage.getItem(ADMIN_ACTIVE_TAB_STORAGE_KEY);
+        return isValidAdminTab(storedTab) ? storedTab : null;
+    } catch (err) {
+        console.warn('Failed to read saved admin tab', err);
+        return null;
+    }
+};
+
+const writeStoredAdminTab = (tabId) => {
+    if (typeof window === 'undefined' || !isValidAdminTab(tabId)) return;
+
+    try {
+        window.localStorage.setItem(ADMIN_ACTIVE_TAB_STORAGE_KEY, tabId);
+    } catch (err) {
+        console.warn('Failed to save admin tab', err);
+    }
+};
+
+const getInitialAdminTab = (initialTab) => {
+    if (initialTab && initialTab !== 'dashboard' && isValidAdminTab(initialTab)) {
+        return initialTab;
+    }
+
+    return readStoredAdminTab() || (isValidAdminTab(initialTab) ? initialTab : 'dashboard');
+};
 
 const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState(initialTab);
+    const [activeTab, setActiveTab] = useState(() => getInitialAdminTab(initialTab));
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState(''); // 'post'
     const [eventView, setEventView] = useState('list');
     const [eventNotice, setEventNotice] = useState('');
+    const [events, setEvents] = useState([]);
+    const [eventsLoading, setEventsLoading] = useState(false);
+    const [eventsError, setEventsError] = useState('');
+    const [eventsLoaded, setEventsLoaded] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
+    const [eventActionId, setEventActionId] = useState('');
     const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
     const [communityPosts, setCommunityPosts] = useState([]);
     const [communityLoading, setCommunityLoading] = useState(false);
@@ -111,8 +150,12 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
     }, []);
 
     useEffect(() => {
-        setActiveTab(initialTab);
+        setActiveTab(getInitialAdminTab(initialTab));
     }, [initialTab]);
+
+    useEffect(() => {
+        writeStoredAdminTab(activeTab);
+    }, [activeTab]);
 
     useEffect(() => {
         const handlePointerDown = (event) => {
@@ -132,6 +175,7 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
     useEffect(() => {
         if (activeTab !== 'events') {
             setEventView('list');
+            setEditingEvent(null);
         }
     }, [activeTab]);
 
@@ -142,6 +186,14 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
 
         loadCommunityPosts();
     }, [user, activeTab, communityLoaded]);
+
+    useEffect(() => {
+        if (!user || activeTab !== 'events' || eventsLoaded) {
+            return;
+        }
+
+        loadEvents();
+    }, [user, activeTab, eventsLoaded]);
 
     useEffect(() => {
         if (!user || activeTab !== 'news' || newsLoaded) {
@@ -190,6 +242,7 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const openEventCreator = () => {
         setActiveTab('events');
         setEventView('create');
+        setEditingEvent(null);
         setEventNotice('');
     };
 
@@ -207,9 +260,86 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
         }
     };
 
-    const handleEventCreated = () => {
+    const loadEvents = async () => {
+        try {
+            setEventsLoading(true);
+            setEventsError('');
+            const items = await eventApi.listEvents();
+            setEvents(items);
+            setEventsLoaded(true);
+        } catch (err) {
+            setEventsError(err.message || 'Etkinlikler yüklenemedi.');
+        } finally {
+            setEventsLoading(false);
+        }
+    };
+
+    const openEventEditor = (event) => {
+        setEditingEvent(event);
+        setEventView('edit');
+        setEventNotice('');
+    };
+
+    const handleEventCreated = async () => {
         setEventView('list');
-        setEventNotice('Etkinlik taslağı oluşturuldu. Liste bağlantısı geldiğinde burada görünecek.');
+        setEditingEvent(null);
+        setEventNotice('Etkinlik taslağı oluşturuldu.');
+        setEventsLoaded(false);
+        await loadEvents();
+    };
+
+    const handleEventSaved = async () => {
+        setEventView('list');
+        setEditingEvent(null);
+        setEventNotice('Etkinlik güncellendi.');
+        setEventsLoaded(false);
+        await loadEvents();
+    };
+
+    const handleToggleEventStatus = async (event) => {
+        const nextStatus = event.isActive ? 'draft' : 'active';
+
+        try {
+            setEventActionId(`${event.id}:status`);
+            setEventsError('');
+            const updatedEvent = await eventApi.updateEvent(event.id, { status: nextStatus });
+            setEvents((prev) => prev.map((item) => String(item.id) === String(event.id) ? updatedEvent : item));
+            setEventNotice(nextStatus === 'active' ? 'Etkinlik yayınlandı.' : 'Etkinlik taslağa alındı.');
+        } catch (err) {
+            setEventsError(err.message || 'Etkinlik durumu güncellenemedi.');
+        } finally {
+            setEventActionId('');
+        }
+    };
+
+    const handleDeleteEvent = async (event) => {
+        const confirmed = window.confirm('Bu etkinliği silmek istediğinizden emin misiniz?');
+        if (!confirmed) return;
+
+        try {
+            setEventActionId(`${event.id}:delete`);
+            setEventsError('');
+            await eventApi.deleteEvent(event.id);
+            setEvents((prev) => prev.filter((item) => String(item.id) !== String(event.id)));
+            setEventNotice('Etkinlik silindi.');
+        } catch (err) {
+            setEventsError(err.message || 'Etkinlik silinemedi.');
+        } finally {
+            setEventActionId('');
+        }
+    };
+
+    const handleNotifyEvent = async (event) => {
+        try {
+            setEventActionId(`${event.id}:notify`);
+            setEventsError('');
+            await eventApi.notifyEvent(event.id);
+            setEventNotice('Etkinlik bildirimi gönderildi.');
+        } catch (err) {
+            setEventsError(err.message || 'Bildirim gönderilemedi.');
+        } finally {
+            setEventActionId('');
+        }
     };
 
     const loadNewsItems = async () => {
@@ -484,26 +614,41 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
 
                     {activeTab === 'events' && (
                         <div className="space-y-6">
-                            {eventView === 'create' ? (
+                            {eventView === 'create' || eventView === 'edit' ? (
                                 <EventForm
                                     user={user}
-                                    onBack={() => setEventView('list')}
+                                    event={editingEvent}
+                                    onBack={() => {
+                                        setEventView('list');
+                                        setEditingEvent(null);
+                                    }}
                                     onCreated={handleEventCreated}
+                                    onSaved={handleEventSaved}
                                 />
                             ) : (
                                 <>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
                                             <h3 className="text-2xl font-bold text-white">Etkinlik Yönetimi</h3>
                                             <p className="mt-2 text-sm text-slate-500">Temel bilgileri hızlıca girin, kalan ayrıntıları isterseniz sonradan zenginleştirin.</p>
                                         </div>
-                                        <button
-                                            onClick={openEventCreator}
-                                            className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-900/20"
-                                        >
-                                            <Plus size={20} />
-                                            Etkinlik Oluştur
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={loadEvents}
+                                                disabled={eventsLoading}
+                                                className="flex items-center gap-2 px-4 py-3 border border-white/10 bg-white/5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 text-slate-200 rounded-xl font-semibold transition-all"
+                                            >
+                                                <RefreshCw size={18} className={eventsLoading ? 'animate-spin' : ''} />
+                                                Yenile
+                                            </button>
+                                            <button
+                                                onClick={openEventCreator}
+                                                className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-cyan-900/20"
+                                            >
+                                                <Plus size={20} />
+                                                Etkinlik Oluştur
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {eventNotice && (
@@ -512,10 +657,36 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
                                         </div>
                                     )}
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
-                                            Etkinlik verileri burada yüklenecek...
+                                    {eventsError && (
+                                        <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                                            {eventsError}
                                         </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                        {eventsLoading && events.length === 0 && (
+                                            <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                                Etkinlikler yükleniyor...
+                                            </div>
+                                        )}
+
+                                        {!eventsLoading && events.length === 0 && !eventsError && (
+                                            <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-center h-48 italic text-slate-500">
+                                                Henüz etkinlik bulunmuyor.
+                                            </div>
+                                        )}
+
+                                        {events.map((event) => (
+                                            <EventCard
+                                                key={event.id}
+                                                event={event}
+                                                actionId={eventActionId}
+                                                onEdit={openEventEditor}
+                                                onToggleStatus={handleToggleEventStatus}
+                                                onDelete={handleDeleteEvent}
+                                                onNotify={handleNotifyEvent}
+                                            />
+                                        ))}
                                     </div>
                                 </>
                             )}
@@ -2664,9 +2835,137 @@ const NotificationsTester = () => {
     );
 };
 
+const EventCard = ({ event, actionId = '', onEdit, onToggleStatus, onDelete, onNotify }) => {
+    const status = event.status || (event.isActive ? 'active' : 'draft');
+    const isActive = status === 'active' || event.isActive === true;
+    const tags = parseJsonArray(event.tags);
+    const thumbnailUrl = event.thumbnailFullUrl || getAdminImageUrl(event.thumbnailUrl);
+    const statusActionId = `${event.id}:status`;
+    const deleteActionId = `${event.id}:delete`;
+    const notifyActionId = `${event.id}:notify`;
+
+    return (
+        <article className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/45 backdrop-blur-xl">
+            <div className="h-44 border-b border-white/5 bg-slate-950/60">
+                {thumbnailUrl ? (
+                    <img
+                        src={thumbnailUrl}
+                        alt={event.title || 'Etkinlik görseli'}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <div className="flex h-full items-center justify-center px-6 text-center text-sm italic text-slate-500">
+                        Kapak görseli yok
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <h4 className="line-clamp-2 text-lg font-bold text-white">
+                            {event.title || 'Başlıksız taslak'}
+                        </h4>
+                        <div className="mt-2 text-xs text-slate-500">
+                            {formatAdminDateTime(event.date)}
+                        </div>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${isActive
+                        ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200'
+                        : 'border-amber-400/25 bg-amber-400/10 text-amber-200'
+                        }`}>
+                        {isActive ? 'Yayında' : 'Taslak'}
+                    </span>
+                </div>
+
+                <p className="line-clamp-3 min-h-[4.4rem] text-sm leading-7 text-slate-300">
+                    {event.description || 'Bu taslak için açıklama henüz eklenmedi.'}
+                </p>
+
+                <div className="space-y-2 text-sm text-slate-400">
+                    <div>{event.location || 'Konum eklenmedi'}</div>
+                    <div>{event.creatorName || event.publisher || 'AkademiZ'}</div>
+                </div>
+
+                {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => (
+                            <span key={`${event.id}-${tag}`} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-4 border-t border-white/5 pt-4 text-xs text-slate-500">
+                    <span>{event.views ?? 0} görüntülenme</span>
+                    <span>{event.likes ?? 0} beğeni</span>
+                    {event.maxJoiners ? <span>Kontenjan {event.maxJoiners}</span> : null}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-t border-white/5 pt-4">
+                    <button
+                        type="button"
+                        onClick={() => onEdit?.(event)}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+                    >
+                        <Pencil size={14} />
+                        Düzenle
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onToggleStatus?.(event)}
+                        disabled={actionId === statusActionId}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${isActive
+                            ? 'border-amber-400/20 bg-amber-400/10 text-amber-100 hover:bg-amber-400/15'
+                            : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/15'
+                            }`}
+                    >
+                        {actionId === statusActionId ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
+                        {isActive ? 'Taslağa Al' : 'Yayınla'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onNotify?.(event)}
+                        disabled={!isActive || actionId === notifyActionId}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {actionId === notifyActionId ? <Loader2 className="animate-spin" size={14} /> : <Bell size={14} />}
+                        Bildir
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onDelete?.(event)}
+                        disabled={actionId === deleteActionId}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-semibold text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {actionId === deleteActionId ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                        Sil
+                    </button>
+                </div>
+            </div>
+        </article>
+    );
+};
+
 // Forms
-const EventForm = ({ onBack, onCreated, user }) => {
-    const [formData, setFormData] = useState({
+const getEventFormData = (event, user) => ({
+    title: event?.title || '',
+    date: event?.date ? toDateTimeLocalInputValue(event.date) : '',
+    location: event?.location || '',
+    description: event?.description || '',
+    thumbnailUrl: event?.thumbnailUrl || event?.thumbnailFullUrl || '',
+    creatorName: event?.creatorName || event?.publisher || user?.displayName || 'AkademiZ Admin',
+    eventLength: event?.eventLength ?? '',
+    maxJoiners: event?.maxJoiners ?? '',
+    tags: parseJsonArray(event?.tags).join(', '),
+    carouselImages: parseJsonArray(event?.carouselImages)
+});
+
+const EventForm = ({ event = null, onBack, onCreated, onSaved, user }) => {
+    const isEditing = Boolean(event?.id);
+    const [formData, setFormData] = useState(() => getEventFormData(event, user));
+    const emptyFormData = {
         title: '',
         date: '',
         location: '',
@@ -2677,7 +2976,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
         maxJoiners: '',
         tags: '',
         carouselImages: []
-    });
+    };
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingTarget, setUploadingTarget] = useState('');
     const [submitError, setSubmitError] = useState('');
@@ -2739,8 +3038,8 @@ const EventForm = ({ onBack, onCreated, user }) => {
         e.preventDefault();
         setIsSubmitting(true);
         setSubmitError('');
+
         try {
-            const token = await auth.currentUser.getIdToken(true);
             const parsedEventLength = parseFloat(formData.eventLength);
             const parsedMaxJoiners = parseInt(formData.maxJoiners, 10);
             const parsedTags = formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
@@ -2750,51 +3049,40 @@ const EventForm = ({ onBack, onCreated, user }) => {
                 date: formData.date,
                 description: formData.description.trim(),
                 location: formData.location.trim(),
-                thumbnailUrl: formData.thumbnailUrl,
+                thumbnailUrl: formData.thumbnailUrl || null,
                 creatorName: formData.creatorName.trim() || user?.displayName || 'AkademiZ Admin',
                 tags: JSON.stringify(parsedTags),
                 carouselImages: JSON.stringify(formData.carouselImages),
-                saveAsDraft: true,
-                status: 'draft'
+                status: isEditing ? event.status : 'draft'
             };
 
             if (Number.isFinite(parsedEventLength)) {
                 payload.eventLength = parsedEventLength;
+            } else if (isEditing) {
+                payload.eventLength = null;
             }
 
             if (Number.isFinite(parsedMaxJoiners)) {
                 payload.maxJoiners = parsedMaxJoiners;
+            } else if (isEditing) {
+                payload.maxJoiners = null;
             }
 
-            const res = await fetch(`${API_BASE_URL}/events/create`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                setFormData({
-                    title: '',
-                    date: '',
-                    location: '',
-                    description: '',
-                    thumbnailUrl: '',
-                    creatorName: user?.displayName || 'AkademiZ Admin',
-                    eventLength: '',
-                    maxJoiners: '',
-                    tags: '',
-                    carouselImages: []
-                });
-                onCreated?.();
+            if (!isEditing) {
+                payload.saveAsDraft = true;
+            }
+
+            if (isEditing) {
+                await eventApi.updateEvent(event.id, payload);
+                onSaved?.();
             } else {
-                const text = await res.text();
-                throw new Error(text || 'Etkinlik oluşturulamadı.');
+                await eventApi.createEvent(payload);
+                setFormData(emptyFormData);
+                onCreated?.();
             }
         } catch (err) {
-            console.error('Etkinlik oluşturma başarısız oldu', err);
-            setSubmitError(err.message || 'Etkinlik oluşturma başarısız oldu.');
+            console.error('Etkinlik kaydetme başarısız oldu', err);
+            setSubmitError(err.message || 'Etkinlik kaydedilemedi.');
         } finally {
             setIsSubmitting(false);
         }
@@ -2805,8 +3093,8 @@ const EventForm = ({ onBack, onCreated, user }) => {
             <section className="rounded-[2rem] border border-cyan-500/15 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_rgba(15,23,42,0.92)_58%)] p-6 md:p-8">
                 <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">Etkinlik Oluşturucu</p>
-                        <h3 className="mt-3 text-2xl font-bold text-white">Yeni Etkinlik</h3>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">{isEditing ? 'Etkinlik Düzenleyici' : 'Etkinlik Oluşturucu'}</p>
+                        <h3 className="mt-3 text-2xl font-bold text-white">{isEditing ? 'Etkinliği Düzenle' : 'Yeni Etkinlik'}</h3>
                         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
                             Oluşturma adımı artık kısa tutuldu. Yalnızca başlık, konum, tarih, açıklama ve kapak görseli istenir; yeni kayıt doğrudan taslak olarak açılır.
                         </p>
@@ -3066,7 +3354,7 @@ const EventForm = ({ onBack, onCreated, user }) => {
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                        Taslak Etkinlik Oluştur
+                        {isEditing ? 'Etkinliği Kaydet' : 'Taslak Etkinlik Oluştur'}
                     </button>
                 </div>
             </form>
@@ -4010,6 +4298,45 @@ const newsApi = {
 };
 
 const eventApi = {
+    async listEvents() {
+        const data = await apiFetch('/admin/events', { authRequired: true });
+        return Array.isArray(data) ? data.map(normalizeAdminEvent) : [];
+    },
+
+    async createEvent(payload) {
+        const data = await apiFetch('/events/create', {
+            method: 'POST',
+            body: payload,
+            authRequired: true
+        });
+        return normalizeAdminEvent(data);
+    },
+
+    async updateEvent(eventId, payload) {
+        const data = await apiFetch('/events/edit', {
+            method: 'POST',
+            body: { id: eventId, ...payload },
+            authRequired: true
+        });
+        return normalizeAdminEvent(data);
+    },
+
+    async deleteEvent(eventId) {
+        return apiFetch('/events/delete', {
+            method: 'POST',
+            body: { id: eventId },
+            authRequired: true
+        });
+    },
+
+    async notifyEvent(eventId) {
+        const encodedId = encodeURIComponent(eventId);
+        return apiFetch(`/admin/events/${encodedId}/notify`, {
+            method: 'POST',
+            authRequired: true
+        });
+    },
+
     async sendTestNotification(payload) {
         return apiFetch('/admin/events/notify', {
             method: 'POST',
@@ -4475,6 +4802,18 @@ const formatAdminDateTime = (value) => {
     }).format(date);
 };
 
+const toDateTimeLocalInputValue = (value) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+};
+
 const parseJsonArray = (value) => {
     if (Array.isArray(value)) return value;
     if (typeof value !== 'string' || value.trim() === '') return [];
@@ -4485,6 +4824,24 @@ const parseJsonArray = (value) => {
     } catch {
         return [];
     }
+};
+
+const getAdminImageUrl = (value) => {
+    if (!value || typeof value !== 'string') return '';
+    return value.startsWith('/') ? `${API_BASE_URL}${value}` : value;
+};
+
+const normalizeAdminEvent = (event) => {
+    const isActive = event.isActive === true || event.status === 'active';
+
+    return {
+        ...event,
+        isActive,
+        status: isActive ? 'active' : 'draft',
+        tags: parseJsonArray(event.tags),
+        carouselImages: parseJsonArray(event.carouselImages),
+        joiners: parseJsonArray(event.joiners)
+    };
 };
 
 const readDepartmentYearPreference = () => {
