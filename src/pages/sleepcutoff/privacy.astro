@@ -1,0 +1,174 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+---
+
+<Layout title="Sleep Cutoff Privacy Policy | Nortixlabs">
+  <Navbar client:load />
+
+  <main class="pt-32 pb-24 relative z-10 min-h-screen">
+    <div class="container mx-auto px-6 max-w-4xl">
+      <div class="glass p-8 md:p-12 rounded-2xl border border-white/5">
+        <header class="mb-8 pb-6 border-b border-white/5">
+          <p class="text-sm uppercase tracking-[0.22em] text-cyan-400/80 mb-3">Sleep Cutoff</p>
+          <h1 class="text-3xl md:text-4xl font-bold font-display text-white mb-4">Privacy Policy</h1>
+          <p class="text-slate-400">Copied from the current Sleep Cutoff legal draft, with the app's local-only data model stated plainly.</p>
+        </header>
+
+        <div class="prose prose-invert prose-lg max-w-none prose-headings:font-display prose-headings:text-white prose-a:text-cyan-400 prose-strong:text-white text-slate-400">
+          <div class="not-prose mb-8 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-6">
+            <h2 class="text-xl font-bold font-display text-white mb-3">Plain-English Summary</h2>
+            <p class="text-slate-200 leading-relaxed mb-3">
+              Sleep Cutoff stores your app data on your device only.
+            </p>
+            <p class="text-slate-200 leading-relaxed mb-3">
+              Your drink logs, sleep times, wake times, reminders, and forecasts are not uploaded to Nortixlabs and are not transmitted over the internet by the app.
+            </p>
+            <p class="text-slate-200 leading-relaxed">
+              The only expected exception is iOS in-app purchase handling through Apple, which may process purchase and entitlement data so premium features can work.
+            </p>
+          </div>
+
+          <h2>1. Overview</h2>
+          <p>
+            This Privacy Policy explains how Sleep Cutoff handles information.
+          </p>
+          <p>
+            Sleep Cutoff is designed as a local-first app. Based on the current app design, user-entered drink logs, sleep settings, wake settings, and similar app data are intended to remain on the device and are not sent to our servers by the app.
+          </p>
+
+          <h2>2. Information We Handle</h2>
+          <p>Depending on how you use the app, the app may handle:</p>
+          <ul>
+            <li>drink and caffeine log entries you create</li>
+            <li>sleep time and wake time preferences</li>
+            <li>selected drink preferences</li>
+            <li>language, theme, and in-app settings</li>
+            <li>local premium entitlement state stored on the device</li>
+            <li>notification preferences and locally scheduled reminders</li>
+          </ul>
+
+          <h2>3. How Information Is Stored</h2>
+          <p>
+            The app stores its main user data locally on your device. We do not operate an app backend for storing your drink logs or sleep settings for this app based on the current version of the product.
+          </p>
+          <p>
+            In normal use, the app works without sending your core app data to our servers.
+          </p>
+
+          <h2>4. Data We Do Not Intentionally Collect on Our Servers</h2>
+          <p>
+            Based on the current app design, we do not intentionally collect or store the following on our own servers through the app:
+          </p>
+          <ul>
+            <li>your drink log history</li>
+            <li>your sleep time or wake time settings</li>
+            <li>your caffeine estimates or sleep forecast data</li>
+            <li>your name, email address, or account profile through an in-app account system</li>
+            <li>your payment card details</li>
+          </ul>
+
+          <h2>5. Purchases and Third-Party Platform Providers</h2>
+          <p>
+            If you buy or restore premium access, Apple and Google may process transaction, billing, or entitlement data under their own policies and terms.
+          </p>
+          <p>
+            Aside from purchase-related platform processing, the app is intended not to send your personal app data over the internet.
+          </p>
+          <p>The app may receive limited purchase-related information from those platforms, such as:</p>
+          <ul>
+            <li>product identifiers</li>
+            <li>purchase status</li>
+            <li>active entitlement status</li>
+            <li>transaction timing or restoration status</li>
+          </ul>
+          <p>
+            We use that information only to determine whether premium access should be available in the app.
+          </p>
+
+          <h2>6. Notifications</h2>
+          <p>
+            If you allow notifications, the app may schedule local notifications on your device. These reminders are created on-device and may use your locally stored bedtime, wake time, drink logs, and related settings to decide when to notify you.
+          </p>
+
+          <h2>7. Analytics, Tracking, and Advertising</h2>
+          <p>Based on the current app design, we do not use the app to:</p>
+          <ul>
+            <li>track you across apps or websites</li>
+            <li>run third-party advertising</li>
+            <li>sell your personal information</li>
+            <li>upload your drink logs or sleep settings to our own analytics servers</li>
+          </ul>
+          <p>
+            If that changes in a future release, this Privacy Policy should be updated before release.
+          </p>
+
+          <h2>8. Data Sharing</h2>
+          <p>
+            We do not share your locally stored app data with third parties through our own servers based on the current app design.
+          </p>
+          <p>
+            Nortixlabs does not receive your drink logs, sleep settings, wake times, reminders, or forecast history from the app.
+          </p>
+          <p>
+            This does not limit data handling by platform providers or services you independently use, such as:
+          </p>
+          <ul>
+            <li>Apple</li>
+            <li>Google</li>
+            <li>device backup providers</li>
+            <li>app store payment systems</li>
+          </ul>
+          <p>
+            Those providers may process data under their own terms and privacy policies.
+          </p>
+
+          <h2>9. Data Retention</h2>
+          <p>
+            Because the app is designed to store its main data locally on your device, retention is generally controlled by:
+          </p>
+          <ul>
+            <li>how long you keep the app installed</li>
+            <li>whether you delete app data</li>
+            <li>whether your device creates system backups</li>
+          </ul>
+          <p>
+            If you delete the app or clear its local data, app data may be removed from the device, subject to operating system behavior and device backups outside our control.
+          </p>
+
+          <h2>10. Your Choices</h2>
+          <p>You can generally:</p>
+          <ul>
+            <li>stop using the app at any time</li>
+            <li>delete the app from your device</li>
+            <li>revoke notification permissions in device settings</li>
+            <li>manage purchases and subscriptions through Apple App Store or Google Play</li>
+          </ul>
+
+          <h2>11. Children</h2>
+          <p>
+            Sleep Cutoff is not intended for children under the age at which they may validly consent to data processing under applicable law without involvement of a parent or guardian, unless otherwise allowed by law.
+          </p>
+
+          <h2>12. International Use</h2>
+          <p>
+            If you use the app in a jurisdiction with specific privacy rights, local law may give you additional protections. Because the app is designed not to send your core app data to our servers, many standard server-side access or deletion workflows may not apply in the usual way.
+          </p>
+
+          <h2>13. Changes to This Privacy Policy</h2>
+          <p>
+            We may update this Privacy Policy from time to time. The updated version should include a revised effective date.
+          </p>
+
+          <h2>14. Contact</h2>
+          <p>
+            For privacy questions, contact: <a href="mailto:privacy@nortixlabs.com">privacy@nortixlabs.com</a> or <a href="https://nortixlabs.com">https://nortixlabs.com</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer client:visible />
+</Layout>
