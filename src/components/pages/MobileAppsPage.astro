@@ -1,7 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Navbar from '../../components/Navbar.jsx';
-import ComingSoon from '../../components/ComingSoon.jsx';
 import Footer from '../../components/Footer.jsx';
 
 interface Props {
@@ -10,39 +9,334 @@ interface Props {
 
 const { lang = 'en' } = Astro.props;
 
-const titles = {
-    en: "Mobile Apps - Nortixlabs",
-    tr: "Mobil Uygulamalar - Nortixlabs"
-};
-
-const descriptions = {
-    en: "Next-generation mobile experiences crafted by Nortixlabs. We specialize in high-performance, cross-platform applications for modern users.",
-    tr: "Nortixlabs tarafından hazırlanan yeni nesil mobil deneyimler. Modern kullanıcılar için yüksek performanslı, çapraz platform uygulamalarda uzmanlaşıyoruz."
-};
-
-const pageContent = {
+const content = {
     en: {
-        title: "Mobile Applications",
-        desc: "Next-generation mobile experiences are being crafted in our labs. We're bringing the power of Nortix to your pocket."
+        title: "Mobile Apps - Nortixlabs",
+        description: "Explore Nortixlabs mobile products, including Sleep Cutoff, AkademiZ, and Focus Tree.",
+        eyebrow: "Mobile Applications",
+        heroTitle: "Mobile products built around real routines.",
+        heroDesc: "Our mobile apps focus on clarity, usefulness, and daily habits people actually want to keep. Each product is shaped around one specific job and designed to feel straightforward from the first tap.",
+        apps: [
+            {
+                name: "Sleep Cutoff",
+                badge: "Sleep Intelligence",
+                summary: "A calm, privacy-first sleep companion that helps users decide when caffeine should stop and rest should start.",
+                points: [
+                    "Tracks drink timing and estimated caffeine cutoffs",
+                    "Encourages healthier evening routines with a simple interface",
+                    "Built around local-first habits and lightweight daily use"
+                ],
+                accent: "violet",
+                imageSide: "left",
+                kind: "sleep"
+            },
+            {
+                name: "AkademiZ",
+                badge: "Campus Utility",
+                summary: "A student-focused university app that brings announcements, events, and important campus updates into one fast mobile experience.",
+                points: [
+                    "Combines news, events, and notifications in one place",
+                    "Makes university communication easier to discover and follow",
+                    "Designed to feel structured, immediate, and student-friendly"
+                ],
+                accent: "cyan",
+                imageSide: "right",
+                kind: "akademiz"
+            },
+            {
+                name: "Focus Tree",
+                badge: "Coming Soon",
+                summary: "A focus-driven productivity app currently in development, built around sustained work sessions, visible progress, and calm daily momentum.",
+                points: [
+                    "Planned around deep work sessions and simple progress feedback",
+                    "Designed to help users build a more intentional study rhythm",
+                    "Currently in development and not yet available"
+                ],
+                accent: "emerald",
+                imageSide: "left",
+                kind: "focus"
+            }
+        ],
+        ctaTitle: "Let's build the next useful app.",
+        ctaDesc: "If you have a product idea that deserves more than a bloated feature list, we can help shape it into something focused, clear, and ready to ship.",
+        ctaButton: "Start a Conversation"
     },
     tr: {
-        title: "Mobil Uygulamalar",
-        desc: "Laboratuvarlarımızda yeni nesil mobil deneyimler hazırlanıyor. Nortix'in gücünü cebinize getiriyoruz."
+        title: "Mobil Uygulamalar - Nortixlabs",
+        description: "Nortixlabs mobil urunlerini kesfedin: Sleep Cutoff, AkademiZ ve Focus Tree.",
+        eyebrow: "Mobil Uygulamalar",
+        heroTitle: "Gercek kullanim rutinleri etrafinda kurulan mobil urunler.",
+        heroDesc: "Mobil uygulamalarimiz netlik, fayda ve insanlarin surdurmek isteyecegi gunluk aliskanliklar etrafinda sekilleniyor. Her urun belirli bir ihtiyaca odaklaniyor ve ilk dokunustan itibaren sade hissettirecek sekilde tasarlaniyor.",
+        apps: [
+            {
+                name: "Sleep Cutoff",
+                badge: "Uyku Zekasi",
+                summary: "Kullanicilarin kafeini ne zaman birakip dinlenmeye ne zaman gecmesi gerektigini anlamasina yardimci olan sakin ve gizlilik odakli bir uyku arkadasi.",
+                points: [
+                    "Icecek zamanlamasini ve tahmini kafein bitis saatini takip eder",
+                    "Sade bir arayuzle daha saglikli aksam rutinleri olusturur",
+                    "Yerel veriye dayali, hafif ve gunluk kullanima uygun bir yapiya sahiptir"
+                ],
+                accent: "violet",
+                imageSide: "left",
+                kind: "sleep"
+            },
+            {
+                name: "AkademiZ",
+                badge: "Kampus Araci",
+                summary: "Duyurulari, etkinlikleri ve onemli kampus guncellemelerini tek bir hizli mobil deneyimde bir araya getiren ogrenci odakli bir universite uygulamasi.",
+                points: [
+                    "Haberleri, etkinlikleri ve bildirimleri tek yerde toplar",
+                    "Universite iletisimini takip etmeyi daha kolay hale getirir",
+                    "Duzenli, hizli ve ogrenci dostu bir kullanim hissi sunar"
+                ],
+                accent: "cyan",
+                imageSide: "right",
+                kind: "akademiz"
+            },
+            {
+                name: "Focus Tree",
+                badge: "Yakinda",
+                summary: "Uzun sureli calisma seanslari, gorunur ilerleme ve sakin bir gunluk ritim etrafinda tasarlanan, su anda gelistirme asamasindaki bir verimlilik uygulamasi.",
+                points: [
+                    "Derin odak seanslari ve sade ilerleme geri bildirimi etrafinda planlaniyor",
+                    "Kullanicilarin daha bilincli bir ders ritmi kurmasina yardim etmeyi hedefliyor",
+                    "Su anda gelistirme surecinde ve henuz kullanima acik degil"
+                ],
+                accent: "emerald",
+                imageSide: "left",
+                kind: "focus"
+            }
+        ],
+        ctaTitle: "Siradaki faydali uygulamayi birlikte insa edelim.",
+        ctaDesc: "Sisme ozellik listeleri yerine gercekten ise yarayan urunler tasarliyoruz. Elinizde net bir fikre donusebilecek bir dusunce varsa birlikte sekillendirelim.",
+        ctaButton: "Iletisime Gecin"
     }
 };
 
-const t = pageContent[lang];
+const t = content[lang] || content.en;
+
+const accentClasses = {
+    violet: {
+        badge: 'border-violet-500/20 bg-violet-500/10 text-violet-200',
+        bullet: 'bg-violet-400'
+    },
+    cyan: {
+        badge: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200',
+        bullet: 'bg-cyan-400'
+    },
+    emerald: {
+        badge: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200',
+        bullet: 'bg-emerald-400'
+    }
+} as const;
 ---
 
-<Layout title={titles[lang]} description={descriptions[lang]} lang={lang}>
+<Layout title={t.title} description={t.description} lang={lang}>
 	<Navbar lang={lang} client:load />
-	<main>
-		<ComingSoon 
-            lang={lang}
-            client:load 
-            title={t.title}
-            description={t.desc}
-        />
-	</main>
+
+    <main class="pt-24 md:pt-32 pb-20">
+        <section class="container mx-auto px-6">
+            <div class="mx-auto mb-16 max-w-4xl text-center md:mb-20">
+                <p class="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-300">
+                    {t.eyebrow}
+                </p>
+                <h1 class="text-4xl font-bold leading-tight text-white md:text-6xl">
+                    {t.heroTitle}
+                </h1>
+                <p class="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-slate-400">
+                    {t.heroDesc}
+                </p>
+            </div>
+
+            <div>
+                {t.apps.map((app, index) => {
+                    const accent = accentClasses[app.accent as keyof typeof accentClasses];
+                    const isRight = app.imageSide === 'right';
+
+                    return (
+                        <section class={`${index !== 0 ? 'border-t border-white/8' : ''} py-12 md:py-16`}>
+                            <div class={`flex flex-col gap-10 md:items-center md:gap-12 ${isRight ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
+                                <div class="w-full md:w-2/5">
+                                    {app.kind === 'akademiz' ? (
+                                        <div class="product-flash mx-auto max-w-[340px] rounded-2xl border border-white/10 bg-slate-900/70 p-3" style={`animation-delay: ${index * 0.6}s;`}>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div class="overflow-hidden rounded-xl border border-white/10 bg-slate-900">
+                                                    <img
+                                                        src="/akademiz/news.png"
+                                                        alt="AkademiZ news screen"
+                                                        loading="lazy"
+                                                        width="1080"
+                                                        height="2400"
+                                                        class="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                                <div class="overflow-hidden rounded-xl border border-white/10 bg-slate-900">
+                                                    <img
+                                                        src="/akademiz/events.png"
+                                                        alt="AkademiZ events screen"
+                                                        loading="lazy"
+                                                        width="1080"
+                                                        height="2400"
+                                                        class="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 overflow-hidden rounded-xl border border-white/10 bg-slate-900">
+                                                <img
+                                                    src="/akademiz/notifications.png"
+                                                    alt="AkademiZ notifications screen"
+                                                    loading="lazy"
+                                                    width="1080"
+                                                    height="2400"
+                                                    class="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : app.kind === 'sleep' ? (
+                                        <div class="product-flash mx-auto max-w-[340px] rounded-2xl border border-white/10 bg-slate-900/70 p-4" style={`animation-delay: ${index * 0.6}s;`}>
+                                            <div class="rounded-xl border border-white/10 bg-slate-950 p-5">
+                                                <div class="mb-5 flex items-center justify-between">
+                                                    <div>
+                                                        <p class="text-xs uppercase tracking-[0.24em] text-violet-300">Tonight</p>
+                                                        <h3 class="mt-1 text-2xl font-bold text-white">Sleep Cutoff</h3>
+                                                    </div>
+                                                    <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-violet-500/15 text-sm font-bold uppercase tracking-[0.24em] text-violet-200">ZZ</div>
+                                                </div>
+                                                <div class="rounded-xl border border-violet-400/15 bg-violet-500/10 p-4">
+                                                    <p class="text-xs uppercase tracking-[0.2em] text-violet-200/80">Recommended last caffeine</p>
+                                                    <p class="mt-2 text-4xl font-bold text-white">16:30</p>
+                                                    <p class="mt-2 text-sm text-slate-300">Based on your planned bedtime and recent drink log.</p>
+                                                </div>
+                                                <div class="mt-4 grid grid-cols-2 gap-3">
+                                                    <div class="rounded-xl border border-white/10 bg-white/5 p-3">
+                                                        <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Bedtime</p>
+                                                        <p class="mt-2 text-xl font-semibold text-white">23:45</p>
+                                                    </div>
+                                                    <div class="rounded-xl border border-white/10 bg-white/5 p-3">
+                                                        <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Drinks today</p>
+                                                        <p class="mt-2 text-xl font-semibold text-white">3 logged</p>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-4 h-28 rounded-xl border border-white/10 bg-white/5 p-4">
+                                                    <div class="flex h-full items-end gap-2">
+                                                        <div class="h-8 w-full rounded-full bg-violet-300/30"></div>
+                                                        <div class="h-12 w-full rounded-full bg-violet-300/40"></div>
+                                                        <div class="h-20 w-full rounded-full bg-violet-300/60"></div>
+                                                        <div class="h-14 w-full rounded-full bg-cyan-300/45"></div>
+                                                        <div class="h-6 w-full rounded-full bg-cyan-300/25"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div class="product-flash mx-auto max-w-[340px] rounded-2xl border border-white/10 bg-slate-900/70 p-4" style={`animation-delay: ${index * 0.6}s;`}>
+                                            <div class="rounded-xl border border-white/10 bg-slate-950 p-5">
+                                                <div class="mb-5 flex items-center justify-between">
+                                                    <div>
+                                                        <p class="text-xs uppercase tracking-[0.24em] text-emerald-300">Coming Soon</p>
+                                                        <h3 class="mt-1 text-2xl font-bold text-white">Focus Tree</h3>
+                                                    </div>
+                                                    <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/15 text-sm font-bold uppercase tracking-[0.24em] text-emerald-200">FT</div>
+                                                </div>
+                                                <div class="flex items-center justify-between rounded-xl border border-emerald-400/15 bg-emerald-500/10 p-4">
+                                                    <div>
+                                                        <p class="text-xs uppercase tracking-[0.2em] text-emerald-200/80">Current focus block</p>
+                                                        <p class="mt-2 text-3xl font-bold text-white">42 min</p>
+                                                    </div>
+                                                    <div class="flex h-20 w-20 items-end justify-center rounded-full border border-emerald-300/20 bg-slate-950/60">
+                                                        <div class="h-11 w-11 rounded-t-full rounded-b-[0.8rem] bg-gradient-to-t from-emerald-600 to-lime-300"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                                                    <div class="mb-3 flex items-center justify-between">
+                                                        <span class="text-sm font-medium text-white">Weekly growth</span>
+                                                        <span class="text-sm text-emerald-300">+5 sessions</span>
+                                                    </div>
+                                                    <div class="flex items-end gap-2">
+                                                        <div class="h-10 w-full rounded-full bg-emerald-400/20"></div>
+                                                        <div class="h-16 w-full rounded-full bg-emerald-400/30"></div>
+                                                        <div class="h-12 w-full rounded-full bg-emerald-400/25"></div>
+                                                        <div class="h-20 w-full rounded-full bg-emerald-400/50"></div>
+                                                        <div class="h-24 w-full rounded-full bg-lime-300/60"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-4 flex gap-3">
+                                                    <div class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-slate-300">Soon</div>
+                                                    <div class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-slate-300">Focus</div>
+                                                    <div class="flex-1 rounded-xl border border-white/10 bg-emerald-500/15 px-4 py-3 text-center text-sm font-semibold text-emerald-200">Tree</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div class="w-full md:w-3/5">
+                                    <div class={`inline-flex rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] ${accent.badge}`}>
+                                        {app.badge}
+                                    </div>
+                                    <h2 class="mt-5 text-3xl font-bold text-white md:text-5xl">{app.name}</h2>
+                                    <p class="mt-5 max-w-2xl text-lg leading-relaxed text-slate-400">
+                                        {app.summary}
+                                    </p>
+
+                                    <ul class="mt-8 space-y-4">
+                                        {app.points.map((point) => (
+                                            <li class="flex items-start gap-4">
+                                                <span class={`mt-2 h-2.5 w-2.5 rounded-full ${accent.bullet}`}></span>
+                                                <span class="text-base leading-relaxed text-slate-300 md:text-lg">{point}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+                    );
+                })}
+            </div>
+
+            <section class="mt-16 border-t border-white/8 pt-16 text-center md:mt-20">
+                <h2 class="text-3xl font-bold text-white md:text-5xl">{t.ctaTitle}</h2>
+                <p class="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-slate-400">
+                    {t.ctaDesc}
+                </p>
+                <a
+                    href={`${lang === 'en' ? '' : '/tr'}/#contact`}
+                    class="mt-8 inline-flex rounded-full border border-white/10 bg-white px-7 py-4 text-sm font-bold uppercase tracking-[0.18em] text-slate-950 transition-all duration-300 hover:bg-cyan-300"
+                >
+                    {t.ctaButton}
+                </a>
+            </section>
+        </section>
+    </main>
+
 	<Footer lang={lang} client:visible />
+
+    <style>
+        @keyframes productFlash {
+            0%, 100% {
+                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+                opacity: 1;
+            }
+
+            45% {
+                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+                opacity: 1;
+            }
+
+            55% {
+                box-shadow: 0 0 32px rgba(255, 255, 255, 0.12);
+                opacity: 0.82;
+            }
+
+            65% {
+                box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+                opacity: 1;
+            }
+        }
+
+        .product-flash {
+            animation: productFlash 4.8s ease-in-out infinite;
+        }
+    </style>
 </Layout>

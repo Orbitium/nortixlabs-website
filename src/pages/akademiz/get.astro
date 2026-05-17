@@ -1,0 +1,8 @@
+---
+import AkademizGetPage from '../../components/pages/AkademizGetPage.astro';
+
+export const prerender = true;
+const target = Astro.url.searchParams.get('target');
+---
+
+<AkademizGetPage lang="en" target={target} />

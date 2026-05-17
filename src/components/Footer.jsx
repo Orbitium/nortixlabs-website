@@ -10,6 +10,7 @@ export default function Footer({ lang = 'en' }) {
             company: 'Company',
             services: 'Services',
             legal: 'Legal',
+            shop: 'Shop',
             about: 'About Us',
             careers: 'Careers',
             blog: 'Blog',
@@ -28,26 +29,27 @@ export default function Footer({ lang = 'en' }) {
             version: 'Version'
         },
         tr: {
-            desc: 'Yenilikçi yazılım çözümleriyle dijital deneyimlere öncülük ediyoruz.',
-            products: 'Ürünler',
-            company: 'Şirket',
+            desc: 'YenilikÃ§i yazÄ±lÄ±m Ã§Ã¶zÃ¼mleriyle dijital deneyimlere Ã¶ncÃ¼lÃ¼k ediyoruz.',
+            products: 'ÃœrÃ¼nler',
+            company: 'Åirket',
             services: 'Hizmetler',
             legal: 'Yasal',
-            about: 'Hakkımızda',
+            shop: 'Shop',
+            about: 'HakkÄ±mÄ±zda',
             careers: 'Kariyer',
             blog: 'Blog',
-            contact: 'İletişim',
-            saas: 'SaaS Geliştirme',
-            game: 'Oyun Tasarımı',
-            mobile: 'Mobil Çözümler',
-            consulting: 'Danışmanlık',
-            privacy: 'Gizlilik Politikası',
-            terms: 'Kullanım Koşulları',
-            cookies: 'Çerez Politikası',
+            contact: 'Ä°letiÅŸim',
+            saas: 'SaaS GeliÅŸtirme',
+            game: 'Oyun TasarÄ±mÄ±',
+            mobile: 'Mobil Ã‡Ã¶zÃ¼mler',
+            consulting: 'DanÄ±ÅŸmanlÄ±k',
+            privacy: 'Gizlilik PolitikasÄ±',
+            terms: 'KullanÄ±m KoÅŸullarÄ±',
+            cookies: 'Ã‡erez PolitikasÄ±',
             accountDeletion: 'Hesap Silme',
-            rights: 'Tüm hakları saklıdır.',
-            designed: 'Tasarım:',
-            by: 'Nortixlabs Ekibi tarafından.',
+            rights: 'TÃ¼m haklarÄ± saklÄ±dÄ±r.',
+            designed: 'TasarÄ±m:',
+            by: 'Nortixlabs Ekibi tarafÄ±ndan.',
             version: 'Version'
         }
     };
@@ -99,6 +101,9 @@ export default function Footer({ lang = 'en' }) {
                                 </a>
                             </li>
                             <li>
+                                <a href={`${base}/shop`} className="hover:text-cyan-400 transition-colors">{t.shop}</a>
+                            </li>
+                            <li>
                                 <a href={`${base}/akademiz`} className="hover:text-cyan-400 transition-colors">AkademiZ</a>
                             </li>
                         </ul>
@@ -108,7 +113,7 @@ export default function Footer({ lang = 'en' }) {
                         <h4 className="text-white font-semibold mb-6">{t.services}</h4>
                         <ul className="space-y-3 text-sm text-slate-400">
                             <li><a href={`${base}/services/saas`} className="hover:text-cyan-400 transition-colors">{t.saas}</a></li>
-                            <li><a href={`${base}/services/game-development`} className="hover:text-cyan-400 transition-colors">{t.game}</a></li>
+                            <li><a href={`${base}/game-design`} className="hover:text-cyan-400 transition-colors">{t.game}</a></li>
                             <li><a href={`${base}/services/mobile-apps`} className="hover:text-cyan-400 transition-colors">{t.mobile}</a></li>
                             <li><a href="#" className="hover:text-cyan-400 transition-colors">{t.consulting}</a></li>
                         </ul>
@@ -135,7 +140,7 @@ export default function Footer({ lang = 'en' }) {
                             {t.version}: {buildVersion}
                         </p>
                         <p className="text-slate-600 text-xs">
-                        {t.designed} <span className="text-red-500">♥</span> {t.by}
+                        {t.designed} <span className="text-red-500">â™¥</span> {t.by}
                         </p>
                     </div>
                 </div>

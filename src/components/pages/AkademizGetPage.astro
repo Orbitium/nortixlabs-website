@@ -1,0 +1,384 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Props {
+    lang: 'en' | 'tr';
+    target?: string | null;
+}
+
+const { lang = 'en', target = null } = Astro.props;
+
+const normalizeTarget = (value: string | null | undefined) => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    try {
+        return new URL(trimmed, 'https://akademiz.nortixlabs.com');
+    } catch {
+        return null;
+    }
+};
+
+const buildAppOpenUrl = (value: URL | null) => {
+    if (!value) return 'akademiz://';
+
+    const segments = value.pathname
+        .split('/')
+        .map((segment) => decodeURIComponent(segment).trim())
+        .filter(Boolean);
+
+    if (segments.length >= 2 && segments[0] === 'event') {
+        return `akademiz://event/${encodeURIComponent(segments[1])}`;
+    }
+
+    if (segments.length >= 2 && segments[0] === 'news') {
+        return `akademiz://news/${encodeURIComponent(segments[1])}`;
+    }
+
+    if (segments.length >= 3 && segments[0] === 'community' && segments[1] === 'post') {
+        return `akademiz://community/post/${encodeURIComponent(segments[2])}`;
+    }
+
+    if (segments.length >= 2 && segments[0] === 'user') {
+        return `akademiz://user/${encodeURIComponent(segments[1])}`;
+    }
+
+    if (segments.length >= 1 && segments[0] === 'schedule') {
+        const scheduleId = value.searchParams.get('scheduleId');
+        const classKey = value.searchParams.get('classKey');
+        const params = new URLSearchParams();
+        if (scheduleId) params.set('scheduleId', scheduleId);
+        if (classKey) params.set('classKey', classKey);
+        const query = params.toString();
+        return query ? `akademiz://schedule?${query}` : 'akademiz://schedule';
+    }
+
+    return 'akademiz://';
+};
+
+const normalizedTarget = normalizeTarget(target);
+const openAppUrl = buildAppOpenUrl(normalizedTarget);
+const attemptedPath = normalizedTarget
+    ? `${normalizedTarget.pathname}${normalizedTarget.search}`
+    : null;
+
+// Replace these values with the final QR image paths and destination links when available.
+const downloadConfig = {
+    ios: {
+        qrImage: '/akademiz/get/app-store.jpeg',
+        url: 'https://apps.apple.com/tr/app/akademiz/id6762343867',
+    },
+    android: {
+        groupQrImage: '/akademiz/get/google-groups.png',
+        groupUrl: 'https://groups.google.com/g/akademiz-testers',
+        downloadQrImage: '/akademiz/get/play-store.png',
+        downloadUrl: 'https://play.google.com/store/apps/details?id=me.orbitium.akademiz',
+    },
+};
+
+const content = {
+    en: {
+        title: 'Get AkademiZ | NortixLabs',
+        description: 'Download AkademiZ on iOS or join the Android closed test flow.',
+        eyebrow: 'AkademiZ Access',
+        heading: 'Get the app in a few simple steps',
+        intro: 'This page adapts the flow for iPhone and Android users so you can present one clear download experience.',
+        targetNotice:
+            'We could not open the app directly, or the app may not be installed yet. You can try again or install AkademiZ below.',
+        targetLabel: 'Requested link',
+        openAppButton: 'Try Opening in App Again',
+        detectedLabel: 'Detected platform',
+        detectedUnknown: 'We could not detect your device. Pick the path below.',
+        detectedIos: 'iPhone or iPad detected. Scan the iOS QR and install the app.',
+        detectedAndroid: 'Android detected. First join the Google Group, then install the app.',
+        allPlatforms: 'All platforms',
+        iosBadge: 'iOS',
+        iosTitle: 'Scan and install on iPhone',
+        iosDescription: 'If you are on iOS, scan the QR code below to open the app download page and complete the install flow.',
+        iosStep1: 'Open your camera and scan the QR code.',
+        iosStep2: 'Follow the link and install the app.',
+        iosStep3: 'Return here only if you need the Android flow instead.',
+        iosButton: 'Open iOS Link',
+        iosRawLinkLabel: 'Direct link',
+        androidBadge: 'Android Closed Test',
+        androidTitle: 'Join the Android test first',
+        androidDescription: 'Android testers need to join the Google Group before the Play Store closed test link will work.',
+        androidStep1Title: 'Step 1',
+        androidStep1Heading: 'Join the Google Group',
+        androidStep1Body: 'Scan this QR code, open the Google Group invite, and join with the Google account you will use on Play Store.',
+        androidStep1Button: 'Open Google Group',
+        androidRawLinkLabel: 'Direct link',
+        joinHelpLabel: 'Nasıl Katılınır?',
+        joinHelpAlt: 'Google Groups join button guide',
+        androidStep2Title: 'Step 2',
+        androidStep2Heading: 'Download from Google Play',
+        androidStep2Body: 'After joining the group, scan the second QR code and continue to the Play Store closed test download page.',
+        androidStep2Button: 'Open Play Store Link',
+    },
+    tr: {
+        title: 'AkademiZ Edin | NortixLabs',
+        description: 'AkademiZ uygulamasını iOS için indirin veya Android kapalı test akışına katılın.',
+        eyebrow: 'AkademiZ Erişimi',
+        heading: 'Uygulamayı birkaç basit adımda edinin',
+        intro: 'Bu sayfa iPhone ve Android kullanıcıları için akış farkını netleştirir ve sunumda rahat kullanılabilecek sade bir indirme deneyimi sunar.',
+        targetNotice:
+            'Uygulama doğrudan açılamadı veya cihazınızda yüklü olmayabilir. İsterseniz yeniden deneyin ya da aşağıdan AkademiZ uygulamasını yükleyin.',
+        targetLabel: 'İstenen bağlantı',
+        openAppButton: 'Uygulamada Yeniden Açmayı Dene',
+        detectedLabel: 'Algılanan platform',
+        detectedUnknown: 'Cihaz tespit edilemedi. Aşağıdan uygun yolu seçin.',
+        detectedIos: 'iPhone veya iPad algılandı. iOS QR kodunu tarayıp uygulamayı kurun.',
+        detectedAndroid: 'Android algılandı. Önce Google Group grubuna katılın, sonra uygulamayı indirin.',
+        allPlatforms: 'Tüm platformlar',
+        iosBadge: 'iOS',
+        iosTitle: 'iPhone için tara ve yükle',
+        iosDescription: 'iOS kullanıyorsanız, aşağıdaki QR kodunu tarayarak uygulama indirme sayfasını açın ve kurulum adımlarını tamamlayın.',
+        iosStep1: 'Kamerayı açın ve QR kodunu tarayın.',
+        iosStep2: 'Açılan bağlantıdan uygulamayı yükleyin.',
+        iosStep3: 'Yalnızca Android akışına ihtiyacınız varsa bu sayfaya geri dönün.',
+        iosButton: 'iOS Bağlantısını Aç',
+        iosRawLinkLabel: 'Doğrudan bağlantı',
+        androidBadge: 'Android Kapalı Test',
+        androidTitle: 'Android testi için önce gruba katılın',
+        androidDescription: 'Android test kullanıcılarının, Play Store kapalı test bağlantısı çalışmadan önce Google Group grubuna katılması gerekir.',
+        androidStep1Title: 'Adım 1',
+        androidStep1Heading: 'Google Group grubuna katılın',
+        androidStep1Body: 'Bu QR kodunu tarayın, Google Group davetini açın ve Play Store için kullanacağınız Google hesabı ile gruba katılın.',
+        androidStep1Button: 'Google Group Aç',
+        androidRawLinkLabel: 'Doğrudan bağlantı',
+        joinHelpLabel: 'How to Join?',
+        joinHelpAlt: 'Google Groups katılım düğmesi rehberi',
+        androidStep2Title: 'Adım 2',
+        androidStep2Heading: 'Google Play üzerinden indirin',
+        androidStep2Body: 'Gruba katıldıktan sonra ikinci QR kodunu tarayın ve Play Store kapalı test indirme sayfasına gidin.',
+        androidStep2Button: 'Play Store Bağlantısını Aç',
+    },
+} as const;
+
+const t = content[lang] ?? content.en;
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main class="relative overflow-hidden pt-28 pb-20 md:pt-32">
+        <section class="container mx-auto px-6">
+            <div class="mx-auto max-w-5xl">
+                <div class="mb-8 text-center md:mb-12">
+                    <div class="mb-4 inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-300">
+                        {t.eyebrow}
+                    </div>
+                    <h1 class="mx-auto max-w-3xl text-4xl font-bold leading-tight text-white md:text-6xl">
+                        {t.heading}
+                    </h1>
+                    <p class="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-400 md:text-lg">
+                        {t.intro}
+                    </p>
+                </div>
+
+                {attemptedPath && (
+                    <div class="glass-card mb-8 rounded-[2rem] border border-amber-300/20 bg-amber-400/5 p-6 md:mb-10 md:p-8">
+                        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">{t.targetLabel}</p>
+                        <p class="mt-3 text-base leading-7 text-slate-300">{t.targetNotice}</p>
+                        <code class="mt-4 block overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-cyan-200">
+                            {attemptedPath}
+                        </code>
+                        <a
+                            href={openAppUrl}
+                            class="mt-5 inline-flex items-center justify-center rounded-xl bg-amber-300 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-200"
+                        >
+                            {t.openAppButton}
+                        </a>
+                    </div>
+                )}
+
+                <div class="glass-card mb-8 rounded-[2rem] border border-white/10 p-6 md:mb-10 md:p-8">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{t.detectedLabel}</p>
+                            <p id="platform-message" class="mt-2 text-lg text-slate-200">{t.detectedUnknown}</p>
+                        </div>
+                        <div id="platform-chip" class="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-300">
+                            {t.allPlatforms}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-[1fr_1.15fr]">
+                    <section id="ios-panel" class="glass-card rounded-[2rem] border border-white/10 p-6 md:p-8">
+                        <div class="mb-6 flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">{t.iosBadge}</p>
+                                <h2 class="mt-2 text-2xl font-bold text-white">{t.iosTitle}</h2>
+                            </div>
+                            <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3 text-cyan-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 18.5c1.7 0 3.1-1.4 3.1-3.1V8.6c0-1.7-1.4-3.1-3.1-3.1S8.9 6.9 8.9 8.6v6.8c0 1.7 1.4 3.1 3.1 3.1zM8.5 8.9h7M8.5 15.1h7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <p class="mb-6 text-slate-400">{t.iosDescription}</p>
+
+                        <div class="mb-6 flex items-center justify-center rounded-[1.5rem] border border-dashed border-white/15 bg-slate-950/70 p-5">
+                            <img
+                                src={downloadConfig.ios.qrImage}
+                                alt="AkademiZ iOS QR"
+                                class="aspect-square w-full max-w-[220px] rounded-2xl object-cover"
+                                width="440"
+                                height="440"
+                            />
+                        </div>
+
+                        <ul class="mb-6 space-y-3 text-sm text-slate-300 md:text-base">
+                            <li class="flex gap-3">
+                                <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400"></span>
+                                <span>{t.iosStep1}</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400"></span>
+                                <span>{t.iosStep2}</span>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400"></span>
+                                <span>{t.iosStep3}</span>
+                            </li>
+                        </ul>
+
+                        <a href={downloadConfig.ios.url} class="inline-flex w-full items-center justify-center rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300">
+                            {t.iosButton}
+                        </a>
+                        <p class="mt-4 text-sm text-slate-400">{t.iosRawLinkLabel}</p>
+                        <a href={downloadConfig.ios.url} class="mt-1 block break-all text-sm text-cyan-300 underline decoration-cyan-400/40 underline-offset-4 hover:text-white">
+                            {downloadConfig.ios.url}
+                        </a>
+                    </section>
+
+                    <section id="android-panel" class="glass-card rounded-[2rem] border border-white/10 p-6 md:p-8">
+                        <div class="mb-6 flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">{t.androidBadge}</p>
+                                <h2 class="mt-2 text-2xl font-bold text-white">{t.androidTitle}</h2>
+                            </div>
+                            <div class="rounded-2xl border border-violet-400/20 bg-violet-400/10 p-3 text-violet-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 4.5L7.5 2.7m9 1.8l-1.5-1.8M7.2 9h9.6M8.4 19h7.2c1 0 1.8-.8 1.8-1.8V9.3c0-1-.8-1.8-1.8-1.8H8.4c-1 0-1.8.8-1.8 1.8v7.9c0 1 .8 1.8 1.8 1.8zM9 19v2.5m6-2.5v2.5M4.5 9.7V16m15-6.3V16" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <p class="mb-6 text-slate-400">{t.androidDescription}</p>
+
+                        <div class="grid gap-5 md:grid-cols-2">
+                            <article class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">{t.androidStep1Title}</p>
+                                <h3 class="mt-2 text-xl font-bold text-white">{t.androidStep1Heading}</h3>
+                                <p class="mt-3 text-sm leading-6 text-slate-400">{t.androidStep1Body}</p>
+
+                                <div class="mt-5 flex items-center justify-center rounded-[1.25rem] border border-dashed border-white/15 bg-slate-950/80 p-4">
+                                    <img
+                                        src={downloadConfig.android.groupQrImage}
+                                        alt="AkademiZ Android Google Group QR"
+                                        class="aspect-square w-full max-w-[180px] rounded-2xl object-cover"
+                                        width="360"
+                                        height="360"
+                                    />
+                                </div>
+
+                                <div class="mt-5">
+                                    <a href={downloadConfig.android.groupUrl} class="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 font-semibold text-slate-950 transition hover:bg-violet-300">
+                                        {t.androidStep1Button}
+                                    </a>
+                                    <p class="mt-4 text-sm text-slate-400">{t.androidRawLinkLabel}</p>
+                                    <a href={downloadConfig.android.groupUrl} class="mt-1 block break-all text-sm text-violet-300 underline decoration-violet-400/40 underline-offset-4 hover:text-white">
+                                        {downloadConfig.android.groupUrl}
+                                    </a>
+                                    <details class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                                        <summary class="cursor-pointer list-none font-semibold text-white">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <span>{t.joinHelpLabel}</span>
+                                                <span class="text-violet-300">+</span>
+                                            </div>
+                                        </summary>
+                                        <div class="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                                            <img
+                                                src="/akademiz/get/how-to-join-groups.png"
+                                                alt={t.joinHelpAlt}
+                                                class="w-full rounded-xl"
+                                                width="505"
+                                                height="901"
+                                            />
+                                        </div>
+                                    </details>
+                                </div>
+                            </article>
+
+                            <article class="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">{t.androidStep2Title}</p>
+                                <h3 class="mt-2 text-xl font-bold text-white">{t.androidStep2Heading}</h3>
+                                <p class="mt-3 text-sm leading-6 text-slate-400">{t.androidStep2Body}</p>
+
+                                <div class="mt-5 flex items-center justify-center rounded-[1.25rem] border border-dashed border-white/15 bg-slate-950/80 p-4">
+                                    <img
+                                        src={downloadConfig.android.downloadQrImage}
+                                        alt="AkademiZ Android download QR"
+                                        class="aspect-square w-full max-w-[180px] rounded-2xl object-cover"
+                                        width="360"
+                                        height="360"
+                                    />
+                                </div>
+
+                                <div class="mt-5">
+                                    <a href={downloadConfig.android.downloadUrl} class="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300">
+                                        {t.androidStep2Button}
+                                    </a>
+                                    <p class="mt-4 text-sm text-slate-400">{t.androidRawLinkLabel}</p>
+                                    <a href={downloadConfig.android.downloadUrl} class="mt-1 block break-all text-sm text-cyan-300 underline decoration-cyan-400/40 underline-offset-4 hover:text-white">
+                                        {downloadConfig.android.downloadUrl}
+                                    </a>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>
+
+<script define:vars={{
+    detectedUnknown: t.detectedUnknown,
+    detectedIos: t.detectedIos,
+    detectedAndroid: t.detectedAndroid,
+    allPlatforms: t.allPlatforms,
+    iosBadge: t.iosBadge,
+    androidBadge: t.androidBadge,
+}}>
+    const platformMessage = document.getElementById('platform-message');
+    const platformChip = document.getElementById('platform-chip');
+    const iosPanel = document.getElementById('ios-panel');
+    const androidPanel = document.getElementById('android-panel');
+
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIos = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+
+    if (isIos) {
+        if (platformMessage) platformMessage.textContent = detectedIos;
+        if (platformChip) platformChip.textContent = iosBadge;
+        iosPanel?.classList.add('ring-1', 'ring-cyan-400/30');
+    } else if (isAndroid) {
+        if (platformMessage) platformMessage.textContent = detectedAndroid;
+        if (platformChip) platformChip.textContent = androidBadge;
+        androidPanel?.classList.add('ring-1', 'ring-violet-400/30');
+    } else {
+        if (platformMessage) platformMessage.textContent = detectedUnknown;
+        if (platformChip) platformChip.textContent = allPlatforms;
+    }
+</script>

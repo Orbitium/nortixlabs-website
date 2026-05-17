@@ -50,6 +50,7 @@ const DEFAULT_LESSON_DURATION_MINUTES = 45;
 const ADMIN_SCHEDULE_WORKSPACE_CACHE_KEY = 'akademiz-admin-schedule-workspace-v1';
 const ADMIN_SCHEDULE_EDITOR_CACHE_KEY = 'akademiz-admin-schedule-editor-v1';
 const ADMIN_SCHEDULE_SELECTION_CACHE_KEY = 'akademiz-admin-schedule-selection-v1';
+const EMPTY_SCHEDULE_ID = '__empty_schedule__';
 const ADMIN_DEPARTMENT_YEAR_SELECTION_KEY = 'akademiz-admin-department-years-v1';
 const ADMIN_ACTIVE_TAB_STORAGE_KEY = 'akademiz-admin-active-tab-v1';
 const ADMIN_LOCAL_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -973,7 +974,18 @@ const useScheduleWorkspace = () => {
         }
     }, [schedules, selectedScheduleId]);
 
-    const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0];
+    const virtualEmptySchedule = schedules.length === 0
+        ? normalizeScheduleSummary({
+            id: EMPTY_SCHEDULE_ID,
+            programName: '',
+            academicYear: '',
+            semester: '',
+            availableClassKeys: classes.map((item) => item.key),
+            manualClassKeys: [],
+            schedule: {}
+        })
+        : null;
+    const selectedSchedule = schedules.find((schedule) => schedule.id === selectedScheduleId) || schedules[0] || virtualEmptySchedule;
     const availableClassKeys = selectedSchedule?.availableClassKeys || [];
     const availableClassKeySignature = availableClassKeys.join('|');
 
@@ -2151,7 +2163,12 @@ const ScheduleManager = () => {
     const [editorState, setEditorState] = useState(null);
     const [timeSlotState, setTimeSlotState] = useState(null);
     const [quickAddState, setQuickAddState] = useState(null);
-    const editorPayload = selectedSchedule ? editorDrafts[selectedSchedule.id] || null : null;
+    const isVirtualSchedule = selectedSchedule?.id === EMPTY_SCHEDULE_ID;
+    const editorPayload = React.useMemo(() => {
+        if (!selectedSchedule) return null;
+        if (isVirtualSchedule) return editorDrafts[selectedSchedule.id] || createEmptyScheduleEditorPayload(selectedSchedule);
+        return editorDrafts[selectedSchedule.id] || null;
+    }, [editorDrafts, isVirtualSchedule, selectedSchedule]);
     const selectedClassInfo = classes.find((item) => item.key === selectedClassKey) || null;
     const availableScheduleFaculties = React.useMemo(
         () => mergeFacultyGradesFromClasses(faculties, classes),
@@ -2163,7 +2180,7 @@ const ScheduleManager = () => {
     const selectableGrades = selectedScheduleDepartment?.grades || [];
     const selectedClassState = buildEditorClassState(editorPayload, selectedClassKey);
     const scheduleBoard = buildScheduleBoard(selectedClassState);
-    const isEditorRefreshing = Boolean(selectedSchedule && editorLoading && !editorPayload);
+    const isEditorRefreshing = Boolean(selectedSchedule && !isVirtualSchedule && editorLoading && !editorPayload);
     const selectedCell = editorState
         ? scheduleBoard.cellMap[makeScheduleCellKey(editorState.dayKey, editorState.time)] || createEmptyScheduleCell(editorState.dayKey, editorState.time)
         : null;
@@ -2173,7 +2190,7 @@ const ScheduleManager = () => {
         let cancelled = false;
 
         const loadEditor = async () => {
-            if (!selectedSchedule) {
+            if (!selectedSchedule || isVirtualSchedule) {
                 setEditorLoading(false);
                 return;
             }
@@ -2216,7 +2233,7 @@ const ScheduleManager = () => {
         return () => {
             cancelled = true;
         };
-    }, [selectedSchedule?.id, loadedScheduleIds]);
+    }, [isVirtualSchedule, selectedSchedule?.id, loadedScheduleIds]);
 
     useEffect(() => {
         if (!selectedSchedule) {
@@ -2289,9 +2306,22 @@ const ScheduleManager = () => {
     };
 
     useEffect(() => {
-        if (!selectedSchedule || !editorPayload) return;
+        if (!selectedSchedule || !editorPayload || isVirtualSchedule) return;
         writeScheduleEditorCache(selectedSchedule.id, editorPayload);
-    }, [selectedSchedule?.id, editorPayload]);
+    }, [editorPayload, isVirtualSchedule, selectedSchedule?.id]);
+
+    const applyDraftClassSchedule = React.useCallback((nextClassSchedule) => {
+        if (!selectedSchedule || !selectedClassKey) return;
+
+        setEditorDrafts((prev) => {
+            const basePayload = prev[selectedSchedule.id] || createEmptyScheduleEditorPayload(selectedSchedule);
+            return {
+                ...prev,
+                [selectedSchedule.id]: applyLocalClassScheduleToPayload(basePayload, selectedClassKey, nextClassSchedule)
+            };
+        });
+        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+    }, [selectedClassKey, selectedSchedule]);
 
     const openEditor = (cell) => {
         const existingLesson = cell.manualLessons[0] || cell.effectiveLessons[0] || null;
@@ -2397,11 +2427,7 @@ const ScheduleManager = () => {
             }
         );
 
-        setEditorDrafts((prev) => ({
-            ...prev,
-            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
-        }));
-        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        applyDraftClassSchedule(nextClassSchedule);
         setError('');
         setNotice('Program taslağı güncellendi. API isteği için sayfadaki kaydet butonunu kullanın.');
         setEditorState(null);
@@ -2417,11 +2443,7 @@ const ScheduleManager = () => {
             editorState.time
         );
 
-        setEditorDrafts((prev) => ({
-            ...prev,
-            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
-        }));
-        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        applyDraftClassSchedule(nextClassSchedule);
         setError('');
         setNotice('Program taslağından manuel ders kaldırıldı. API isteği için sayfadaki kaydet butonunu kullanın.');
         setEditorState(null);
@@ -2461,11 +2483,7 @@ const ScheduleManager = () => {
             );
         }
 
-        setEditorDrafts((prev) => ({
-            ...prev,
-            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
-        }));
-        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        applyDraftClassSchedule(nextClassSchedule);
         setError('');
         setNotice(timeSlotState.isNew
             ? 'Saat satırı taslağa eklendi. API isteği için sayfadaki kaydet butonunu kullanın.'
@@ -2481,11 +2499,7 @@ const ScheduleManager = () => {
             timeSlotState.previousTime
         );
 
-        setEditorDrafts((prev) => ({
-            ...prev,
-            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
-        }));
-        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        applyDraftClassSchedule(nextClassSchedule);
         setError('');
         setNotice('Saat satırı ve bu saate bağlı manuel kayıtlar taslaktan kaldırıldı. API isteği için sayfadaki kaydet butonunu kullanın.');
         setTimeSlotState(null);
@@ -2515,11 +2529,7 @@ const ScheduleManager = () => {
                 parsedLessons
             );
 
-        setEditorDrafts((prev) => ({
-            ...prev,
-            [selectedSchedule.id]: applyLocalClassScheduleToPayload(prev[selectedSchedule.id], selectedClassKey, nextClassSchedule)
-        }));
-        setDirtyScheduleIds((prev) => ({ ...prev, [selectedSchedule.id]: true }));
+        applyDraftClassSchedule(nextClassSchedule);
         setError('');
         const appliedDayLabel = dayEntries.length > 0
             ? dayEntries.map(([dayKey]) => getDayLabel(dayKey)).join(', ')
@@ -2535,6 +2545,38 @@ const ScheduleManager = () => {
             setSaving(true);
             setError('');
             setNotice('');
+
+            if (isVirtualSchedule) {
+                const createdSchedule = await scheduleApi.createSchedule({
+                    programName: buildDefaultProgramName({
+                        selectedClassInfo,
+                        selectedScheduleDepartment,
+                        selectedDepartmentKey,
+                        selectedClassKey
+                    }),
+                    academicYear: getDefaultAcademicYear(),
+                    semester: getDefaultSemester(),
+                    manualOverrideEnabled: true,
+                    manualSchedule: editorPayload.manualSchedule || {}
+                });
+
+                setEditorDrafts((prev) => {
+                    const nextDrafts = { ...prev, [createdSchedule.id]: createdSchedule };
+                    delete nextDrafts[EMPTY_SCHEDULE_ID];
+                    return nextDrafts;
+                });
+                setDirtyScheduleIds((prev) => {
+                    const nextDirty = { ...prev, [createdSchedule.id]: false };
+                    delete nextDirty[EMPTY_SCHEDULE_ID];
+                    return nextDirty;
+                });
+                setLoadedScheduleIds((prev) => ({ ...prev, [createdSchedule.id]: true }));
+                writeScheduleEditorCache(createdSchedule.id, createdSchedule);
+                await reloadSchedules();
+                setSelectedScheduleId(createdSchedule.id);
+                setNotice('İlk ders programı oluşturuldu ve değişiklikler kaydedildi.');
+                return;
+            }
 
             const response = await scheduleApi.saveManualSchedule({
                 scheduleId: selectedSchedule.id,
@@ -2597,12 +2639,14 @@ const ScheduleManager = () => {
                 </button>
             </section>
 
-            {(loadError || error || notice) && (
+            {(loadError || error || notice || isVirtualSchedule) && (
                 <div className={`rounded-[2rem] border px-5 py-4 text-sm ${(loadError || error)
                     ? 'border-red-400/20 bg-red-400/10 text-red-100'
-                    : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
+                    : isVirtualSchedule
+                        ? 'border-amber-400/20 bg-amber-400/10 text-amber-100'
+                        : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
                     }`}>
-                    {loadError || error || notice}
+                    {loadError || error || notice || 'Henüz kayıtlı bir ders programı yok. Panel boş veriyi boş haftalık tablo olarak gösteriyor.'}
                 </div>
             )}
 
@@ -5059,6 +5103,40 @@ const normalizeScheduleEditor = (schedule) => ({
         Object.entries((schedule.effectiveSchedule || schedule.schedule || {})).map(([classKey, dayMap]) => [classKey, normalizeClassSchedule(dayMap)])
     )
 });
+
+const createEmptyScheduleEditorPayload = (schedule = {}) => normalizeScheduleEditor({
+    ...schedule,
+    autoSchedule: schedule.autoSchedule || {},
+    manualSchedule: schedule.manualSchedule || {},
+    effectiveSchedule: schedule.effectiveSchedule || schedule.schedule || {},
+    manualOverrideEnabled: schedule.manualOverrideEnabled ?? true
+});
+
+const getDefaultAcademicYear = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    return month >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+};
+
+const getDefaultSemester = (date = new Date()) => {
+    const month = date.getMonth() + 1;
+    return month >= 8 || month <= 1 ? 'Güz' : 'Bahar';
+};
+
+const buildDefaultProgramName = ({
+    selectedClassInfo,
+    selectedScheduleDepartment,
+    selectedDepartmentKey,
+    selectedClassKey
+}) => {
+    const baseName = selectedClassInfo?.departmentName
+        || selectedScheduleDepartment?.name
+        || selectedDepartmentKey
+        || selectedClassKey
+        || 'Yeni Program';
+
+    return String(baseName).trim() || 'Yeni Program';
+};
 
 const mergeClassSchedules = (autoSchedule, manualSchedule, overrideEnabled) => {
     const normalizedAuto = normalizeClassSchedule(autoSchedule || createEmptyWeekSchedule());

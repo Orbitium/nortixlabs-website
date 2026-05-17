@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "6536RGM23A.me.orbitium.akademiz",
+        "paths": [
+          "/event/*",
+          "/community/post/*",
+          "/news/*",
+          "/user/*",
+          "/schedule*"
+        ]
+      }
+    ]
+  }
+}

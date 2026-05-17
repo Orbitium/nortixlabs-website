@@ -1,0 +1,99 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../Navbar.jsx';
+import Footer from '../Footer.jsx';
+import ShopCatalog from '../shop/ShopCatalog.jsx';
+import { getProducts } from '../../lib/shopify.js';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const copy = {
+    en: {
+        title: 'Nortixlabs Shop - 3D Printed Items',
+        description: 'Shop custom 3D printed items from Nortixlabs for desks, shelves, and everyday setups.',
+        eyebrow: 'Nortixlabs Shop',
+        heading: '3D printed pieces made for everyday spaces.',
+        intro: 'Explore a small collection of practical and display-ready prints designed to fit naturally into your desk setup, room, or workspace.',
+        addToCart: 'Add to cart',
+        adding: 'Adding...',
+        cartNote: 'Small-batch designs for work and play',
+        cartLabel: 'Cart',
+        checkout: 'Checkout',
+        subtotal: 'Subtotal',
+        itemSingular: 'item',
+        itemPlural: 'items',
+        addedToCart: 'Item added to your cart.',
+        errorFallback: 'Something went wrong while updating your cart.',
+        emptyTitle: 'Products are coming soon.',
+        emptyText: 'Connect your Shopify products and they will appear here automatically.',
+    },
+    tr: {
+        title: 'Nortixlabs Shop - 3D Baski Urunler',
+        description: 'Nortixlabs tarafindan tasarlanan masaustu, raf ve gunluk kullanim icin 3D baski urunleri kesfedin.',
+        eyebrow: 'Nortixlabs Shop',
+        heading: 'Gunluk alanlar icin tasarlanmis 3D baski urunler.',
+        intro: 'Masa duzeni, oda yerlesimi ve calisma alanlari icin hazirlanan pratik ve sergilenebilir urunlerden olusan kucuk bir seckiyi kesfedin.',
+        addToCart: 'Sepete ekle',
+        adding: 'Ekleniyor...',
+        cartNote: 'Calisma ve yasam alanlari icin kucuk seri tasarimlar',
+        cartLabel: 'Sepet',
+        checkout: 'Odeme',
+        subtotal: 'Ara toplam',
+        itemSingular: 'urun',
+        itemPlural: 'urun',
+        addedToCart: 'Urun sepete eklendi.',
+        errorFallback: 'Sepet guncellenirken bir sorun olustu.',
+        emptyTitle: 'Urunler yakinda burada olacak.',
+        emptyText: 'Shopify urunlerinizi bagladiginizda burada otomatik olarak gorunecekler.',
+    }
+};
+
+const t = copy[lang] || copy.en;
+let products = [];
+
+try {
+    products = await getProducts(Astro.locals, 12);
+} catch (error) {
+    console.error('Failed to load Shopify products for shop page:', error);
+}
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main class="relative px-6 pb-20 pt-32">
+        <section class="mx-auto max-w-6xl">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <p class="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">
+                    {t.eyebrow}
+                </p>
+                <h1 class="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+                    {t.heading}
+                </h1>
+                <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
+                    {t.intro}
+                </p>
+                <p class="mt-5 text-xs uppercase tracking-[0.26em] text-slate-500">
+                    {t.cartNote}
+                </p>
+            </div>
+
+            {products.length > 0 ? (
+                <ShopCatalog products={products} labels={t} client:load />
+            ) : (
+                <div class="glass-card mx-auto max-w-2xl rounded-[28px] p-10 text-center">
+                    <h2 class="text-2xl font-semibold text-white">{t.emptyTitle}</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400 md:text-base">
+                        {t.emptyText}
+                    </p>
+                </div>
+            )}
+        </section>
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>

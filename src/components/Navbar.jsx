@@ -17,7 +17,7 @@ export default function Navbar({ lang = 'en' }) {
 
     const languages = [
         { code: 'en', name: 'English' },
-        { code: 'tr', name: 'Türkçe' }
+        { code: 'tr', name: 'TÃ¼rkÃ§e' }
     ];
 
     const currentLang = languages.find((language) => language.code === lang) || languages[0];
@@ -28,19 +28,17 @@ export default function Navbar({ lang = 'en' }) {
             { name: 'Home', href: '/' },
             { name: 'Services', href: '/#services' },
             { name: 'About', href: '/#about' },
+            { name: 'Shop', href: '/shop' },
             { name: 'Careers', href: '/careers' },
-            { name: 'AkademiZ', href: '/akademiz' },
-            { name: 'BillTicket', href: '/billticket' },
             { name: 'Contact', href: '/#contact' },
         ],
         tr: [
             { name: 'Ana Sayfa', href: '/tr' },
             { name: 'Hizmetler', href: '/tr#services' },
-            { name: 'Hakkımızda', href: '/tr#about' },
+            { name: 'HakkÄ±mÄ±zda', href: '/tr#about' },
+            { name: 'Shop', href: '/tr/shop' },
             { name: 'Kariyer', href: '/tr/careers' },
-            { name: 'AkademiZ', href: '/tr/akademiz' },
-            { name: 'BillTicket', href: '/tr/billticket' },
-            { name: 'İletişim', href: '/tr#contact' },
+            { name: 'Ä°letiÅŸim', href: '/tr#contact' },
         ]
     };
 
@@ -134,7 +132,7 @@ export default function Navbar({ lang = 'en' }) {
                         href={contactHref}
                         className="px-5 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/50 transition-all duration-300 text-sm font-medium text-white"
                     >
-                        {lang === 'en' ? 'Get in Touch' : 'İletişime Geç'}
+                        {lang === 'en' ? 'Get in Touch' : 'Ä°letiÅŸime GeÃ§'}
                     </a>
                 </div>
 

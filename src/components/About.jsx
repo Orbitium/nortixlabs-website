@@ -7,9 +7,9 @@ export default function About({ lang = 'en' }) {
 
     const content = {
         en: {
-            title: "The Architects of",
-            nortix: "Nortix",
-            alt: "The Architects of Nortix",
+            title: "The Architects of Virtual",
+            nortix: "Realities",
+            alt: "The Architects of Virtual Realities",
             p1: "Founded with a vision to revolutionize digital interaction, Nortixlabs stands as the creative powerhouse behind the acclaimed Nortix Launcher.",
             p2: "We are more than just a software company; we are a collective of engineers, designers, and visionaries dedicated to pushing the boundaries of what's possible on the web and desktop.",
             p3: "From maintaining the robust infrastructure that supports thousands of concurrent users on Nortix, to developing bespoke SaaS solutions for enterprise clients, our mission remains the same:",

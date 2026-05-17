@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "me.orbitium.akademiz",
+      "sha256_cert_fingerprints": [
+        "38:5B:F4:73:CA:C7:57:03:D9:37:07:5B:35:83:AA:79:73:D6:7E:8C:5E:5A:A8:BA:18:69:FF:EB:D7:B1:DA:85",
+        "F9:AE:DD:6B:5E:CF:65:9B:1F:FE:51:E5:98:96:57:AE:27:E6:32:8C:3A:E9:61:7B:56:13:FE:A8:D1:64:BA:17"
+      ]
+    }
+  }
+]
