@@ -4,7 +4,7 @@ import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import {
     LogOut, ShieldAlert, GraduationCap, LayoutDashboard,
     Settings, Users, MessageSquare, Calendar, Plus, Bell,
-    X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2,
+    X, Upload, Image as ImageIcon, Send, Loader2, Pencil, Trash2, Inbox,
     ChevronDown, RefreshCw
 } from 'lucide-react';
 
@@ -13,7 +13,8 @@ const ADMIN_TAB_ROUTES = {
     dashboard: '/akademiz/admin',
     schedule: '/akademiz/admin/ders-programlari',
     'class-management': '/akademiz/admin/sinif-yonetimi',
-    notifications: '/akademiz/admin/notifications'
+    notifications: '/akademiz/admin/notifications',
+    feedback: '/akademiz/admin/feedback'
 };
 
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
     { id: 'schedule', label: 'Ders Programları', icon: Settings },
     { id: 'events', label: 'Etkinlikler', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'feedback', label: 'Geri Bildirimler', icon: Inbox },
     { id: 'community', label: 'Topluluk', icon: Users },
     { id: 'news', label: 'Haberler', icon: MessageSquare }
 ];
@@ -112,6 +114,11 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
     const [newsLoading, setNewsLoading] = useState(false);
     const [newsError, setNewsError] = useState('');
     const [newsLoaded, setNewsLoaded] = useState(false);
+    const [feedbackItems, setFeedbackItems] = useState([]);
+    const [feedbackLoading, setFeedbackLoading] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+    const [feedbackLoaded, setFeedbackLoaded] = useState(false);
+    const [feedbackSearch, setFeedbackSearch] = useState('');
     const accountMenuRef = useRef(null);
     const activeNavItem = NAV_ITEMS.find((item) => item.id === activeTab);
 
@@ -203,6 +210,14 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
 
         loadNewsItems();
     }, [user, activeTab, newsLoaded]);
+
+    useEffect(() => {
+        if (!user || activeTab !== 'feedback' || feedbackLoaded) {
+            return;
+        }
+
+        loadFeedbackItems();
+    }, [user, activeTab, feedbackLoaded]);
 
     const handleGoogleSignIn = async () => {
         try {
@@ -354,6 +369,20 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
             setNewsError(err.message || 'Haberler yüklenemedi.');
         } finally {
             setNewsLoading(false);
+        }
+    };
+
+    const loadFeedbackItems = async () => {
+        try {
+            setFeedbackLoading(true);
+            setFeedbackError('');
+            const items = await feedbackApi.listItems();
+            setFeedbackItems(items);
+            setFeedbackLoaded(true);
+        } catch (err) {
+            setFeedbackError(err.message || 'Geri bildirimler yüklenemedi.');
+        } finally {
+            setFeedbackLoading(false);
         }
     };
 
@@ -695,6 +724,17 @@ const AdminPanel = ({ initialTab = 'dashboard' }) => {
                     )}
 
                     {activeTab === 'notifications' && <NotificationsTester />}
+
+                    {activeTab === 'feedback' && (
+                        <FeedbackInbox
+                            items={feedbackItems}
+                            loading={feedbackLoading}
+                            error={feedbackError}
+                            search={feedbackSearch}
+                            onSearchChange={setFeedbackSearch}
+                            onRefresh={loadFeedbackItems}
+                        />
+                    )}
 
                     {activeTab === 'community' && (
                         <div className="space-y-6">
@@ -4341,6 +4381,15 @@ const newsApi = {
     }
 };
 
+const feedbackApi = {
+    async listItems(limit = 100) {
+        const data = await apiFetch(`/admin/feedback?limit=${limit}`, { authRequired: true });
+        return Array.isArray(data)
+            ? data.map(normalizeFeedbackItem)
+            : [];
+    }
+};
+
 const eventApi = {
     async listEvents() {
         const data = await apiFetch('/admin/events', { authRequired: true });
@@ -4511,6 +4560,154 @@ const academicFacultyApi = {
         });
     }
 };
+
+const normalizeFeedbackItem = (item = {}) => ({
+    id: item.id ?? '',
+    subject: typeof item.subject === 'string' ? item.subject : '',
+    message: typeof item.message === 'string' ? item.message : '',
+    email: typeof item.email === 'string' ? item.email : '',
+    userId: typeof item.userId === 'string' ? item.userId : '',
+    platform: typeof item.platform === 'string' ? item.platform : '',
+    timestamp: item.timestamp || item.createdAt || null,
+    createdAt: item.createdAt || item.timestamp || null
+});
+
+const FeedbackInbox = ({
+    items,
+    loading,
+    error,
+    search,
+    onSearchChange,
+    onRefresh
+}) => {
+    const normalizedSearch = search.trim().toLocaleLowerCase('tr');
+    const filteredItems = normalizedSearch
+        ? items.filter((item) => {
+            const haystack = [
+                item.subject,
+                item.message,
+                item.email,
+                item.userId,
+                item.platform
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLocaleLowerCase('tr');
+            return haystack.includes(normalizedSearch);
+        })
+        : items;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h3 className="text-2xl font-bold text-white">Geri Bildirim Kutusu</h3>
+                    <p className="mt-2 text-sm text-slate-500">Mobil uygulamadan gelen son geri bildirim kayıtları burada listelenir.</p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <label className="flex min-w-[280px] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+                        <Inbox size={16} className="text-slate-500" />
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(event) => onSearchChange(event.target.value)}
+                            placeholder="Konu, mesaj, e-posta veya kullanıcı ara"
+                            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                        />
+                    </label>
+                    <button
+                        onClick={onRefresh}
+                        disabled={loading}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-200 transition-all hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                        Yenile
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <StatCard title="Toplam Kayıt" value={String(items.length)} change="Yüklenen geri bildirim satırı" />
+                <StatCard title="Filtrelenmiş" value={String(filteredItems.length)} change="Arama sonucunda görünen" />
+                <StatCard
+                    title="E-postalı Kayıt"
+                    value={String(items.filter((item) => item.email).length)}
+                    change="Geri dönüş yapılabilir kayıt"
+                />
+            </div>
+
+            {error && (
+                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">
+                    {error}
+                </div>
+            )}
+
+            {loading && items.length === 0 && (
+                <div className="flex h-48 items-center justify-center rounded-2xl border border-white/5 bg-slate-900/40 text-sm italic text-slate-500">
+                    Geri bildirimler yükleniyor...
+                </div>
+            )}
+
+            {!loading && filteredItems.length === 0 && !error && (
+                <div className="flex h-48 items-center justify-center rounded-2xl border border-white/5 bg-slate-900/40 text-sm italic text-slate-500">
+                    {items.length === 0 ? 'Henüz geri bildirim bulunmuyor.' : 'Aramanızla eşleşen geri bildirim bulunamadı.'}
+                </div>
+            )}
+
+            <div className="space-y-4">
+                {filteredItems.map((item) => (
+                    <article key={item.id} className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/45 backdrop-blur-xl">
+                        <div className="flex flex-col gap-4 border-b border-white/5 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <h4 className="text-lg font-semibold text-white">{item.subject || 'Konusuz geri bildirim'}</h4>
+                                    {item.platform && (
+                                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                                            {item.platform}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                                    <span>#{item.id}</span>
+                                    <span>{formatAdminDateTime(item.timestamp || item.createdAt)}</span>
+                                    {item.userId && <span>Kullanıcı: {item.userId}</span>}
+                                </div>
+                            </div>
+                            {item.email && (
+                                <a
+                                    href={`mailto:${item.email}?subject=${encodeURIComponent(`AkademiZ Geri Bildirim: ${item.subject || 'Yanıt'}`)}`}
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/15"
+                                >
+                                    <Send size={16} />
+                                    E-posta Gönder
+                                </a>
+                            )}
+                        </div>
+
+                        <div className="space-y-5 px-6 py-5">
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <InfoPill label="E-posta" value={item.email || 'Paylaşılmadı'} />
+                                <InfoPill label="Kullanıcı ID" value={item.userId || 'Anonim'} />
+                                <InfoPill label="Platform" value={item.platform || 'Belirtilmedi'} />
+                            </div>
+                            <div className="rounded-2xl border border-white/5 bg-slate-950/40 px-5 py-4">
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Mesaj</div>
+                                <p className="whitespace-pre-wrap text-sm leading-7 text-slate-200">{item.message || 'Mesaj boş.'}</p>
+                            </div>
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const InfoPill = ({ label, value }) => (
+    <div className="rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{label}</div>
+        <div className="mt-2 break-all text-sm text-slate-200">{value}</div>
+    </div>
+);
 
 const createFacultyGradeDraft = (grade = {}) => ({
     localId: grade.localId || `grade-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
