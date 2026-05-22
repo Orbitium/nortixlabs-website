@@ -28,7 +28,7 @@ export default function Navbar({ lang = 'en' }) {
             { name: 'Home', href: '/' },
             { name: 'Services', href: '/#services' },
             { name: 'About', href: '/#about' },
-            { name: 'Shop', href: '/shop' },
+            { name: 'Shop', href: '/store' },
             { name: 'Careers', href: '/careers' },
             { name: 'Contact', href: '/#contact' },
         ],
@@ -36,7 +36,7 @@ export default function Navbar({ lang = 'en' }) {
             { name: 'Ana Sayfa', href: '/tr' },
             { name: 'Hizmetler', href: '/tr#services' },
             { name: 'HakkÄ±mÄ±zda', href: '/tr#about' },
-            { name: 'Shop', href: '/tr/shop' },
+            { name: 'Shop', href: '/tr/store' },
             { name: 'Kariyer', href: '/tr/careers' },
             { name: 'Ä°letiÅŸim', href: '/tr#contact' },
         ]

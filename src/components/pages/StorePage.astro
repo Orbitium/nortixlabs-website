@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../Navbar.jsx';
+import Footer from '../Footer.jsx';
+import { getProducts } from '../../lib/shopier.js';
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const copy = {
+    en: {
+        title: 'Nortixlabs Store',
+        description: 'Browse Nortixlabs products with live Shopier pricing, stock, and checkout.',
+        eyebrow: 'Nortixlabs Store',
+        heading: 'Shop our catalog with Shopier checkout.',
+        intro: 'Browse live product data from our Shopier catalog, including prices, stock, and product photos.',
+        checkout: 'Checkout with Shopier',
+        soldOut: 'Out of stock',
+        inStock: 'In stock',
+        stockLeft: 'left',
+        unknownStock: 'Stock available',
+        variantNote: 'Options are selected during Shopier checkout.',
+        shippingBuyer: 'Shipping paid by customer',
+        shippingSeller: 'Shipping paid by Nortixlabs',
+        shippingExtra: 'Shipping shown at checkout',
+        emptyTitle: 'No products are available right now.',
+        emptyText: 'Add visible products to your Shopier shop and they will appear here automatically.',
+        unavailableTitle: 'Store is temporarily unavailable.',
+        unavailableText: 'We could not load Shopier products right now. Please try again shortly.',
+        categoryLabel: 'Category',
+        discountLabel: 'Sale',
+    },
+    tr: {
+        title: 'Nortixlabs Magaza',
+        description: 'Nortixlabs urunlerini canli Shopier fiyatlari, stok bilgisi ve odeme akisi ile inceleyin.',
+        eyebrow: 'Nortixlabs Magaza',
+        heading: 'Katalogumuzu Shopier odemesi ile inceleyin.',
+        intro: 'Shopier katalogumuzdaki canli urun bilgilerini, fiyatlari, stok durumunu ve urun gorsellerini burada gorebilirsiniz.',
+        checkout: 'Shopier ile ode',
+        soldOut: 'Stokta yok',
+        inStock: 'Stokta',
+        stockLeft: 'adet kaldi',
+        unknownStock: 'Stok mevcut',
+        variantNote: 'Secenekler Shopier odeme adiminda secilir.',
+        shippingBuyer: 'Kargo ucreti musteride',
+        shippingSeller: 'Kargo ucreti Nortixlabs tarafindan karsilanir',
+        shippingExtra: 'Kargo tutari odemede gosterilir',
+        emptyTitle: 'Su anda gosterilecek urun yok.',
+        emptyText: 'Shopier magazaniza gorunur urunler eklediginizde burada otomatik olarak listelenecekler.',
+        unavailableTitle: 'Magaza gecici olarak kullanilamiyor.',
+        unavailableText: 'Shopier urunleri su anda yuklenemedi. Lutfen kisa bir sure sonra tekrar deneyin.',
+        categoryLabel: 'Kategori',
+        discountLabel: 'Indirim',
+    },
+};
+
+const t = copy[lang] || copy.en;
+let products = [];
+let loadFailed = false;
+
+try {
+    products = await getProducts(Astro.locals, { limit: 12, page: 1, sort: 'dateDesc' });
+} catch (error) {
+    loadFailed = true;
+    console.error('Failed to load Shopier products for store page:', error);
+}
+
+function formatCurrency(amount, currencyCode) {
+    if (amount === null || amount === undefined || amount === '') {
+        return '';
+    }
+
+    return new Intl.NumberFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
+        style: 'currency',
+        currency: currencyCode || 'TRY',
+    }).format(Number(amount));
+}
+
+function getShippingText(product) {
+    if (product.shippingPayer === 'sellerPays') {
+        return t.shippingSeller;
+    }
+
+    if (product.shippingPayer === 'buyerPays') {
+        const shippingPrice = formatCurrency(product.shippingPriceAmount, product.currencyCode);
+        return shippingPrice ? `${t.shippingBuyer} • ${shippingPrice}` : t.shippingExtra;
+    }
+
+    return '';
+}
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main class="relative px-6 pb-20 pt-32">
+        <section class="mx-auto max-w-6xl">
+            <div class="mx-auto mb-14 max-w-3xl text-center">
+                <p class="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300/80">
+                    {t.eyebrow}
+                </p>
+                <h1 class="text-4xl font-semibold tracking-tight text-white md:text-6xl">
+                    {t.heading}
+                </h1>
+                <p class="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-400 md:text-base">
+                    {t.intro}
+                </p>
+            </div>
+
+            {loadFailed ? (
+                <div class="glass-card mx-auto max-w-2xl rounded-[28px] p-10 text-center">
+                    <h2 class="text-2xl font-semibold text-white">{t.unavailableTitle}</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400 md:text-base">
+                        {t.unavailableText}
+                    </p>
+                </div>
+            ) : products.length > 0 ? (
+                <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    {products.map((product) => {
+                        const currentPrice = product.discountedPriceAmount || product.priceAmount;
+                        const stockKnown = Number.isFinite(product.stockQuantity);
+                        const shippingText = getShippingText(product);
+                        const primaryCategory = product.categories[0] || '';
+
+                        return (
+                            <article class="glass-card overflow-hidden rounded-[28px] border border-white/10">
+                                <div class="aspect-[4/3] overflow-hidden bg-slate-900">
+                                    {product.image ? (
+                                        <img
+                                            src={product.image}
+                                            alt={product.imageAlt}
+                                            class="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div class="flex h-full items-center justify-center bg-slate-900 text-sm text-slate-500">
+                                            Nortixlabs
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div class="space-y-4 p-5">
+                                    <div class="flex flex-wrap items-start justify-between gap-4">
+                                        <h2 class="max-w-[16rem] text-xl font-semibold text-white">{product.name}</h2>
+                                        <div class="text-right">
+                                            <p class="text-lg font-semibold text-cyan-300">
+                                                {formatCurrency(currentPrice, product.currencyCode)}
+                                            </p>
+                                            {product.discountedPriceAmount && product.priceAmount && (
+                                                <p class="text-sm text-slate-500 line-through">
+                                                    {formatCurrency(product.priceAmount, product.currencyCode)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {primaryCategory && (
+                                        <p class="text-xs uppercase tracking-[0.22em] text-slate-500">
+                                            {t.categoryLabel}: {primaryCategory}
+                                        </p>
+                                    )}
+
+                                    <p class="text-sm leading-6 text-slate-400">
+                                        {product.description}
+                                    </p>
+
+                                    <div class="flex flex-wrap gap-2 text-xs">
+                                        <span class={`rounded-full px-3 py-1 ${product.stockStatus === 'inStock' ? 'bg-emerald-500/15 text-emerald-200' : 'bg-rose-500/15 text-rose-200'}`}>
+                                            {product.stockStatus === 'inStock'
+                                                ? stockKnown
+                                                    ? `${t.inStock} • ${product.stockQuantity} ${t.stockLeft}`
+                                                    : t.unknownStock
+                                                : t.soldOut}
+                                        </span>
+
+                                        {product.discountedPriceAmount && (
+                                            <span class="rounded-full bg-amber-500/15 px-3 py-1 text-amber-200">
+                                                {t.discountLabel}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {shippingText && (
+                                        <p class="text-xs leading-5 text-slate-500">
+                                            {shippingText}
+                                        </p>
+                                    )}
+
+                                    {product.hasVariants && (
+                                        <p class="text-xs leading-5 text-slate-500">
+                                            {t.variantNote}
+                                        </p>
+                                    )}
+
+                                    {product.url && product.stockStatus === 'inStock' ? (
+                                        <a
+                                            href={product.url}
+                                            class="block w-full rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-300/60 hover:bg-cyan-400/20"
+                                        >
+                                            {t.checkout}
+                                        </a>
+                                    ) : (
+                                        <span class="block w-full rounded-full border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-slate-500">
+                                            {t.soldOut}
+                                        </span>
+                                    )}
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div class="glass-card mx-auto max-w-2xl rounded-[28px] p-10 text-center">
+                    <h2 class="text-2xl font-semibold text-white">{t.emptyTitle}</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400 md:text-base">
+                        {t.emptyText}
+                    </p>
+                </div>
+            )}
+        </section>
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>

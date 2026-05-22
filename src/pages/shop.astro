@@ -1,6 +1,4 @@
 ---
-import ShopPage from '../components/pages/ShopPage.astro';
 export const prerender = false;
+return Astro.redirect('/store', 302);
 ---
-
-<ShopPage lang="en" />
