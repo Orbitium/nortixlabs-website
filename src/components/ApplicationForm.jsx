@@ -48,16 +48,12 @@ export default function ApplicationForm() {
         setStatus('submitting');
 
         try {
-            const formData = new FormData();
-            formData.append('position', position);
-            formData.append('firstName', e.target.firstName.value);
-            formData.append('lastName', e.target.lastName.value);
-            formData.append('email', e.target.email.value);
-            formData.append('portfolio', e.target.portfolio.value);
-            formData.append('message', e.target.message.value);
+            const form = e.currentTarget;
+            const formData = new FormData(form);
+            formData.set('position', position);
 
             if (file) {
-                formData.append('file', file);
+                formData.set('file', file);
             }
 
             const response = await fetch('/api/submit-application', {
@@ -65,19 +61,26 @@ export default function ApplicationForm() {
                 body: formData,
             });
 
-            const result = await response.json();
+            const raw = await response.text();
+            let result = null;
 
-            if (response.ok && result.success) {
+            try {
+                result = raw ? JSON.parse(raw) : null;
+            } catch (parseError) {
+                console.error('Failed to parse application response:', parseError, raw);
+            }
+
+            if (response.ok && result?.success) {
                 setStatus('success');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 console.error("Submission failed: ", result);
-                alert('Something went wrong. Please try again.');
+                alert(result?.message || 'Something went wrong. Please try again.');
                 setStatus('error');
             }
         } catch (error) {
             console.error("Network error: ", error);
-            alert('Unable to submit application. Please checking your connection.');
+            alert('Unable to submit application. Please check your connection.');
             setStatus('error');
         }
     };
@@ -130,6 +133,7 @@ export default function ApplicationForm() {
                                 <input
                                     type="text"
                                     id="position"
+                                    name="position"
                                     value={position}
                                     onChange={(e) => setPosition(e.target.value)}
                                     placeholder="e.g. UI/UX Artist"
@@ -142,22 +146,22 @@ export default function ApplicationForm() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label htmlFor="firstName" className="text-sm font-semibold text-slate-300 uppercase tracking-wider">First Name</label>
-                                <input type="text" id="firstName" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
+                                <input type="text" id="firstName" name="firstName" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="lastName" className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Last Name</label>
-                                <input type="text" id="lastName" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
+                                <input type="text" id="lastName" name="lastName" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label htmlFor="email" className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Email Address</label>
-                            <input type="email" id="email" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
+                            <input type="email" id="email" name="email" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" required />
                         </div>
 
                         <div className="space-y-2">
                             <label htmlFor="portfolio" className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Portfolio / LinkedIn URL</label>
-                            <input type="url" id="portfolio" placeholder="https://" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" />
+                            <input type="url" id="portfolio" name="portfolio" placeholder="https://" className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none" />
                         </div>
 
                         {/* File Upload Area */}
@@ -212,11 +216,12 @@ export default function ApplicationForm() {
 
                         <div className="space-y-2">
                             <label htmlFor="message" className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Start Note (Optional)</label>
-                            <textarea
-                                id="message"
-                                rows={4}
-                                className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none resize-none"
-                                placeholder="Tell us a bit about yourself..."
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    rows={4}
+                                    className="w-full px-5 py-3 rounded-xl bg-slate-900/60 border border-white/10 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all outline-none resize-none"
+                                    placeholder="Tell us a bit about yourself..."
                             ></textarea>
                         </div>
 

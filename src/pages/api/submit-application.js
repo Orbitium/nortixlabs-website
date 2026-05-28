@@ -2,6 +2,26 @@ export const prerender = false; // This must be server-rendered
 
 import { Resend } from 'resend';
 
+const json = (body, status = 200) =>
+    new Response(JSON.stringify(body), {
+        status,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+const toBase64 = (arrayBuffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+
+    return btoa(binary);
+};
+
 export const POST = async ({ request, locals }) => {
     try {
         const data = await request.formData();
@@ -15,10 +35,7 @@ export const POST = async ({ request, locals }) => {
 
         // Basic Validation
         if (!email || !firstName) {
-            return new Response(
-                JSON.stringify({ success: false, message: 'Missing required fields' }),
-                { status: 400 }
-            );
+            return json({ success: false, message: 'Missing required fields' }, 400);
         }
 
         // Get Resend API Key from env
@@ -30,7 +47,8 @@ export const POST = async ({ request, locals }) => {
             const arrayBuffer = await file.arrayBuffer();
             attachments.push({
                 filename: file.name,
-                content: Buffer.from(arrayBuffer),
+                content: toBase64(arrayBuffer),
+                contentType: file.type || undefined,
             });
         }
 
@@ -53,22 +71,13 @@ export const POST = async ({ request, locals }) => {
 
         if (error) {
             console.error('Resend Error:', error);
-            return new Response(
-                JSON.stringify({ success: false, message: 'Failed to send application' }),
-                { status: 500 }
-            );
+            return json({ success: false, message: 'Failed to send application' }, 500);
         }
 
-        return new Response(
-            JSON.stringify({ success: true, message: 'Application submitted successfully' }),
-            { status: 200 }
-        );
+        return json({ success: true, message: 'Application submitted successfully' }, 200);
 
     } catch (error) {
         console.error('Submission Error:', error);
-        return new Response(
-            JSON.stringify({ success: false, message: 'Internal Server Error' }),
-            { status: 500 }
-        );
+        return json({ success: false, message: 'Internal Server Error' }, 500);
     }
 };

@@ -1,37 +1,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Palette, Code, TrendingUp, Scale, ArrowRight } from 'lucide-react';
+import { Palette, TrendingUp, ArrowRight } from 'lucide-react';
 
 const localizedPositions = {
     en: [
         {
-            title: 'UI/UX Artist',
+            title: 'UI/UX Artist / Illusturator',
             type: 'Half Time',
             compensation: 'Revenue Share',
-            description: 'We need a creative visionary to design intuitive and beautiful interfaces for the Nortix Launcher and our ecosystem of apps.',
+            description: 'We are looking for someone who can shape polished UI/UX flows and create 2D hand-drawn visuals for our mobile app projects.',
             requirements: [
                 'Proficiency in Figma or Adobe Suite',
-                'Experience with modern, dark-mode aesthetics',
-                'Understanding of user flows and interactive states',
-                'Ability to create game-ready assets is a plus'
+                'Strong understanding of UI/UX design principles for mobile apps',
+                'Ability to design user flows, screens, and interactive states',
+                'Able to create 2D hand-drawn illustrations or visual assets for app experiences'
             ],
             icon: Palette,
             color: 'from-pink-500 to-rose-500',
-        },
-        {
-            title: 'Minecraft Modder',
-            subtitle: 'Nortix Client',
-            type: 'Contract / Project Based',
-            compensation: 'Revenue Share',
-            description: 'Join the team building the Nortix Client. You will be working deep within the Minecraft codebase to create smooth, feature-rich experiences.',
-            requirements: [
-                'Extensive experience with Fabric API',
-                'Strong knowledge of Java and Mixins',
-                'Understanding of client-side rendering & optimization',
-                'Previous public mods or contributions are required'
-            ],
-            icon: Code,
-            color: 'from-emerald-400 to-cyan-500',
         },
         {
             title: 'Marketing Specialist',
@@ -47,78 +32,35 @@ const localizedPositions = {
             icon: TrendingUp,
             color: 'from-amber-400 to-orange-500',
         },
-        {
-            title: 'Business & Legal Manager',
-            type: 'Part Time',
-            compensation: 'Revenue Share',
-            description: 'Handle the operational backbone of Nortixlabs. We need someone organized to manage the "boring" but critical stuff.',
-            requirements: [
-                'Experience with digital goods & software compliance',
-                'Drafting & managing ToS, Privacy Policies, EULAs',
-                'Handling tax obligations and financial structuring',
-                'Managing refund policies and disputes'
-            ],
-            icon: Scale,
-            color: 'from-violet-500 to-purple-500',
-        },
     ],
     tr: [
         {
-            title: 'UI/UX Sanatçısı',
-            type: 'Yarı Zamanlı',
-            compensation: 'Gelir Paylaşımı',
-            description: 'Nortix Launcher ve uygulama ekosistemimiz için sezgisel ve güzel arayüzler tasarlayacak yaratıcı bir vizyoner arıyoruz.',
+            title: 'UI/UX Sanatcisi / Illustrator',
+            type: 'Yari Zamanli',
+            compensation: 'Gelir Paylasimi',
+            description: 'Mobil uygulama projelerimiz icin guclu UI/UX akislari tasarlayabilecek ve 2D el cizimi gorseller uretebilecek birini ariyoruz.',
             requirements: [
-                'Figma veya Adobe Suite yetkinliği',
-                'Modern, karanlık mod estetiği deneyimi',
-                'Kullanıcı akışları ve etkileşimli durumlar hakkında anlayış',
-                'Oyun varlıkları oluşturma yeteneği artı puandır'
+                'Figma veya Adobe Suite yetkinligi',
+                'Mobil uygulamalar icin UI/UX tasarim prensiplerine hakimiyet',
+                'Kullanici akislari, ekranlar ve etkilesimli durumlar tasarlayabilme',
+                'Uygulama deneyimi icin 2D el cizimi illustrasyonlar veya gorsel varliklar uretebilme'
             ],
             icon: Palette,
             color: 'from-pink-500 to-rose-500',
         },
         {
-            title: 'Minecraft Mod Geliştirici',
-            subtitle: 'Nortix Client',
-            type: 'Sözleşmeli / Proje Bazlı',
-            compensation: 'Gelir Paylaşımı',
-            description: 'Nortix Client\'ı inşa eden ekibe katılın. Pürüzsüz ve özellik açısından zengin deneyimler yaratmak için Minecraft kod tabanında derinlemesine çalışacaksınız.',
-            requirements: [
-                'Fabric API ile kapsamlı deneyim',
-                'Güçlü Java ve Mixin bilgisi',
-                'İstemci tarafı oluşturma ve optimizasyon anlayışı',
-                'Önceki halka açık modlar veya katkılar gereklidir'
-            ],
-            icon: Code,
-            color: 'from-emerald-400 to-cyan-500',
-        },
-        {
-            title: 'Pazarlama Uzmanı',
+            title: 'Pazarlama Uzmani',
             type: 'Esnek',
-            compensation: 'Gelir Paylaşımı',
-            description: 'Nortix topluluğunu büyütmemize yardımcı olun. Yeni oyunculara, içerik üreticilerine ve ortaklara ulaşarak Nortix\'in sesi olacaksınız.',
+            compensation: 'Gelir Paylasimi',
+            description: 'Nortix toplulugunu buyutmemize yardimci olun. Yeni oyunculara, icerik ureticilerine ve ortaklara ulasarak Nortix\'in sesi olacaksiniz.',
             requirements: [
-                'Sosyal medya yönetimi deneyimi (Twitter/Discord)',
-                'Etkileyici içerik ve metin oluşturma yeteneği',
-                'Influencer\'lara ve topluluklara ulaşmak için ağ kurma becerileri',
-                'Analitik ve büyüme stratejileri hakkında temel anlayış'
+                'Sosyal medya yonetimi deneyimi (Twitter/Discord)',
+                'Etkileyici icerik ve metin olusturma yetenegi',
+                'Influencer\'lara ve topluluklara ulasmak icin ag kurma becerileri',
+                'Analitik ve buyume stratejileri hakkinda temel anlayis'
             ],
             icon: TrendingUp,
             color: 'from-amber-400 to-orange-500',
-        },
-        {
-            title: 'İş ve Hukuk Yöneticisi',
-            type: 'Yarı Zamanlı',
-            compensation: 'Gelir Paylaşımı',
-            description: 'Nortixlabs\'ın operasyonel omurgasını yönetin. "Sıkıcı" ama kritik işleri yönetecek düzenli birine ihtiyacımız var.',
-            requirements: [
-                'Dijital ürünler ve yazılım uyumluluğu deneyimi',
-                'Hizmet Şartları, Gizlilik Politikaları ve EULA hazırlama/yönetme',
-                'Vergi yükümlülükleri ve finansal yapılandırma yönetimi',
-                'İade politikaları ve uyuşmazlık yönetimi'
-            ],
-            icon: Scale,
-            color: 'from-violet-500 to-purple-500',
         },
     ]
 };
@@ -132,12 +74,12 @@ const labels = {
         apply: 'Apply Now'
     },
     tr: {
-        badge: 'Ekibe Katılın',
-        title: 'Geleceği Birlikte',
-        nortixSuffix: 'İnşa Edelim',
-        desc: 'Gelir paylaşımı esasına göre aramıza katılacak tutkulu bireyler arıyoruz. Gelecek nesil launcher teknolojisini geliştirmemize yardımcı olun.',
+        badge: 'Ekibe Katilin',
+        title: 'Gelecegi Birlikte',
+        nortixSuffix: 'Insa Edelim',
+        desc: 'Gelir paylasimi esasina gore aramiza katilacak tutkulu bireyler ariyoruz. Gelecek nesil launcher teknolojisini gelistirmemize yardimci olun.',
         requirements: 'Gereksinimler',
-        apply: 'Hemen Başvur'
+        apply: 'Hemen Basvur'
     }
 };
 
