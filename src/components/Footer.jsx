@@ -29,27 +29,27 @@ export default function Footer({ lang = 'en' }) {
             version: 'Version'
         },
         tr: {
-            desc: 'YenilikÃ§i yazÄ±lÄ±m Ã§Ã¶zÃ¼mleriyle dijital deneyimlere Ã¶ncÃ¼lÃ¼k ediyoruz.',
-            products: 'ÃœrÃ¼nler',
-            company: 'Åirket',
+            desc: 'Yenilikçi yazılım çözümleriyle dijital deneyimlere öncülük ediyoruz.',
+            products: 'Ürünler',
+            company: 'Şirket',
             services: 'Hizmetler',
             legal: 'Yasal',
             shop: 'Shop',
-            about: 'HakkÄ±mÄ±zda',
+            about: 'Hakkımızda',
             careers: 'Kariyer',
             blog: 'Blog',
-            contact: 'Ä°letiÅŸim',
-            saas: 'SaaS GeliÅŸtirme',
-            game: 'Oyun TasarÄ±mÄ±',
-            mobile: 'Mobil Ã‡Ã¶zÃ¼mler',
-            consulting: 'DanÄ±ÅŸmanlÄ±k',
-            privacy: 'Gizlilik PolitikasÄ±',
-            terms: 'KullanÄ±m KoÅŸullarÄ±',
-            cookies: 'Ã‡erez PolitikasÄ±',
+            contact: 'İletişim',
+            saas: 'SaaS Geliştirme',
+            game: 'Oyun Tasarımı',
+            mobile: 'Mobil Çözümler',
+            consulting: 'Danışmanlık',
+            privacy: 'Gizlilik Politikası',
+            terms: 'Kullanım Koşulları',
+            cookies: 'Çerez Politikası',
             accountDeletion: 'Hesap Silme',
-            rights: 'TÃ¼m haklarÄ± saklÄ±dÄ±r.',
-            designed: 'TasarÄ±m:',
-            by: 'Nortixlabs Ekibi tarafÄ±ndan.',
+            rights: 'Tüm hakları saklıdır.',
+            designed: 'Tasarım:',
+            by: 'Nortixlabs Ekibi tarafından.',
             version: 'Version'
         }
     };
@@ -106,6 +106,9 @@ export default function Footer({ lang = 'en' }) {
                             <li>
                                 <a href={`${base}/akademiz`} className="hover:text-cyan-400 transition-colors">AkademiZ</a>
                             </li>
+                            <li>
+                                <a href={`${base}/swell`} className="hover:text-cyan-400 transition-colors">Swell</a>
+                            </li>
                         </ul>
                     </div>
 
@@ -140,7 +143,7 @@ export default function Footer({ lang = 'en' }) {
                             {t.version}: {buildVersion}
                         </p>
                         <p className="text-slate-600 text-xs">
-                        {t.designed} <span className="text-red-500">â™¥</span> {t.by}
+                        {t.designed} <span className="text-red-500">♥</span> {t.by}
                         </p>
                     </div>
                 </div>

@@ -17,7 +17,7 @@ export default function Navbar({ lang = 'en' }) {
 
     const languages = [
         { code: 'en', name: 'English' },
-        { code: 'tr', name: 'TÃ¼rkÃ§e' }
+        { code: 'tr', name: 'Türkçe' }
     ];
 
     const currentLang = languages.find((language) => language.code === lang) || languages[0];
@@ -35,10 +35,10 @@ export default function Navbar({ lang = 'en' }) {
         tr: [
             { name: 'Ana Sayfa', href: '/tr' },
             { name: 'Hizmetler', href: '/tr#services' },
-            { name: 'HakkÄ±mÄ±zda', href: '/tr#about' },
+            { name: 'Hakkımızda', href: '/tr#about' },
             { name: 'Shop', href: '/tr/store' },
             { name: 'Kariyer', href: '/tr/careers' },
-            { name: 'Ä°letiÅŸim', href: '/tr#contact' },
+            { name: 'İletişim', href: '/tr#contact' },
         ]
     };
 
@@ -132,7 +132,7 @@ export default function Navbar({ lang = 'en' }) {
                         href={contactHref}
                         className="px-5 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-500/50 transition-all duration-300 text-sm font-medium text-white"
                     >
-                        {lang === 'en' ? 'Get in Touch' : 'Ä°letiÅŸime GeÃ§'}
+                        {lang === 'en' ? 'Get in Touch' : 'İletişime Geç'}
                     </a>
                 </div>
 

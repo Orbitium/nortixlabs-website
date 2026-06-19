@@ -1,0 +1,333 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Section {
+    eyebrow: string;
+    title: string;
+    body: string;
+    bullets: string[];
+    placeholder: string;
+}
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const content = {
+    en: {
+        title: 'Swell - Focus, Habits, Progress, and Social Motivation | NortixLabs',
+        description: 'Swell is a mobile app that turns focus sessions, habit building, progress tracking, and social accountability into one calm daily loop.',
+        badge: 'Productivity game in development',
+        heroTitle: 'Swell turns focus into something you can grow.',
+        heroSubtitle:
+            'It is a mobile app built around deep work, habit consistency, visible progress, and a social layer that makes commitment feel more real.',
+        heroBody:
+            'Swell combines focus sessions, daily habits, island growth, progress stats, public profiles, and lightweight social accountability into one loop. The goal is to make productivity feel grounded, visual, and easier to return to every day.',
+        primaryCta: 'Talk to Us About Swell',
+        secondaryCta: 'See Mobile Products',
+        heroStats: [
+            { label: 'Core loop', value: 'Focus -> Work -> Growth' },
+            { label: 'Built around', value: 'Habits, streaks, and momentum' },
+            { label: 'Social layer', value: 'Profiles, badges, and discovery' },
+        ],
+        sections: [
+            {
+                eyebrow: 'Productivity',
+                title: 'Start a focus session and turn real work into visible momentum.',
+                body: 'Swell is not just a timer. Focus sessions create work, reward consistency, and feed a progression loop that keeps the app tied to actual effort instead of abstract checklists.',
+                bullets: [
+                    'Focus sessions convert minutes into usable work',
+                    'Running sessions, pause states, and completion rewards stay clear in the interface',
+                    'The app is designed to support calm, repeatable work blocks instead of noisy productivity theater',
+                ],
+                placeholder: 'Focus session screen placeholder',
+            },
+            {
+                eyebrow: 'Habit Building',
+                title: 'Daily habits sit next to focus so routines feel connected, not fragmented.',
+                body: 'Swell supports a daily loop where smaller habits and deeper work reinforce each other. Instead of treating habit tracking as a separate product, the app keeps it inside the same rhythm of return, completion, and reward.',
+                bullets: [
+                    'Habit groups help organize routines across health, mind, and life',
+                    'Completing habits contributes to the feeling of steady daily progress',
+                    'The loop is designed to keep consistency tangible even on lighter days',
+                ],
+                placeholder: 'Habit loop screen placeholder',
+            },
+            {
+                eyebrow: 'Progress',
+                title: 'Progress becomes a place you can watch evolve.',
+                body: 'Swell uses an island and home-growth metaphor so progress is easier to feel. Focus time, completed sessions, streaks, chores, and earned work all connect back to a visual space that keeps improvement concrete.',
+                bullets: [
+                    'Island growth gives users a visual sense of progression',
+                    'Stats track focus time, streaks, completions, and historical trends',
+                    'Premium direction includes richer insights, advanced stats, and smoother progression tools',
+                ],
+                placeholder: 'Island growth and stats placeholder',
+            },
+            {
+                eyebrow: 'Social',
+                title: 'Profiles, cosmetics, badges, and commitments make accountability public in the right ways.',
+                body: 'The social side of Swell is built around discovery and identity rather than spam. Users can share public profiles, browse other islands, customize how they appear, and build status through badges, supporter flair, profile links, and commitment-driven social presence.',
+                bullets: [
+                    'Public profiles and island discovery create lightweight social accountability',
+                    'Cosmetics, profile themes, avatars, and badges give users room for self-expression',
+                    'Commitments, prestige features, and profile sharing make progress feel easier to show and maintain',
+                ],
+                placeholder: 'Profile and social screen placeholder',
+            },
+        ] as Section[],
+        showcaseTitle: 'Planned visuals for the page',
+        showcaseBody:
+            'These placeholders are intentionally empty so final app screenshots can be dropped in later without changing the layout.',
+        showcaseCards: [
+            'Home island placeholder',
+            'Focus timer placeholder',
+            'Stats dashboard placeholder',
+            'Profile and badges placeholder',
+        ],
+        ctaTitle: 'Interested in building around motivation, progress, and retention?',
+        ctaBody:
+            'Swell shows how we approach product design when utility and game-like reinforcement need to work together. If you want something in that direction, we can design and ship it with you.',
+        footerCta: 'Start a Conversation',
+    },
+    tr: {
+        title: 'Swell - Odak, Alışkanlık, İlerleme ve Sosyal Motivasyon | NortixLabs',
+        description: 'Swell, odak seanslarını, alışkanlık kurmayı, ilerleme takibini ve sosyal sorumluluk hissini tek bir sakin günlük döngüde birleştiren bir mobil uygulamadır.',
+        badge: 'Gelişim aşamasında bir verimlilik oyunu',
+        heroTitle: 'Swell odağı, büyütülebilen bir ilerlemeye dönüştürür.',
+        heroSubtitle:
+            'Derin çalışma, alışkanlık devamlılığı, görünür ilerleme ve bağlılığı daha gerçek hissettiren sosyal bir katman etrafında kurulan bir mobil uygulama.',
+        heroBody:
+            'Swell; odak seanslarını, günlük alışkanlıkları, ada gelişimini, ilerleme istatistiklerini, herkese açık profilleri ve hafif sosyal sorumluluk yapısını tek bir akışta toplar. Amaç, verimliliği daha somut, daha görsel ve her gün geri dönmesi daha kolay bir hale getirmektir.',
+        primaryCta: 'Swell Hakkında Konuşalım',
+        secondaryCta: 'Mobil Ürünleri Göster',
+        heroStats: [
+            { label: 'Ana döngü', value: 'Odak -> Work -> Gelişim' },
+            { label: 'Temel yapı', value: 'Alışkanlık, streak ve ivme' },
+            { label: 'Sosyal katman', value: 'Profil, badge ve keşif' },
+        ],
+        sections: [
+            {
+                eyebrow: 'Verimlilik',
+                title: 'Bir odak seansı başlat ve gerçek emeği görünür ivmeye çevir.',
+                body: 'Swell sadece bir zamanlayıcı değil. Odak seansları work üretir, devamlılığı ödüllendirir ve uygulamayı soyut checklist mantığı yerine gerçek çabaya bağlı bir ilerleme döngüsüyle besler.',
+                bullets: [
+                    'Odak seansları dakikaları kullanılabilir worke çevirir',
+                    'Çalışan seanslar, duraklatma durumu ve tamamlama ödülleri arayüzde net kalır',
+                    'Uygulama gürültülü verimlilik gösterisinden çok sakin ve tekrar edilebilir çalışma bloklarını destekler',
+                ],
+                placeholder: 'Odak seansı ekranı alanı',
+            },
+            {
+                eyebrow: 'Alışkanlık Kurma',
+                title: 'Günlük alışkanlıklar, odak tarafıyla aynı yerde durur; böylece rutinler parçalanmaz.',
+                body: 'Swell, küçük alışkanlıklarla daha derin çalışmayı birbirini besleyen aynı günlük döngü içinde tutar. Alışkanlık takibini ayrı bir ürün gibi ele almak yerine dönüş, tamamlama ve ödül ritminin içine yerleştirir.',
+                bullets: [
+                    'Alışkanlık grupları sağlık, zihin ve hayat rutinlerini düzenlemeye yardım eder',
+                    'Tamamlanan alışkanlıklar günlük ilerleme hissini destekler',
+                    'Daha hafif günlerde bile devamlılığı somut tutacak bir yapı hedeflenir',
+                ],
+                placeholder: 'Alışkanlık döngüsü alanı',
+            },
+            {
+                eyebrow: 'İlerleme',
+                title: 'İlerleme, değişimini izleyebileceğin bir mekana dönüşür.',
+                body: 'Swell, ilerlemeyi daha hissedilir kılmak için ada ve ev-büyüme metaforunu kullanır. Odak süresi, tamamlanan seanslar, streak’ler, görevler ve kazanılan work aynı görsel alana bağlanır.',
+                bullets: [
+                    'Ada gelişimi kullanıcıya görsel bir ilerleme hissi verir',
+                    'İstatistikler odak süresini, streak’leri, tamamlamaları ve trendleri takip eder',
+                    'Premium yönü daha zengin analizler, gelişmiş istatistikler ve daha akıcı ilerleme araçları içerir',
+                ],
+                placeholder: 'Ada gelişimi ve istatistik alanı',
+            },
+            {
+                eyebrow: 'Sosyal',
+                title: 'Profiller, kozmetikler, badge’ler ve commitments; sorumluluk hissini doğru biçimde daha görünür yapar.',
+                body: 'Swell’in sosyal tarafı spam üretmek yerine keşif ve kimlik etrafında kurulur. Kullanıcılar herkese açık profiller paylaşabilir, diğer adaları gezebilir, görünümlerini özelleştirebilir ve badge’ler, supporter flair, profil linkleri ve commitment temelli sosyal varlıkla statülerini gösterebilir.',
+                bullets: [
+                    'Herkese açık profiller ve ada keşfi hafif bir sosyal sorumluluk hissi oluşturur',
+                    'Kozmetikler, profil temaları, avatarlar ve badge’ler kendini ifade etme alanı açar',
+                    'Commitment’ler, prestij özellikleri ve profil paylaşımı ilerlemeyi göstermeyi ve sürdürmeyi kolaylaştırır',
+                ],
+                placeholder: 'Profil ve sosyal ekran alanı',
+            },
+        ] as Section[],
+        showcaseTitle: 'Sayfa için ayrılan görsel alanlar',
+        showcaseBody:
+            'Bu alanlar bilerek boş bırakıldı; böylece son uygulama ekran görüntüleri daha sonra yerleşim bozulmadan eklenebilir.',
+        showcaseCards: [
+            'Ana ada alanı',
+            'Odak zamanlayıcı alanı',
+            'İstatistik paneli alanı',
+            'Profil ve badge alanı',
+        ],
+        ctaTitle: 'Motivasyon, ilerleme ve retention etrafında ürün kurmak mı istiyorsunuz?',
+        ctaBody:
+            'Swell; fayda ile oyun benzeri pekiştirmenin birlikte çalışması gerektiğinde ürüne nasıl yaklaştığımızı gösteriyor. Bu yöne yakın bir şey düşünüyorsanız birlikte tasarlayıp yayına alabiliriz.',
+        footerCta: 'İletişime Geçin',
+    },
+};
+
+const t = content[lang] || content.en;
+const base = lang === 'en' ? '' : '/tr';
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main>
+        <section class="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(74,222,128,0.18),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.14),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0),rgba(15,23,42,0.32))]"></div>
+            <div class="container mx-auto px-6">
+                <div class="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+                    <div class="max-w-3xl">
+                        <div class="mb-6 inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
+                            {t.badge}
+                        </div>
+                        <h1 class="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl">
+                            {t.heroTitle}
+                        </h1>
+                        <p class="mb-4 max-w-2xl text-lg text-slate-300 md:text-2xl">
+                            {t.heroSubtitle}
+                        </p>
+                        <p class="mb-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">
+                            {t.heroBody}
+                        </p>
+
+                        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                            <a
+                                href={`${base}/#contact`}
+                                class="rounded-full bg-white px-7 py-3 text-sm font-bold text-slate-950 transition-all duration-300 hover:bg-emerald-300"
+                            >
+                                {t.primaryCta}
+                            </a>
+                            <a
+                                href={`${base}/services/mobile-apps`}
+                                class="rounded-full border border-white/12 bg-white/5 px-7 py-3 text-sm font-bold text-white transition-all duration-300 hover:border-emerald-400/40 hover:bg-white/10"
+                            >
+                                {t.secondaryCta}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute inset-4 -z-10 rounded-[2rem] bg-gradient-to-br from-emerald-500/30 via-lime-500/10 to-cyan-400/20 blur-3xl"></div>
+                        <div class="glass-card rounded-[2rem] border border-white/10 p-5 shadow-2xl">
+                            <div class="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-500">Swell</p>
+                                    <p class="text-sm font-semibold text-white">Product overview</p>
+                                </div>
+                                <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">Preview</span>
+                            </div>
+                            <div class="flex min-h-[320px] items-center justify-center rounded-[1.75rem] border border-dashed border-white/15 bg-[radial-gradient(circle_at_top,rgba(74,222,128,0.15),transparent_40%),rgba(15,23,42,0.92)] p-6 text-center">
+                                <div class="max-w-sm">
+                                    <p class="mb-3 text-base font-semibold text-slate-100">Hero app screenshot placeholder</p>
+                                    <p class="text-sm leading-6 text-slate-500">
+                                        Replace this box with a future Swell screenshot, island render, or app montage.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                                {t.heroStats.map((item) => (
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                                        <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                                        <p class="mt-2 text-sm font-semibold leading-6 text-slate-200">{item.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="space-y-16 md:space-y-20">
+                    {t.sections.map((section, index) => {
+                        const reverse = index % 2 === 1;
+
+                        return (
+                            <div class={`grid gap-8 lg:grid-cols-2 lg:items-center ${reverse ? 'lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1' : ''}`}>
+                                <div class="glass-card rounded-[2rem] border border-white/10 p-8 md:p-10">
+                                    <p class="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">{section.eyebrow}</p>
+                                    <h2 class="mb-4 text-3xl font-bold leading-tight text-white md:text-4xl">{section.title}</h2>
+                                    <p class="mb-6 text-base leading-8 text-slate-400 md:text-lg">{section.body}</p>
+                                    <ul class="space-y-4">
+                                        {section.bullets.map((bullet) => (
+                                            <li class="flex items-start gap-3 text-slate-300">
+                                                <span class="mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-emerald-400"></span>
+                                                <span>{bullet}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div class="relative">
+                                    <div class="absolute inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-cyan-500/10 via-emerald-500/10 to-lime-500/15 blur-3xl"></div>
+                                    <div class="glass-card flex min-h-[340px] items-center justify-center rounded-[2rem] border border-dashed border-white/12 p-8 text-center">
+                                        <div class="max-w-xs">
+                                            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-lg font-bold text-white">
+                                                {index + 1}
+                                            </div>
+                                            <p class="mb-2 text-lg font-semibold text-slate-100">{section.placeholder}</p>
+                                            <p class="text-sm leading-6 text-slate-500">
+                                                Empty media frame reserved for a future app screenshot or visual.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="mb-10 max-w-3xl">
+                    <h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">{t.showcaseTitle}</h2>
+                    <p class="text-base leading-7 text-slate-400 md:text-lg">{t.showcaseBody}</p>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                    {t.showcaseCards.map((card) => (
+                        <div class="glass-card rounded-[1.75rem] border border-dashed border-white/12 p-6">
+                            <div class="mb-4 flex h-32 items-center justify-center rounded-[1.35rem] border border-dashed border-white/10 bg-slate-950/70 text-sm text-slate-500">
+                                Image slot
+                            </div>
+                            <p class="text-sm font-semibold text-slate-200">{card}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-20">
+            <div class="container mx-auto px-6">
+                <div class="glass-card overflow-hidden rounded-[2rem] border border-white/10 p-8 md:p-10">
+                    <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="max-w-3xl">
+                            <h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">{t.ctaTitle}</h2>
+                            <p class="text-base leading-8 text-slate-400 md:text-lg">{t.ctaBody}</p>
+                        </div>
+                        <a
+                            href={`${base}/#contact`}
+                            class="inline-flex items-center justify-center rounded-full bg-white px-7 py-3 text-sm font-bold text-slate-950 transition-all duration-300 hover:bg-emerald-300"
+                        >
+                            {t.footerCta}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>
