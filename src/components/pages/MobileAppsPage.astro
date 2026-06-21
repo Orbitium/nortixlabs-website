@@ -12,7 +12,7 @@ const { lang = 'en' } = Astro.props;
 const content = {
     en: {
         title: "Mobile Apps - Nortixlabs",
-        description: "Explore Nortixlabs mobile products, including Sleep Cutoff, AkademiZ, and Swell.",
+        description: "Explore Nortixlabs mobile products, including Sleep Cutoff, AkademiZ, and Islandly.",
         eyebrow: "Mobile Applications",
         heroTitle: "Mobile products built around real routines.",
         heroDesc: "Our mobile apps focus on clarity, usefulness, and daily habits people actually want to keep. Each product is shaped around one specific job and designed to feel straightforward from the first tap.",
@@ -44,7 +44,7 @@ const content = {
                 kind: "akademiz"
             },
             {
-                name: "Swell",
+                name: "Islandly",
                 badge: "In Development",
                 summary: "A focus-driven productivity app built around sustained work sessions, habit building, visible progress, and a social layer that makes accountability easier to keep.",
                 points: [
@@ -54,7 +54,7 @@ const content = {
                 ],
                 accent: "emerald",
                 imageSide: "left",
-                kind: "swell"
+                kind: "islandly"
             }
         ],
         ctaTitle: "Let's build the next useful app.",
@@ -63,7 +63,7 @@ const content = {
     },
     tr: {
         title: "Mobil Uygulamalar - Nortixlabs",
-        description: "Nortixlabs mobil ürünlerini keşfedin: Sleep Cutoff, AkademiZ ve Swell.",
+        description: "Nortixlabs mobil ürünlerini keşfedin: Sleep Cutoff, AkademiZ ve Islandly.",
         eyebrow: "Mobil Uygulamalar",
         heroTitle: "Gerçek kullanım rutinleri etrafında kurulan mobil ürünler.",
         heroDesc: "Mobil uygulamalarımız netlik, fayda ve insanların sürdürmek isteyeceği günlük alışkanlıklar etrafında şekilleniyor. Her ürün belirli bir ihtiyaca odaklanıyor ve ilk dokunuştan itibaren sade hissettirecek şekilde tasarlanıyor.",
@@ -95,7 +95,7 @@ const content = {
                 kind: "akademiz"
             },
             {
-                name: "Swell",
+                name: "Islandly",
                 badge: "Gelişimde",
                 summary: "Uzun süreli çalışma seansları, alışkanlık kurma, görünür ilerleme ve sosyal motivasyon etrafında tasarlanan bir verimlilik uygulaması.",
                 points: [
@@ -105,7 +105,7 @@ const content = {
                 ],
                 accent: "emerald",
                 imageSide: "left",
-                kind: "swell"
+                kind: "islandly"
             }
         ],
         ctaTitle: "Sıradaki faydalı uygulamayı birlikte inşa edelim.",
@@ -235,7 +235,7 @@ const accentClasses = {
                                                 <div class="mb-5 flex items-center justify-between">
                                                     <div>
                                                         <p class="text-xs uppercase tracking-[0.24em] text-emerald-300">{lang === 'en' ? 'In Development' : 'Gelişimde'}</p>
-                                                        <h3 class="mt-1 text-2xl font-bold text-white">Swell</h3>
+                                                        <h3 class="mt-1 text-2xl font-bold text-white">Islandly</h3>
                                                     </div>
                                                     <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/15 text-sm font-bold uppercase tracking-[0.24em] text-emerald-200">SW</div>
                                                 </div>
@@ -267,10 +267,10 @@ const accentClasses = {
                                                     <div class="flex-1 rounded-xl border border-white/10 bg-emerald-500/15 px-4 py-3 text-center text-sm font-semibold text-emerald-200">Social</div>
                                                 </div>
                                                 <a
-                                                    href={`${lang === 'en' ? '' : '/tr'}/swell`}
+                                                    href={`${lang === 'en' ? '' : '/tr'}/islandly`}
                                                     class="mt-4 inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200 transition-colors duration-300 hover:bg-emerald-400/20"
                                                 >
-                                                    {lang === 'en' ? 'Open Swell page' : 'Swell sayfasını aç'}
+                                                    {lang === 'en' ? 'Open Islandly page' : 'Islandly sayfasını aç'}
                                                 </a>
                                             </div>
                                         </div>

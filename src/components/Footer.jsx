@@ -107,7 +107,7 @@ export default function Footer({ lang = 'en' }) {
                                 <a href={`${base}/akademiz`} className="hover:text-cyan-400 transition-colors">AkademiZ</a>
                             </li>
                             <li>
-                                <a href={`${base}/swell`} className="hover:text-cyan-400 transition-colors">Swell</a>
+                                <a href={`${base}/islandly`} className="hover:text-cyan-400 transition-colors">Islandly</a>
                             </li>
                         </ul>
                     </div>

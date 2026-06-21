@@ -3,6 +3,45 @@ import { defineMiddleware } from 'astro:middleware';
 export const onRequest = defineMiddleware(async (context, next) => {
   const host = context.url.hostname.toLowerCase();
   const pathname = context.url.pathname;
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const firstSegment = pathSegments[0]?.toLowerCase();
+
+  const allowedTopLevelSegments = new Set([
+    'en',
+    'tr',
+    'akademiz',
+    'api',
+    'apply',
+    'billticket',
+    'careers',
+    'contact',
+    'game-design',
+    'islandly',
+    'legal',
+    'services',
+    'shop',
+    'sleepcutoff',
+    'store',
+    'terms-of-service',
+    '_astro',
+    '.well-known',
+  ]);
+
+  const isAssetRequest =
+    pathname === '/' ||
+    pathname === '/favicon.ico' ||
+    pathname === '/favicon.png' ||
+    pathname === '/favicon.svg' ||
+    pathname === '/robots.txt' ||
+    /\.[a-z0-9]+$/i.test(pathname);
+
+  if (
+    firstSegment &&
+    !isAssetRequest &&
+    !allowedTopLevelSegments.has(firstSegment)
+  ) {
+    return context.rewrite(new URL('/404', context.url));
+  }
 
   if (host === 'akademiz.nortixlabs.com') {
     const isStaticAsset =

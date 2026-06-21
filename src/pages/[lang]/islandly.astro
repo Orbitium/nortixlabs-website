@@ -1,5 +1,5 @@
 ---
-import SwellPage from '../../components/pages/SwellPage.astro';
+import IslandlyPage from '../../components/pages/IslandlyPage.astro';
 
 export const prerender = true;
 
@@ -13,4 +13,4 @@ export function getStaticPaths() {
 const { lang } = Astro.params;
 ---
 
-<SwellPage lang={lang as 'en' | 'tr'} />
+<IslandlyPage lang={lang as 'en' | 'tr'} />

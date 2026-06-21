@@ -1,0 +1,262 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Navbar from '../../components/Navbar.jsx';
+import Footer from '../../components/Footer.jsx';
+
+interface Section {
+    eyebrow: string;
+    title: string;
+    body: string;
+    bullets: string[];
+    imageSrc: string;
+    imageAlt: string;
+}
+
+interface Props {
+    lang: 'en' | 'tr';
+}
+
+const { lang = 'en' } = Astro.props;
+
+const content = {
+    en: {
+        title: 'Islandly - Focus, Habits, Progress, and Social Motivation | NortixLabs',
+        description: 'Islandly is a mobile app that turns focus sessions, habit building, progress tracking, and social accountability into one calm daily loop.',
+        heroTitle: 'Islandly turns focus into something you can grow.',
+        heroSubtitle:
+            'It is a mobile app built around deep work, habit consistency, visible progress, and a social layer that makes commitment feel more real.',
+        heroBody:
+            'Islandly combines focus sessions, daily habits, island growth, progress stats, public profiles, and lightweight social accountability into one loop. The goal is to make productivity feel grounded, visual, and easier to return to every day.',
+        heroStats: [
+            { label: 'Core loop', value: 'Focus -> Work -> Growth' },
+            { label: 'Built around', value: 'Habits, streaks, and momentum' },
+            { label: 'Social layer', value: 'Profiles, badges, and discovery' },
+        ],
+        sections: [
+            {
+                eyebrow: 'Progress',
+                title: 'Manage your island first, and let progress take visible shape around it.',
+                body: 'Islandly uses an island and home-growth metaphor so progress is easier to feel. Focus time, completed sessions, streaks, daily chores, and earned work all connect back to a visual space that keeps improvement concrete.',
+                bullets: [
+                    'Island growth gives users a visual sense of progression',
+                    'Manage daily chores to keep the island active and evolving',
+                    'Stats track focus time, streaks, completions, and historical trends',
+                ],
+                imageSrc: '/islandly/Island.png',
+                imageAlt: 'Islandly island management screen',
+            },
+            {
+                eyebrow: 'Productivity',
+                title: 'Start a focus session and turn real work into visible momentum.',
+                body: 'Islandly is not just a timer. Focus sessions create work, reward consistency, and feed a progression loop that keeps the app tied to actual effort instead of abstract checklists.',
+                bullets: [
+                    'Focus sessions convert minutes into usable work',
+                    'Running sessions, pause states, and completion rewards stay clear in the interface',
+                    'The app is designed to support calm, repeatable work blocks instead of noisy productivity theater',
+                ],
+                imageSrc: '/islandly/Focus.png',
+                imageAlt: 'Islandly focus session screen',
+            },
+            {
+                eyebrow: 'Habit Building',
+                title: 'Daily habits and chores sit next to focus so routines feel connected, not fragmented.',
+                body: 'Islandly supports a daily loop where smaller habits, daily chores, and deeper work reinforce each other. Instead of treating habit tracking as a separate product, the app keeps it inside the same rhythm of return, completion, and reward.',
+                bullets: [
+                    'Habit groups help organize routines across health, mind, and life',
+                    'Manage daily chores inside the same return loop as your habits',
+                    'Completing habits and chores contributes to the feeling of steady daily progress',
+                ],
+                imageSrc: '/islandly/Chores.png',
+                imageAlt: 'Islandly daily chores screen',
+            },
+            {
+                eyebrow: 'Social',
+                title: 'Profiles, cosmetics, badges, and commitments make accountability public in the right ways.',
+                body: 'The social side of Islandly is built around discovery and identity rather than spam. Users can share public profiles, browse other islands, customize how they appear, and build status through badges, supporter flair, profile links, and commitment-driven social presence.',
+                bullets: [
+                    'Public profiles and island discovery create lightweight social accountability',
+                    'Cosmetics, profile themes, avatars, and badges give users room for self-expression',
+                    'Commitments, prestige features, and profile sharing make progress feel easier to show and maintain',
+                ],
+                imageSrc: '/islandly/Social.png',
+                imageAlt: 'Islandly social discovery screen',
+            },
+        ] as Section[],
+        getTitle: '- GET -',
+        getBody: 'Coming to iOS soon.',
+    },
+    tr: {
+        title: 'Islandly - Odak, Aliskanlik, Ilerleme ve Sosyal Motivasyon | NortixLabs',
+        description: 'Islandly, odak seanslarini, aliskanlik kurmayi, ilerleme takibini ve sosyal sorumluluk hissini tek bir sakin gunluk dongude birlestiren bir mobil uygulamadir.',
+        heroTitle: 'Islandly odagi, buyutulebilen bir ilerlemeye donusturur.',
+        heroSubtitle:
+            'Derin calisma, aliskanlik devamliligi, gorunur ilerleme ve bagliligi daha gercek hissettiren sosyal bir katman etrafinda kurulan bir mobil uygulama.',
+        heroBody:
+            'Islandly; odak seanslarini, gunluk aliskanliklari, ada gelisimini, ilerleme istatistiklerini, herkese acik profilleri ve hafif sosyal sorumluluk yapisini tek bir akista toplar. Amac, verimliligi daha somut, daha gorsel ve her gun geri donmesi daha kolay bir hale getirmektir.',
+        heroStats: [
+            { label: 'Ana dongu', value: 'Odak -> Work -> Gelisim' },
+            { label: 'Temel yapi', value: 'Aliskanlik, streak ve ivme' },
+            { label: 'Sosyal katman', value: 'Profil, badge ve kesif' },
+        ],
+        sections: [
+            {
+                eyebrow: 'Ilerleme',
+                title: 'Once adani yonet, sonra ilerlemenin gorunur bicimde sekil almasini izle.',
+                body: 'Islandly, ilerlemeyi daha hissedilir kilmak icin ada ve ev-buyume metaforunu kullanir. Odak suresi, tamamlanan seanslar, streakler, gunluk gorevler ve kazanilan work ayni gorsel alana baglanir.',
+                bullets: [
+                    'Ada gelisimi kullaniciya gorsel bir ilerleme hissi verir',
+                    'Gunluk gorevleri yoneterek adani aktif ve gelisen halde tutarsin',
+                    'Istatistikler odak suresini, streakleri, tamamlamalari ve trendleri takip eder',
+                ],
+                imageSrc: '/islandly/Island.png',
+                imageAlt: 'Islandly ada yonetimi ekrani',
+            },
+            {
+                eyebrow: 'Verimlilik',
+                title: 'Bir odak seansi baslat ve gercek emegi gorunur ivmeye cevir.',
+                body: 'Islandly sadece bir zamanlayici degil. Odak seanslari work uretir, devamliligi odullendirir ve uygulamayi soyut checklist mantigi yerine gercek cabaya bagli bir ilerleme dongusuyle besler.',
+                bullets: [
+                    'Odak seanslari dakikalari kullanilabilir worke cevirir',
+                    'Calisan seanslar, duraklatma durumu ve tamamlama odulleri arayuzde net kalir',
+                    'Uygulama gurultulu verimlilik gosterisinden cok sakin ve tekrar edilebilir calisma bloklarini destekler',
+                ],
+                imageSrc: '/islandly/Focus.png',
+                imageAlt: 'Islandly odak seansi ekrani',
+            },
+            {
+                eyebrow: 'Aliskanlik Kurma',
+                title: 'Gunluk aliskanliklar ve gorevler, odak tarafiyla ayni yerde durur; boylece rutinler parcalanmaz.',
+                body: 'Islandly, kucuk aliskanliklarla gunluk gorevleri ve daha derin calismayi birbirini besleyen ayni gunluk dongu icinde tutar. Aliskanlik takibini ayri bir urun gibi ele almak yerine donus, tamamlama ve odul ritminin icine yerlestirir.',
+                bullets: [
+                    'Aliskanlik gruplari saglik, zihin ve hayat rutinlerini duzenlemeye yardim eder',
+                    'Gunluk gorevleri aliskanliklarla ayni donus dongusunde yonetirsin',
+                    'Tamamlanan aliskanliklar ve gorevler gunluk ilerleme hissini destekler',
+                ],
+                imageSrc: '/islandly/Chores.png',
+                imageAlt: 'Islandly gunluk gorevler ekrani',
+            },
+            {
+                eyebrow: 'Sosyal',
+                title: 'Profiller, kozmetikler, badgeler ve commitments; sorumluluk hissini dogru bicimde daha gorunur yapar.',
+                body: 'Islandly\'nin sosyal tarafi spam uretmek yerine kesif ve kimlik etrafinda kurulur. Kullanicilar herkese acik profiller paylasabilir, diger adalari gezebilir, gorunumlerini ozellestirebilir ve badgeler, supporter flair, profil linkleri ve commitment temelli sosyal varlikla statulerini gosterebilir.',
+                bullets: [
+                    'Herkese acik profiller ve ada kesfi hafif bir sosyal sorumluluk hissi olusturur',
+                    'Kozmetikler, profil temalari, avatarlar ve badgeler kendini ifade etme alani acar',
+                    'Commitmentler, prestij ozellikleri ve profil paylasimi ilerlemeyi gostermeyi ve surdurmeyi kolaylastirir',
+                ],
+                imageSrc: '/islandly/Social.png',
+                imageAlt: 'Islandly sosyal kesif ekrani',
+            },
+        ] as Section[],
+        getTitle: '- GET -',
+        getBody: 'Cok yakinda iOS\'ta.',
+    },
+};
+
+const t = content[lang] || content.en;
+const base = lang === 'en' ? '' : '/tr';
+---
+
+<Layout title={t.title} description={t.description} lang={lang}>
+    <Navbar lang={lang} client:load />
+
+    <main>
+        <section class="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(74,222,128,0.18),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.14),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0),rgba(15,23,42,0.32))]"></div>
+            <div class="container mx-auto px-6">
+                <div class="grid gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+                    <div class="max-w-3xl">
+                        <h1 class="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl">
+                            {t.heroTitle}
+                        </h1>
+                        <p class="mb-4 max-w-2xl text-lg text-slate-300 md:text-2xl">
+                            {t.heroSubtitle}
+                        </p>
+                        <p class="mb-8 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">
+                            {t.heroBody}
+                        </p>
+
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute inset-4 -z-10 rounded-[2rem] bg-gradient-to-br from-emerald-500/30 via-lime-500/10 to-cyan-400/20 blur-3xl"></div>
+                        <div class="glass-card rounded-[2rem] border border-white/10 p-5 shadow-2xl">
+                            <div class="mx-auto max-w-[320px] overflow-hidden rounded-[1.75rem] border border-white/15 bg-[radial-gradient(circle_at_top,rgba(74,222,128,0.15),transparent_40%),rgba(15,23,42,0.92)] shadow-2xl shadow-emerald-950/30">
+                                <img
+                                    src="/islandly/Islandly.png"
+                                    alt="Islandly overview screen"
+                                    loading="eager"
+                                    width="1080"
+                                    height="2400"
+                                    class="block h-auto w-full"
+                                />
+                            </div>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                                {t.heroStats.map((item) => (
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                                        <p class="text-xs uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                                        <p class="mt-2 text-sm font-semibold leading-6 text-slate-200">{item.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-16 md:pb-24">
+            <div class="container mx-auto px-6">
+                <div class="space-y-16 md:space-y-20">
+                    {t.sections.map((section, index) => {
+                        const reverse = index % 2 === 1;
+
+                        return (
+                            <div class={`grid gap-8 lg:grid-cols-2 lg:items-center ${reverse ? 'lg:[&>*:first-child]:order-2 lg:[&>*:last-child]:order-1' : ''}`}>
+                                <div class="glass-card rounded-[2rem] border border-white/10 p-8 md:p-10">
+                                    <p class="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">{section.eyebrow}</p>
+                                    <h2 class="mb-4 text-3xl font-bold leading-tight text-white md:text-4xl">{section.title}</h2>
+                                    <p class="mb-6 text-base leading-8 text-slate-400 md:text-lg">{section.body}</p>
+                                    <ul class="space-y-4">
+                                        {section.bullets.map((bullet) => (
+                                            <li class="flex items-start gap-3 text-slate-300">
+                                                <span class="mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-emerald-400"></span>
+                                                <span>{bullet}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div class="relative">
+                                    <div class="absolute inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-cyan-500/10 via-emerald-500/10 to-lime-500/15 blur-3xl"></div>
+                                    <div class="mx-auto max-w-[320px] overflow-hidden rounded-[2rem] border border-white/12 shadow-2xl shadow-emerald-950/25">
+                                        <img
+                                            src={section.imageSrc}
+                                            alt={section.imageAlt}
+                                            loading="lazy"
+                                            width="1080"
+                                            height="2400"
+                                            class="block h-auto w-full"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </section>
+
+        <section class="pb-20">
+            <div class="container mx-auto px-6">
+                <div class="glass-card rounded-[2rem] border border-white/10 px-8 py-12 text-center md:px-12">
+                    <p class="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-300">{t.getTitle}</p>
+                    <p class="mt-4 text-3xl font-bold text-white md:text-4xl">{t.getBody}</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <Footer lang={lang} client:visible />
+</Layout>
