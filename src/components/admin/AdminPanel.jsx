@@ -3042,6 +3042,8 @@ const getEventFormData = (event, user) => ({
     creatorName: event?.creatorName || event?.publisher || user?.displayName || 'AkademiZ Admin',
     eventLength: event?.eventLength ?? '',
     maxJoiners: event?.maxJoiners ?? '',
+    allowAppSignups: event?.allowAppSignups !== false,
+    externalSignupUrl: event?.externalSignupUrl || event?.redirectTo || '',
     tags: parseJsonArray(event?.tags).join(', '),
     carouselImages: parseJsonArray(event?.carouselImages)
 });
@@ -3058,6 +3060,8 @@ const EventForm = ({ event = null, onBack, onCreated, onSaved, user }) => {
         creatorName: user?.displayName || 'AkademiZ Admin',
         eventLength: '',
         maxJoiners: '',
+        allowAppSignups: true,
+        externalSignupUrl: '',
         tags: '',
         carouselImages: []
     };
@@ -3137,6 +3141,8 @@ const EventForm = ({ event = null, onBack, onCreated, onSaved, user }) => {
                 creatorName: formData.creatorName.trim() || user?.displayName || 'AkademiZ Admin',
                 tags: JSON.stringify(parsedTags),
                 carouselImages: JSON.stringify(formData.carouselImages),
+                allowAppSignups: formData.allowAppSignups,
+                externalSignupUrl: formData.externalSignupUrl.trim() || null,
                 status: isEditing ? event.status : 'draft'
             };
 
@@ -3335,6 +3341,44 @@ const EventForm = ({ event = null, onBack, onCreated, onSaved, user }) => {
                             />
                         </div>
 
+                        <div className="space-y-4 md:col-span-2">
+                            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                <input
+                                    id="allow-app-signups"
+                                    type="checkbox"
+                                    checked={formData.allowAppSignups}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        allowAppSignups: e.target.checked
+                                    })}
+                                    className="mt-1 h-4 w-4 accent-cyan-500"
+                                />
+                                <div>
+                                    <label htmlFor="allow-app-signups" className="text-sm font-semibold text-slate-200">
+                                        Uygulama içi kayıtları etkinleştir
+                                    </label>
+                                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                                        Kapalı olduğunda uygulamadaki ana buton “Detaylar” olur ve kullanıcı harici kayıt bağlantısına yönlendirilir.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {!formData.allowAppSignups && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-500">Harici kayıt / detay bağlantısı</label>
+                                    <input
+                                        required
+                                        type="url"
+                                        value={formData.externalSignupUrl}
+                                        onChange={(e) => setFormData({ ...formData, externalSignupUrl: e.target.value })}
+                                        className="w-full rounded-2xl border border-cyan-500/30 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-cyan-500/60"
+                                        placeholder="https://example.com/kayit"
+                                    />
+                                    <p className="text-xs text-slate-500">Bu bağlantı uygulamada “Detaylar” butonuna basıldığında açılır.</p>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="space-y-2 md:col-span-2">
                             <label className="text-sm font-medium text-slate-500">Etiketler</label>
                             <input
@@ -3448,7 +3492,9 @@ const EventForm = ({ event = null, onBack, onCreated, onSaved, user }) => {
 
 const PostForm = ({ onClose, onSubmitted, user }) => {
     const [formData, setFormData] = useState({
-        authorName: user?.displayName || 'AkademiZ Admin',
+        useCustomPosterProfile: false,
+        posterName: 'AkademiZ Admin',
+        posterImage: '',
         content: '',
         imageUrl: '',
         poll: {
@@ -3492,6 +3538,37 @@ const PostForm = ({ onClose, onSubmitted, user }) => {
         }
     };
 
+    const handlePosterImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        const token = await auth.currentUser.getIdToken(true);
+        const data = new FormData();
+        data.append('image', file);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/community/upload/image`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: data
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Yükleme başarısız oldu: ${res.status} ${text}`);
+            }
+
+            const result = await res.json();
+            setFormData(prev => ({ ...prev, posterImage: result.url }));
+        } catch (err) {
+            console.error('Poster görseli yüklenemedi', err);
+            alert(err.message);
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
     const addOption = () => {
         if (formData.poll.options.length < 5) {
             setFormData({
@@ -3526,7 +3603,7 @@ const PostForm = ({ onClose, onSubmitted, user }) => {
         setSubmitError('');
         try {
             const token = await auth.currentUser.getIdToken(true);
-            const trimmedAuthorName = formData.authorName.trim() || user?.displayName || 'AkademiZ Admin';
+            const trimmedPosterName = formData.posterName.trim() || 'AkademiZ Admin';
             const trimmedContent = formData.content.trim();
             const pollQuestion = formData.poll.question.trim();
             const pollOptions = formData.poll.options.map((option) => option.trim()).filter(Boolean);
@@ -3536,7 +3613,9 @@ const PostForm = ({ onClose, onSubmitted, user }) => {
             }
 
             const body = {
-                authorName: trimmedAuthorName,
+                useCustomPosterProfile: formData.useCustomPosterProfile,
+                posterName: formData.useCustomPosterProfile ? trimmedPosterName : null,
+                posterImage: formData.useCustomPosterProfile ? (formData.posterImage || null) : null,
                 content: trimmedContent,
                 imageUrl: formData.imageUrl
             };
@@ -3594,23 +3673,46 @@ const PostForm = ({ onClose, onSubmitted, user }) => {
 
             <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                    <img src={user.photoURL} className="w-12 h-12 rounded-full border border-white/10" />
+                    {formData.useCustomPosterProfile && formData.posterImage ? (
+                        <img src={formData.posterImage.startsWith('/') ? `${API_BASE_URL}${formData.posterImage}` : formData.posterImage} className="w-12 h-12 rounded-full border border-white/10 object-cover" />
+                    ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-emerald-500/10 text-xs font-bold text-emerald-300">AZ</div>
+                    )}
                     <div className="min-w-0 flex-1">
-                        <div className="font-bold text-white">{formData.authorName.trim() || user.displayName}</div>
+                        <div className="font-bold text-white">{formData.useCustomPosterProfile ? (formData.posterName.trim() || 'AkademiZ Admin') : 'AkademiZ Admin'}</div>
                         <div className="text-xs text-slate-500">Yönetici olarak paylaşılıyor</div>
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Yazar</label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-200">
                     <input
-                        type="text"
-                        value={formData.authorName}
-                        onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-emerald-500/40"
-                        placeholder="AkademiZ Admin"
+                        type="checkbox"
+                        checked={formData.useCustomPosterProfile}
+                        onChange={(e) => setFormData({ ...formData, useCustomPosterProfile: e.target.checked })}
+                        className="h-4 w-4 accent-emerald-500"
                     />
-                </div>
+                    <span>Özel gönderi profili kullan</span>
+                </label>
+
+                {formData.useCustomPosterProfile && (
+                    <div className="grid gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 md:grid-cols-[1fr_auto]">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-slate-300">Gönderi profil adı</label>
+                            <input
+                                type="text"
+                                value={formData.posterName}
+                                onChange={(e) => setFormData({ ...formData, posterName: e.target.value })}
+                                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-slate-200 outline-none transition focus:border-emerald-500/40"
+                                placeholder="AkademiZ Admin"
+                            />
+                        </div>
+                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
+                            <input type="file" accept="image/*" onChange={handlePosterImageUpload} className="hidden" />
+                            {uploadingImage ? <Loader2 className="animate-spin" size={18} /> : <ImageIcon size={18} />}
+                            {formData.posterImage ? 'Logoyu değiştir' : 'Logo yükle'}
+                        </label>
+                    </div>
+                )}
 
                 <textarea
                     required
@@ -3685,7 +3787,7 @@ const PostForm = ({ onClose, onSubmitted, user }) => {
             )}
 
             <div className="rounded-2xl border border-white/8 bg-slate-950/50 px-4 py-4 text-xs leading-6 text-slate-500">
-                `authorName` alanı frontend tarafından gönderilir. Backend create endpointi şu an bunu resmi olarak dokümante etmiyor; kayıt yanıtında yine oturum sahibinin adı dönüyorsa backend tarafında ayrıca destek eklenmesi gerekir.
+                Özel gönderi profili kapalıyken uygulama gönderiyi AkademiZ Admin adı ve yerleşik AkademiZ logosuyla gösterir.
             </div>
 
             <div className="flex items-center justify-between border-t border-white/5 pt-6">
