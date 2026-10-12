@@ -1,16 +1,10 @@
 ---
 import AkademizPage from '../../components/pages/AkademizPage.astro';
 
-export const prerender = true;
-
-export function getStaticPaths() {
-  return [
-    { params: { lang: 'en' } },
-    { params: { lang: 'tr' } },
-  ];
-}
+export const prerender = false;
 
 const { lang } = Astro.params;
 ---
 
 <AkademizPage lang={lang as 'en' | 'tr'} />
+
