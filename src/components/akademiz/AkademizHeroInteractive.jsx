@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Megaphone, Users, ChevronRight, Bell, Wifi, Battery, BookOpen } from 'lucide-react';
+import { Calendar, Megaphone, Users, ChevronRight, Bell, Wifi, Battery } from 'lucide-react';
 
 export default function AkademizHeroInteractive({ lang = 'tr' }) {
     const [activeTab, setActiveTab] = useState(0); // 0: News, 1: Events, 2: Notifications
@@ -74,9 +74,9 @@ export default function AkademizHeroInteractive({ lang = 'tr' }) {
 
                         {/* Top In-App Brand Header */}
                         <div className="px-4 py-2 flex items-center justify-between border-b border-white/[0.07] bg-slate-950/60 backdrop-blur-md z-20">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center p-0.5">
-                                    <BookOpen className="w-3 h-3 text-white" />
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-md overflow-hidden flex items-center justify-center bg-slate-900 border border-white/10 shadow-sm">
+                                    <img src="/akademiz/logo.webp" alt="AkademiZ" className="w-full h-full object-cover rounded-[3px]" />
                                 </div>
                                 <span className="text-xs font-bold tracking-tight text-white font-display">AkademiZ</span>
                             </div>

@@ -115,15 +115,18 @@ const contentHtml = renderMarkdown(markdown);
 const activePath = `/akademiz/${documentSlug}`;
 ---
 
-<Layout title={`${doc.title} | NortixLabs`} description={`${doc.title} - NortixLabs`} lang="tr">
+<Layout title={`${doc.title} | NortixLabs`} description={`${doc.title} - NortixLabs`} lang="tr" image="/akademiz/logo.png">
     <Navbar client:load lang="tr" />
 
     <main class="relative min-h-screen pt-28 pb-20">
         <div class="container mx-auto px-6 max-w-6xl">
             <div class="mb-10">
-                <a href="/akademiz" class="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-white transition-colors">
+                <a href="/akademiz" class="inline-flex items-center gap-2.5 text-sm font-semibold text-cyan-300 hover:text-white transition-colors group">
                     <span aria-hidden="true">&larr;</span>
-                    AkademiZ
+                    <div class="w-6 h-6 rounded-lg overflow-hidden border border-cyan-400/30">
+                        <img src="/akademiz/logo.webp" alt="AkademiZ" class="w-full h-full object-cover" width="24" height="24" />
+                    </div>
+                    <span>AkademiZ</span>
                 </a>
                 <p class="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">AkademiZ Legal</p>
                 <h1 class="mt-3 text-3xl md:text-5xl font-bold font-display text-white">{doc.title}</h1>

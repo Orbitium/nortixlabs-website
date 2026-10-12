@@ -212,7 +212,7 @@ const t = content[lang] || content.en;
 const contactHref = isTr ? "/tr#contact" : "/#contact";
 ---
 
-<Layout title={t.title} description={t.description} lang={lang}>
+<Layout title={t.title} description={t.description} lang={lang} image="/akademiz/logo.png">
     {/* Dedicated AkademiZ Navigation */}
     <AkademizNavbar lang={lang} client:load />
 
@@ -234,8 +234,10 @@ const contactHref = isTr ? "/tr#contact" : "/#contact";
                 <div class="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
                     
                     {/* Eyebrow Pill */}
-                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-semibold uppercase tracking-wider backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 text-xs font-semibold uppercase tracking-wider backdrop-blur-md shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                        <div class="w-4 h-4 rounded overflow-hidden flex-shrink-0">
+                            <img src="/akademiz/logo.webp" alt="AkademiZ Logo" class="w-full h-full object-cover" width="16" height="16" />
+                        </div>
                         <span>{t.heroEyebrow}</span>
                     </div>
 
@@ -545,6 +547,11 @@ const contactHref = isTr ? "/tr#contact" : "/#contact";
                 <div class="absolute -top-32 right-0 w-[550px] h-[550px] bg-gradient-to-bl from-cyan-500/20 to-blue-600/20 rounded-full blur-[130px] pointer-events-none"></div>
 
                 <div class="relative z-10 text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+                    {/* Official App Icon */}
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl overflow-hidden mx-auto mb-6 p-[2px] bg-gradient-to-tr from-cyan-400 via-blue-500 to-indigo-500 shadow-2xl shadow-cyan-500/25">
+                        <img src="/akademiz/logo.webp" alt="AkademiZ App Icon" class="w-full h-full object-cover rounded-[22px]" width="96" height="96" />
+                    </div>
+
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-widest mb-4 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
                         <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
                         <span>{t.ctaEyebrow}</span>
@@ -649,10 +656,8 @@ const contactHref = isTr ? "/tr#contact" : "/#contact";
                 <div class="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-blue-500/20"></div>
                 
                 <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/80 border border-cyan-500/30 text-xs sm:text-sm text-slate-200 font-semibold shadow-[0_0_25px_rgba(6,182,212,0.2)] backdrop-blur-md">
-                    <div class="w-5 h-5 rounded-md bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
+                    <div class="w-5 h-5 rounded-md overflow-hidden flex items-center justify-center shadow-sm flex-shrink-0">
+                        <img src="/akademiz/logo.webp" alt="AkademiZ Logo" class="w-full h-full object-cover rounded-md" width="20" height="20" />
                     </div>
                     <span>{t.signature}</span>
                 </div>

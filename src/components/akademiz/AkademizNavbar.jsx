@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Menu, X, ArrowLeft, Globe, Smartphone, ChevronRight } from 'lucide-react';
+import { Menu, X, ArrowLeft, Globe, Smartphone, ChevronRight } from 'lucide-react';
 
 export default function AkademizNavbar({ lang = 'tr' }) {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -48,10 +48,14 @@ export default function AkademizNavbar({ lang = 'tr' }) {
                             className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-xl"
                             aria-label="AkademiZ Home"
                         >
-                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 p-[1.5px] shadow-lg shadow-blue-500/25 group-hover:shadow-cyan-400/30 transition-all duration-300">
-                                <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                                    <BookOpen className="w-5 h-5 text-cyan-300 group-hover:scale-110 transition-transform duration-300" />
-                                </div>
+                            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden p-[1.5px] bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 shadow-lg shadow-blue-500/25 group-hover:shadow-cyan-400/35 transition-all duration-300">
+                                <img
+                                    src="/akademiz/logo.webp"
+                                    alt="AkademiZ Logo"
+                                    width="40"
+                                    height="40"
+                                    className="w-full h-full object-cover rounded-[10px] group-hover:scale-105 transition-transform duration-300"
+                                />
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-1.5 font-display">
