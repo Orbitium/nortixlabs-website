@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rocket, Twitter, Github, Linkedin } from 'lucide-react';
+import { Twitter, Github, Linkedin } from 'lucide-react';
 
 export default function Footer({ lang = 'en' }) {
     const buildVersion = typeof __BUILD_VERSION__ === 'string' ? __BUILD_VERSION__ : 'V-dev';
@@ -64,8 +64,8 @@ export default function Footer({ lang = 'en' }) {
 
                     <div className="col-span-1 md:col-span-1">
                         <a href={base || '/'} className="flex items-center gap-2 mb-4 group">
-                            <div className="p-2 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500">
-                                <Rocket className="w-5 h-5 text-white" />
+                            <div className="w-8 h-8 rounded-xl overflow-hidden p-[1.5px] bg-gradient-to-tr from-rose-500 via-blue-600 to-cyan-400 shadow-md shadow-cyan-500/20 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 flex-shrink-0">
+                                <img src="/nortix-logo.webp" alt="Nortixlabs Logo" className="w-full h-full object-cover rounded-[9px] transform group-hover:scale-105 transition-transform duration-300" />
                             </div>
                             <span className="text-xl font-bold font-display tracking-wide text-white">
                                 Nortix<span className="text-cyan-400">labs</span>

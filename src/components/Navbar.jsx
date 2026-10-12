@@ -71,8 +71,8 @@ export default function Navbar({ lang = 'en' }) {
         >
             <div className="container mx-auto px-6 flex items-center justify-between">
                 <a href={lang === 'en' ? '/' : '/tr'} className="flex items-center gap-2 group">
-                    <div className="p-1 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 group-hover:shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-shadow duration-300">
-                        <img src="/favicon.png" alt="Nortixlabs Logo" className="w-7 h-7 transform group-hover:scale-110 transition-transform duration-300" />
+                    <div className="w-9 h-9 rounded-xl overflow-hidden p-[1.5px] bg-gradient-to-tr from-rose-500 via-blue-600 to-cyan-400 shadow-md shadow-cyan-500/20 group-hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 flex-shrink-0">
+                        <img src="/nortix-logo.webp" alt="Nortixlabs Logo" className="w-full h-full object-cover rounded-[10px] transform group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <span className="text-xl font-bold font-display tracking-wide text-white">
                         Nortix<span className="text-cyan-400">labs</span>
