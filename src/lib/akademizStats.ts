@@ -6,9 +6,9 @@ export interface AkademizLiveStats {
 }
 
 const DEFAULT_STATS: AkademizLiveStats = {
-    students: 2480,
-    events: 320,
-    communityPosts: 1450,
+    students: 450,
+    events: 20,
+    communityPosts: 10,
 };
 
 // 32-character security key for backend communication
